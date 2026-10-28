@@ -1,0 +1,23 @@
+:root {
+    background-color: aqua;
+}
+
+button {
+    width: 100%;
+    padding: 8px;
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #357ae8;
+}
+
+#message {
+    margin-top: 10px;
+    font-size: 14px;
+    text-align: center;
+}
