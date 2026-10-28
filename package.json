@@ -1,0 +1,25 @@
+{
+  "name": "webprg-groupg-final",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/t99d99t99t99/WebPrg-GroupG-Final.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/t99d99t99t99/WebPrg-GroupG-Final/issues"
+  },
+  "homepage": "https://github.com/t99d99t99t99/WebPrg-GroupG-Final#readme",
+  "devDependencies": {
+    "@biomejs/biome": "2.6.3",
+    "@types/chrome": "^0.3.7"
+  }
+}
