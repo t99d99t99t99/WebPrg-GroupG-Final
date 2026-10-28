@@ -3,14 +3,39 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="homepage.css">
+    <title>북마크</title>
 </head>
 
 <body>
-    <h1>ㅎㅇ</h1>
-    <div id="hi"></div>
-    <script src="homepage.js"></script>
+    <header class="page-header">
+        <h1>북마크</h1>
+        <div class="toolbar">
+            <button id="selectAllButton" type="button">모두 선택</button>
+            <button id="deselectAllButton" type="button">모두 선택 해제</button>
+            <button id="deleteSelectedButton" type="button">선택된 북마크 모두 삭제</button>
+        </div>
+    </header>
+
+    <main id="categoryList" aria-live="polite"></main>
+
+    <dialog id="editDialog">
+        <form id="editForm">
+            <h2>북마크 수정</h2>
+            <label for="editName">이름</label>
+            <input id="editName" name="name" type="text" required>
+            <label for="editUrl">URL</label>
+            <input id="editUrl" name="url" type="url" required>
+            <div class="dialog-actions">
+                <button id="cancelEditButton" type="button">취소</button>
+                <button type="submit">저장</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script type="module" src="homepage.js"></script>
 </body>
 
 </html>

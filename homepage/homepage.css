@@ -1,0 +1,52 @@
+:root {
+    background: white;
+    color: #202124;
+    font-family: sans-serif;
+}
+
+body {
+    margin: 24px;
+}
+
+.page-header,
+.toolbar,
+.category-section li,
+.dialog-actions {
+    display: flex;
+    align-items: center;
+}
+
+.page-header {
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.toolbar,
+.category-section li,
+.dialog-actions {
+    gap: 8px;
+}
+
+.toolbar button,
+.edit-bookmark-button,
+.dialog-actions button {
+    width: auto;
+}
+
+.category-section li {
+    margin: 8px 0;
+}
+
+.category-section li a {
+    margin-right: 8px;
+}
+
+#editDialog form {
+    display: grid;
+    gap: 8px;
+}
+
+.dialog-actions {
+    justify-content: flex-end;
+    margin-top: 8px;
+}
