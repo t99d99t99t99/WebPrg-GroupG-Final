@@ -10,6 +10,9 @@ const newCategoryName = document.getElementById("newCategoryName");
 const saveCategoryButton = document.getElementById("saveCategoryButton");
 const bookmarkName = document.getElementById("bookmarkName");
 const status = document.getElementById("status");
+const previewCategory = document.getElementById("previewCategory");
+const cancelButton = document.getElementById("cancelButton");
+const selectWrap = categorySelect.closest(".select-wrap");
 
 let currentTab;
 
@@ -19,20 +22,28 @@ function showStatus(message) {
 
 async function loadCategories(selectedId = "") {
     const savedCategories = await categories.get();
-    categorySelect.replaceChildren(new Option("카테고리 없음", ""));
+    categorySelect.replaceChildren();
 
     for (const category of savedCategories) {
         categorySelect.add(new Option(category.name, category.id));
     }
 
     categorySelect.value = selectedId;
+    updatePreviewCategory();
+}
+
+function updatePreviewCategory() {
+    const selectedOption = categorySelect.selectedOptions[0];
+    const hasCategory = Boolean(categorySelect.value);
+    previewCategory.textContent = hasCategory ? selectedOption.textContent : "분류 없음";
+    selectWrap.classList.toggle("has-selection", hasCategory);
 }
 
 async function initialize() {
     try {
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         currentTab = tab;
-        bookmarkName.placeholder = tab?.title ?? "";
+        bookmarkName.value = tab?.title ?? "";
         await loadCategories();
     } catch (error) {
         showStatus("현재 페이지 또는 카테고리 목록을 불러오지 못했습니다.");
@@ -44,6 +55,10 @@ newCategoryButton.addEventListener("click", () => {
     newCategoryFields.hidden = !newCategoryFields.hidden;
     if (!newCategoryFields.hidden) newCategoryName.focus();
 });
+
+categorySelect.addEventListener("change", updatePreviewCategory);
+
+cancelButton.addEventListener("click", () => window.close());
 
 saveCategoryButton.addEventListener("click", async () => {
     const name = newCategoryName.value.trim();
@@ -69,18 +84,28 @@ form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const name = bookmarkName.value.trim() || currentTab?.title?.trim();
 
+    if (!categorySelect.value) {
+        showStatus(categorySelect.options.length === 0
+            ? "먼저 카테고리를 추가해 주세요."
+            : "카테고리를 선택해 주세요.");
+        categorySelect.focus();
+        return;
+    }
+
     if (!currentTab?.url || !name) {
         showStatus("페이지 주소와 북마크 이름이 필요합니다.");
         return;
     }
 
     try {
-        const bookmark = new Bookmark(
-            crypto.randomUUID(),
-            currentTab.url,
-            name,
-            categorySelect.value || null,
-        );
+        const selectedCategory = await categories.get(categorySelect.value);
+        if (!selectedCategory) {
+            showStatus("선택한 카테고리를 찾을 수 없습니다. 다시 선택해 주세요.");
+            await loadCategories();
+            return;
+        }
+
+        const bookmark = new Bookmark(crypto.randomUUID(), currentTab.url, name, selectedCategory.id);
         await bookmarks.add(bookmark);
         showStatus("저장했습니다.");
     } catch (error) {

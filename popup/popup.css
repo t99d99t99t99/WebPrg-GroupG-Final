@@ -1,5 +1,367 @@
-body {
-    width: 200px;
-    padding: 10px;
-    font-family: sans-serif;
+.popup-page {
+    width: 374px;
+    min-width: 374px;
+    height: 616px;
+    overflow: hidden;
+    color: #33494b;
+    background: #fff;
+}
+
+.popup-shell {
+    position: relative;
+    width: 374px;
+    height: 616px;
+}
+
+.save-card {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 374px;
+    height: 616px;
+    margin: 0;
+    padding: 0;
+    border-radius: 15px;
+    background: #fff;
+}
+
+.popup-heading {
+    position: absolute;
+    top: 17px;
+    left: 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    height: 42px;
+}
+
+.popup-logo {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 10px;
+    background: #dff0e5;
+}
+
+.popup-logo img {
+    display: block;
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+}
+
+.popup-heading h1 {
+    margin: -1px 0 3px;
+    color: #2d4249;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 19px;
+}
+
+.popup-heading p {
+    margin: 0;
+    color: #84918b;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 13px;
+}
+
+.popup-divider {
+    position: absolute;
+    top: 71px;
+    left: 18px;
+    width: 338px;
+    height: 1px;
+    background: #e8ede8;
+}
+
+.form-section label {
+    display: block;
+    color: #52635d;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 15px;
+}
+
+.page-name-section,
+.category-section {
+    position: absolute;
+    left: 18px;
+    width: 338px;
+}
+
+.page-name-section {
+    top: 88px;
+}
+
+.page-name-section input,
+.select-wrap {
+    position: absolute;
+    left: 0;
+    width: 338px;
+    height: 43px;
+    border: 1px solid #dde5de;
+    border-radius: 9px;
+    background: #fcfdfc;
+}
+
+.page-name-section input {
+    top: 25px;
+    padding: 0 11px;
+    color: #33494b;
+    font-size: 12px;
+    line-height: 15px;
+}
+
+.page-name-section input::placeholder {
+    color: #33494b;
+    opacity: 1;
+}
+
+.category-section {
+    top: 174px;
+}
+
+.select-wrap {
+    top: 25px;
+}
+
+.select-wrap select {
+    width: 100%;
+    height: 100%;
+    padding: 0 34px 0 37px;
+    appearance: none;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #33494b;
+    font-size: 12px;
+    line-height: 15px;
+}
+
+.category-dot {
+    position: absolute;
+    z-index: 1;
+    top: 14px;
+    left: 12px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #d2a269;
+    pointer-events: none;
+}
+
+.select-wrap:not(.has-selection) .category-dot {
+    display: none;
+}
+
+.select-wrap::after {
+    position: absolute;
+    top: 11px;
+    right: 14px;
+    color: #7c8b83;
+    content: '∨';
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 18px;
+    pointer-events: none;
+}
+
+.text-button {
+    position: absolute;
+    top: 77px;
+    left: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #43836a;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 15px;
+}
+
+.new-category-fields {
+    position: absolute;
+    z-index: 2;
+    top: 100px;
+    left: 0;
+    width: 338px;
+    padding: 12px;
+    border: 1px solid #dde5de;
+    border-radius: 9px;
+    background: #fff;
+    box-shadow: 0 6px 18px rgb(45 66 73 / 12%);
+}
+
+.new-category-fields[hidden] {
+    display: none;
+}
+
+.new-category-fields label {
+    margin-bottom: 7px;
+}
+
+.new-category-row {
+    display: flex;
+    gap: 8px;
+}
+
+.new-category-row input {
+    min-width: 0;
+    height: 34px;
+    flex: 1;
+    padding: 0 9px;
+    border: 1px solid #dde5de;
+    border-radius: 7px;
+    color: #33494b;
+    font-size: 12px;
+}
+
+.small-primary-button {
+    padding: 0 10px;
+    border: 0;
+    border-radius: 7px;
+    background: #43836a;
+    color: #fff;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.preview-card {
+    position: absolute;
+    top: 289px;
+    left: 18px;
+    width: 338px;
+    height: 101px;
+    border-radius: 11px;
+    background: #f3f7f3;
+}
+
+.preview-label {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    margin: 0;
+    color: #77867d;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 13px;
+}
+
+.preview-content {
+    position: absolute;
+    top: 42px;
+    left: 29px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.preview-tile {
+    position: relative;
+    width: 50px;
+    height: 42px;
+    flex: 0 0 50px;
+}
+
+.preview-tile::before {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 40px;
+    height: 22px;
+    background: #e9b962;
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    content: '';
+}
+
+.preview-tile::after {
+    position: absolute;
+    top: 12px;
+    left: 0;
+    width: 40px;
+    height: 30px;
+    background: linear-gradient(90deg, #f8f2db 50%, #d7c8a5 50%);
+    clip-path: polygon(0 0, 50% 35%, 100% 0, 100% 65%, 50% 100%, 0 65%);
+    content: '';
+}
+
+.preview-site-icon {
+    position: absolute;
+    z-index: 1;
+    top: 23px;
+    left: 5px;
+    width: 12px;
+    height: 12px;
+    border: 1px solid #d2d2d2;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.preview-content p {
+    margin: 0;
+    color: #53665d;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 13px;
+}
+
+.preview-content strong {
+    font-weight: 500;
+}
+
+.form-actions {
+    position: absolute;
+    top: 548px;
+    left: 18px;
+    display: flex;
+    gap: 10px;
+    width: 338px;
+    height: 38px;
+}
+
+.cancel-button,
+.save-button {
+    height: 38px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 15px;
+}
+
+.cancel-button {
+    width: 98px;
+    border: 1px solid #dde5de;
+    background: #fff;
+    color: #64736b;
+    font-weight: 500;
+}
+
+.save-button {
+    width: 230px;
+    border: 0;
+    background: #43836a;
+    color: #fff;
+    font-weight: 600;
+}
+
+.save-button:hover,
+.small-primary-button:hover {
+    background: #36745d;
+}
+
+.status-message {
+    position: absolute;
+    top: 591px;
+    left: 0;
+    width: 374px;
+    margin: 0;
+    color: #64736b;
+    font-size: 11px;
+    text-align: center;
 }
