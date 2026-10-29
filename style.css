@@ -1,23 +1,67 @@
 :root {
-    background-color: aqua;
+    /* Shared palette from the homepage and save-popup wireframes */
+    --color-canvas: #f1f4ef;
+    --color-surface: #fffdf8;
+    --color-surface-muted: #f8f2db;
+    --color-surface-raised: #ffffff;
+    --color-text: #315c53;
+    --color-text-muted: #73827b;
+    --color-primary: #52bda5;
+    --color-primary-soft: #e2f4ef;
+    --color-primary-border: #9dc9be;
+    --color-border: #d5c99e;
+    --color-divider: #e6e3d6;
+    --color-road: #f4e6bd;
+    --color-accent-gold: #e5b75d;
+    --color-accent-coral: #e78674;
+    --color-accent-blue: #8da9e8;
+
+    /* Shared type scale */
+    --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-size-xs: 12px;
+    --font-size-sm: 13px;
+    --font-size-base: 14px;
+    --font-size-md: 15px;
+    --font-size-lg: 17px;
+    --font-size-xl: 20px;
+    --font-size-display: 23px;
+
+    /* Shared geometry */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-pill: 999px;
+    --border-width: 1px;
+    --shadow-panel: 0 12px 32px rgb(49 70 60 / 14%);
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    min-width: 320px;
+    background: var(--color-canvas);
+}
+
+body {
+    margin: 0;
+    color: var(--color-text);
+    background: var(--color-canvas);
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-base);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
 }
 
 button {
-    width: 100%;
-    padding: 8px;
-    background-color: #4285f4;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-button:hover {
-    background-color: #357ae8;
-}
-
-#message {
-    margin-top: 10px;
-    font-size: 14px;
-    text-align: center;
+    color: inherit;
 }
