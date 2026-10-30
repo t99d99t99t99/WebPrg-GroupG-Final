@@ -35,3 +35,16 @@ npm install
 4. 우측 상단 "개발자 모드" 버튼 누르기
 5. "압축해제된 확장 프로그램 로드" 버튼 누르기
 6. 본 프로젝트의 폴더를 불러오기
+
+## 에셋 출처
+
+3D 건물 에셋 출처: [Thridy](https://thridy.com/)
+
+- [Building 3D Icon](https://thridy.com/building-3d-icon) by Thridy
+- [Scandinavian Apartment Building 3D Icon](https://thridy.com/scandinavian-apartment-building-3d-icon) by Thridy
+- [Home 3D Icon](https://thridy.com/home-3d-icon) by Thridy
+- [Property 3D Icon](https://thridy.com/property-3d-icon) by Thridy
+- [Apartment Building 3D Icon](https://thridy.com/apartment-building-3d-icon) by Thridy
+- [Modern House 3D Icon](https://thridy.com/modern-house-3d-icon) by Thridy
+- [Sanctuary 3D Icon](https://thridy.com/sanctuary-3d-icon) by Thridy
+- [Villa 3D Icon](https://thridy.com/villa-3d-icon) by Thridy
