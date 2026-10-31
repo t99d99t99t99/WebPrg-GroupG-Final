@@ -85,9 +85,9 @@ form.addEventListener("submit", async (event) => {
     const name = bookmarkName.value.trim() || currentTab?.title?.trim();
 
     if (!categorySelect.value) {
-        showStatus(categorySelect.options.length === 0
-            ? "먼저 카테고리를 추가해 주세요."
-            : "카테고리를 선택해 주세요.");
+        showStatus(
+            categorySelect.options.length === 0 ? "먼저 카테고리를 추가해 주세요." : "카테고리를 선택해 주세요.",
+        );
         categorySelect.focus();
         return;
     }
