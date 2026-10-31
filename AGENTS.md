@@ -1,7 +1,117 @@
-# Styling guidance
+# AGENTS.md
 
-- Treat `style.css` as the shared stylesheet for both `popup/` and `homepage/`, as described in `README.md`.
-- Prefer existing custom properties from `style.css` for colors, typography, sizing, borders, radii, and other shared visual values.
-- When a value needs to be shared but no suitable token exists, add or refine the token in `style.css` and use it from each page stylesheet.
-- Keep `popup/popup.css` and `homepage/homepage.css` for page-specific layout and styles. Those files should reference shared `style.css` tokens where applicable instead of repeating shared values.
-- Use a page-specific value only when the design genuinely differs for that page or the rule is only used there.
+이 프로젝트의 AI 에이전트(Codex, Claude Code 등) 공용 지침입니다. 프로젝트가 진행돼도 거의 바뀌지 않는 원칙만 적습니다.
+`CLAUDE.md`는 이 파일을 불러오기만 합니다(`@AGENTS.md`).
+
+## 문서 안내
+
+| 문서 | 내용 | 언제 읽나 |
+|---|---|---|
+| [PROJECT.md](PROJECT.md) | 기획: 아이디어, 사용 흐름, 화면, 알파 범위, 성공 기준 | 무엇을 만들지, 범위 안인지 판단할 때 |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | 코드 지도: 폴더 책임, 데이터 구조, 호출 관계 | 코드를 고치거나 파일을 추가하기 전 |
+| [README.md](README.md) | 설치, 크롬에서 실행·확인하는 방법, 에셋 출처 | 실행하거나 확인할 때 |
+
+- **PROJECT.md는 노션 기획 문서에서 생성됩니다. 직접 고치지 않습니다.** 기획이 바뀌어야 하면 노션을 고치거나 사용자에게 알립니다.
+- 문서와 코드가 다르면 코드가 맞습니다. 그 문서를 고쳐야 한다고 보고합니다.
+
+## 기본 원칙
+
+여러 사람이 각자 AI로 같은 레포를 고칩니다. 한 사람의 AI가 남의 작업을 덮어쓰지 않는 것이 제일 중요합니다.
+
+- 요청과 직접 관련된 줄만 고칩니다. 옆 코드의 "개선", 이름 바꾸기, 주석 정리는 하지 않습니다.
+- 고치기 전에 무엇을 어느 파일에서 바꿀지 한 줄로 밝힙니다.
+- 요청이 두 가지로 읽히면 구현하기 전에 묻습니다.
+- PROJECT.md의 "꼭 해야"를 먼저 합니다. "나중" 항목은 요청이 없으면 만들지 않습니다.
+- 내가 만들지 않은 변경(작업 트리의 다른 수정, 남의 커밋)은 되돌리지 않습니다.
+- **완료 기준은 크롬에서 직접 확인한 것입니다.** 자동 테스트가 없습니다. 확인하지 못했으면 확인하지 못했다고 보고합니다.
+
+**먼저 물어볼 것**
+- 저장 키나 저장되는 객체의 필드를 바꾸거나 지우기. 팀원 브라우저에 이미 저장된 데이터가 사라지거나 깨집니다.
+- `manifest.json`의 `permissions` 변경.
+- npm 의존성, 번들러, 프레임워크 추가.
+- 공용 `style.css` 변수의 이름 변경이나 삭제. 다른 페이지가 깨집니다.
+- 폴더 이동, 파일 이름 변경, 큰 에셋 추가.
+
+**하지 않을 것**
+- 관련 없는 리팩터링.
+- API 키·토큰 같은 비밀값 커밋.
+- `AGENTS.override.md` 커밋. Codex에서 이 파일은 `AGENTS.md`를 통째로 대체해서 팀원 전체의 지침이 몰래 바뀝니다.
+
+## 코드 컨벤션
+
+들여쓰기·따옴표·줄 길이는 Biome(`biome.json`)이 맞춥니다. 여기에는 Biome이 못 잡는 약속만 적습니다.
+
+- 번들러 없이 순수 HTML/CSS/JS를 씁니다. JS는 ES module이고, import는 상대경로와 `.js` 확장자까지 씁니다(`"../db/db.js"`).
+- DOM은 `createElement` + `textContent`로 만듭니다. **`innerHTML`에 사용자 데이터(북마크 이름·URL)를 넣지 않습니다**(XSS 방지).
+- 저장소 접근은 `db/`의 객체를 통해서만 합니다. 페이지 코드에서 `chrome.storage`를 직접 부르지 않습니다.
+- DB 메서드는 `async`이고, 처음 읽기가 끝나기 전에 쓰지 않도록 `await this.ready`를 거칩니다.
+- ID는 `crypto.randomUUID()`로 만듭니다.
+- 화면 문구는 한국어로 쓰고, 아이콘만 있는 버튼에는 `aria-label`을 붙입니다.
+- 오류는 `try/catch`로 잡아 화면에 한국어 메시지를 띄우고, 원본은 `console.error`로 남깁니다.
+
+## 스타일
+
+- `style.css`는 `popup/`과 `homepage/`가 함께 쓰는 공용 스타일시트입니다.
+- 색상·글꼴·크기·테두리·모서리 등 공유되는 값은 `style.css`의 CSS 변수를 먼저 씁니다.
+- 공유해야 하는 값인데 맞는 변수가 없으면 `style.css`에 변수를 추가하거나 다듬고, 각 페이지 css에서 그 변수를 씁니다.
+- 각 페이지 폴더의 css에는 그 페이지 전용 레이아웃·스타일만 둡니다. 공유 값을 복사하지 말고 `style.css` 변수를 참조합니다.
+- 페이지 전용 값은 디자인이 정말 그 페이지에서만 다르거나, 그 규칙을 거기서만 쓸 때만 씁니다.
+
+## Git 규칙
+
+`main`은 **언제 받아도 크롬에 로드되어 동작하는 상태**로 유지합니다. 작업은 브랜치에서 하고 PR로 합칩니다.
+
+**브랜치: 기능 하나 = 브랜치 하나 = 담당자 한 명**
+- 화면 단위가 아니라 **사용자가 할 수 있게 되는 일** 단위로 나눕니다. 하루~이틀 안에 PR을 올릴 수 있는 크기로 자릅니다.
+- 한 브랜치를 두 사람이 동시에 고치지 않습니다.
+- 이름은 `<종류>/<짧은-영문-설명>`입니다. 종류는 아래 여섯 가지입니다.
+
+| 종류 | 쓰는 때 | 예 |
+|---|---|---|
+| `feat` | 새 기능 | `feat/homepage-map` |
+| `fix` | 버그 수정 | `fix/category-not-saved` |
+| `style` | 화면 디자인·CSS만 | `style/popup-layout` |
+| `assets` | 이미지·에셋 | `assets/building-icons` |
+| `docs` | 문서만 | `docs/architecture` |
+| `chore` | 설정·패키지·CI | `chore/biome-config` |
+
+**흐름**
+1. 최신 `main`에서 브랜치를 만듭니다: `git switch main`, `git pull`, `git switch -c feat/...`
+2. 작업 중에도 `git pull origin main`으로 다른 사람의 변경을 자주 받습니다. **rebase와 force push는 하지 않습니다.**
+3. PR을 올리면 GitHub에서 Biome 검사가 자동으로 돕니다. 검사를 통과하고 **팀원 1명 이상이 확인**하면 **Squash and merge**로 합칩니다.
+4. 합친 브랜치는 다시 쓰지 않습니다. 버그가 나오면 최신 `main`에서 `fix/...`를 새로 만듭니다.
+
+**이름 규칙:** PR 제목과 커밋 메시지는 `범위: 설명`(설명은 한국어)입니다. Squash 하면 PR 제목이 `main`의 커밋 메시지가 됩니다.
+- 범위는 `popup`, `homepage`, `db`, `style`, `assets`, `manifest`, `docs`, `chore` 중 하나입니다.
+- 예: `popup: 새 카테고리 만들기 버튼 추가`
+
+**충돌이 잘 나는 공용 파일:** `style.css`, `db/`, `manifest.json`. 고치기 전에 팀 채팅에 알리고, 가능하면 그 변경만 작은 PR로 먼저 합칩니다.
+
+## 커밋 체크리스트
+
+에이전트는 **사용자가 요청할 때만** 커밋·push합니다. 요청을 받으면 아래 순서를 따릅니다.
+
+1. **브랜치 확인**: 지금 브랜치가 `main`이면 커밋하지 말고, 위 이름 규칙으로 브랜치를 먼저 만듭니다.
+2. **범위 확인**: `git status`의 모든 줄을 설명할 수 있어야 합니다. 이번 작업과 관계없는 변경은 커밋에 넣지 않고 사용자에게 알립니다.
+3. **문서 갱신**: 아래 표에 해당하면 그 문서를 **같은 커밋에서** 고칩니다. 새로 생긴 것은 추가하고, **없어진 것은 지웁니다.**
+
+   | 이런 변경을 했으면 | 이 문서를 고친다 |
+   |---|---|
+   | 파일·폴더를 추가, 이동, 삭제 | ARCHITECTURE.md 구조 |
+   | 모듈 사이 호출 관계가 바뀜 (새 import, 새 진입점) | ARCHITECTURE.md 호출 관계 |
+   | 저장 키나 저장 데이터의 필드를 바꿈 | ARCHITECTURE.md 데이터 구조 |
+   | 권한, 새 탭·팝업 같은 확장 설정을 바꿈 | ARCHITECTURE.md, README.md |
+   | 설치·실행 방법이 바뀜 | README.md |
+   | 에셋을 추가 | README.md 에셋 출처 |
+   | 이 문서의 원칙과 다르게 해야 할 일이 생김 | 고치지 말고 사용자에게 묻습니다 |
+
+4. **검사**: `npx biome check --write <바꾼 파일>`을 돌리고 남은 오류를 고칩니다.
+5. **커밋**: `범위: 설명` 형식으로, 한 커밋에 한 가지 일만 담습니다.
+6. **보고**: 커밋 메시지, 갱신한 문서, 크롬에서 확인했는지를 알립니다. PR을 만들 때는 본문에 사용한 AI 도구(Codex, Claude Code 등)를 적습니다.
+
+## 개인 설정
+
+이 파일에는 팀 공용 규칙만 적습니다. 개인 취향은 각자의 전역 파일에 둡니다.
+- Codex: `~/.codex/AGENTS.md`
+- Claude Code: `~/.claude/CLAUDE.md`, 또는 이 프로젝트에만 적용할 개인 메모는 `CLAUDE.local.md`(gitignore됨).
+- `CLAUDE.md`의 `@AGENTS.md` 줄은 지우지 않습니다. 이 줄이 없으면 Claude가 이 파일을 읽지 않을 수 있습니다.
