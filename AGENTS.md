@@ -78,10 +78,10 @@
 **흐름**
 1. 최신 `main`에서 브랜치를 만듭니다: `git switch main`, `git pull`, `git switch -c feat/...`
 2. 작업 중에도 `git pull origin main`으로 다른 사람의 변경을 자주 받습니다. **rebase와 force push는 하지 않습니다.**
-3. PR을 올리면 GitHub에서 Biome 검사가 자동으로 돕니다. 검사를 통과하면 작성자가 직접 **Squash and merge**로 합칩니다. 리뷰는 필수가 아닙니다. 에이전트는 아래 "올려줘" 절차로 이 과정을 한 번에 합니다.
+3. PR을 올리면 GitHub에서 Biome 검사가 자동으로 돕니다. 검사를 통과하면 작성자가 직접 **일반 merge**(Merge pull request)로 합칩니다. 리뷰는 필수가 아닙니다. 에이전트는 아래 "올려줘" 절차로 이 과정을 한 번에 합니다.
 4. 합친 브랜치는 다시 쓰지 않습니다. 버그가 나오면 최신 `main`에서 `fix/...`를 새로 만듭니다.
 
-**이름 규칙:** PR 제목과 커밋 메시지는 `범위: 설명`(설명은 한국어)입니다. Squash 하면 PR 제목이 `main`의 커밋 메시지가 됩니다.
+**이름 규칙:** PR 제목과 커밋 메시지는 `범위: 설명`(설명은 한국어)입니다.
 - 범위는 `popup`, `homepage`, `db`, `style`, `assets`, `manifest`, `docs`, `chore` 중 하나입니다.
 - 예: `popup: 새 카테고리 만들기 버튼 추가`
 
@@ -113,7 +113,7 @@
 7. **최신 main 반영 후 push**: `git pull origin main`(merge)으로 받은 뒤 `git push -u origin <브랜치>`.
 8. **PR**: 이 브랜치의 PR이 이미 있으면 그대로 쓰고, 없으면 `gh pr create`로 만듭니다. 제목은 `범위: 설명`이고, 본문에는 바꾼 것, 크롬 확인 여부, 사용한 AI 도구(Codex, Claude Code 등)를 적습니다.
 9. **검사 대기**: `gh pr checks --watch`. Biome 검사가 실패하면 고쳐서 4단계부터 다시 합니다.
-10. **머지**: `gh pr merge --squash`로 합친 뒤 `git switch main`, `git pull`. PR 링크와 결과를 보고합니다.
+10. **머지**: `gh pr merge --merge`로 합친 뒤 `git switch main`, `git pull`. PR 링크와 결과를 보고합니다.
 
 **멈추고 묻는 경우** (그 단계까지 한 것을 보고)
 - 7단계에서 `main`과 충돌이 남. 충돌을 임의로 풀지 않습니다.
