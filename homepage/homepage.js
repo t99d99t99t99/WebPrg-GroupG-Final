@@ -60,10 +60,7 @@ async function render() {
     categoryList.replaceChildren();
 
     try {
-        const [savedCategories, savedBookmarks] = await Promise.all([
-            categories.get(),
-            bookmarks.get(),
-        ]);
+        const [savedCategories, savedBookmarks] = await Promise.all([categories.get(), bookmarks.get()]);
         const assignedBookmarkIds = new Set();
 
         for (const category of savedCategories) {
@@ -74,9 +71,7 @@ async function render() {
             appendCategory(category.name, categoryBookmarks);
         }
 
-        const uncategorized = savedBookmarks.filter(
-            (bookmark) => !assignedBookmarkIds.has(bookmark.id),
-        );
+        const uncategorized = savedBookmarks.filter((bookmark) => !assignedBookmarkIds.has(bookmark.id));
         if (uncategorized.length > 0) appendCategory("분류 없음", uncategorized);
         if (savedCategories.length === 0 && savedBookmarks.length === 0) {
             categoryList.append(makeElement("p", "저장된 북마크가 없습니다."));
@@ -107,8 +102,9 @@ deselectAllButton.addEventListener("click", () => {
 });
 
 deleteSelectedButton.addEventListener("click", async () => {
-    const selectedIds = Array.from(document.querySelectorAll(".bookmark-checkbox:checked"))
-        .map((checkbox) => checkbox.value);
+    const selectedIds = Array.from(document.querySelectorAll(".bookmark-checkbox:checked")).map(
+        (checkbox) => checkbox.value,
+    );
     const savedBookmarks = await bookmarks.get();
 
     for (const id of selectedIds) {

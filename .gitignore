@@ -1,3 +1,8 @@
 **/.DS_Store
 node_modules/
 .local
+
+# AI 에이전트 개인 설정 (팀 공용 규칙은 AGENTS.md)
+CLAUDE.local.md
+.claude/settings.local.json
+AGENTS.override.md
