@@ -78,7 +78,7 @@
 **흐름**
 1. 최신 `main`에서 브랜치를 만듭니다: `git switch main`, `git pull`, `git switch -c feat/...`
 2. 작업 중에도 `git pull origin main`으로 다른 사람의 변경을 자주 받습니다. **rebase와 force push는 하지 않습니다.**
-3. PR을 올리면 GitHub에서 Biome 검사가 자동으로 돕니다. 검사를 통과하고 **팀원 1명 이상이 확인**하면 **Squash and merge**로 합칩니다.
+3. PR을 올리면 GitHub에서 Biome 검사가 자동으로 돕니다. 검사를 통과하면 작성자가 직접 **Squash and merge**로 합칩니다. 리뷰는 필수가 아닙니다.
 4. 합친 브랜치는 다시 쓰지 않습니다. 버그가 나오면 최신 `main`에서 `fix/...`를 새로 만듭니다.
 
 **이름 규칙:** PR 제목과 커밋 메시지는 `범위: 설명`(설명은 한국어)입니다. Squash 하면 PR 제목이 `main`의 커밋 메시지가 됩니다.
