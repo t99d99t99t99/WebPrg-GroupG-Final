@@ -26,6 +26,13 @@ Node.js 설치 시 npm도 함께 설치됩니다. 프로젝트 폴더에서 의�
 npm install
 ```
 
+### GitHub CLI (AI가 PR 생성·머지까지 하려면 필요)
+AI에게 "올려줘"라고 하면 커밋부터 `main` 머지까지 한 번에 진행합니다([AGENTS.md](AGENTS.md) "커밋과 올리기"). 이때 GitHub CLI(`gh`)를 씁니다.
+```bash
+winget install GitHub.cli   # Windows (MacOS: brew install gh)
+gh auth login               # 처음 한 번, GitHub 계정으로 로그인
+```
+
 ## 크롬에서 보기
 1. 크롬 우측 상단 점 세개 버튼 누르기
 2. "설정" 누르기
