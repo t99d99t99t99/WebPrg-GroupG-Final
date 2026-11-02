@@ -1,3 +1,5 @@
+import { storage } from "./storage.js";
+
 export class Category {
     constructor(_id, _name) {
         this.id = _id;
@@ -7,19 +9,23 @@ export class Category {
 }
 
 export class CategoryDB {
-    constructor(_key) {
+    constructor(_key, initialized = Promise.resolve()) {
         this.key = _key;
         this.categories = [];
         // chrome.storage.local.get is asynchronous; wait for it before any
         // mutation so an early add/remove cannot overwrite saved categories.
-        this.ready = chrome.storage.local.get({ [_key]: [] }).then((data) => {
-            this.categories = Array.isArray(data[_key]) ? data[_key] : [];
-            return this.categories;
-        });
+        this.ready = initialized
+            .then(() => storage.get({ [_key]: [] }))
+            .then((data) => {
+                this.categories = Array.isArray(data[_key]) ? data[_key] : [];
+                return this.categories;
+            });
     }
 
     async get(...args) {
         await this.ready;
+        const data = await storage.get({ [this.key]: [] });
+        this.categories = Array.isArray(data[this.key]) ? data[this.key] : [];
         if (args.length > 0) {
             return this.categories.find((category) => category.id === args[0]);
         }
@@ -38,7 +44,7 @@ export class CategoryDB {
             createdAt: newCategory.createdAt ?? Date.now(),
         };
         categories.push(category);
-        await chrome.storage.local.set({ [this.key]: categories });
+        await storage.set({ [this.key]: categories });
         return category;
     }
 
@@ -47,7 +53,7 @@ export class CategoryDB {
         if (!category) return false;
 
         this.categories = this.categories.filter((item) => item.id !== id);
-        await chrome.storage.local.set({ [this.key]: this.categories });
+        await storage.set({ [this.key]: this.categories });
         return category;
     }
 
@@ -59,7 +65,7 @@ export class CategoryDB {
         }
 
         if (changes.name !== undefined) category.name = changes.name;
-        await chrome.storage.local.set({ [this.key]: this.categories });
+        await storage.set({ [this.key]: this.categories });
         return category;
     }
 }

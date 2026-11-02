@@ -1,3 +1,5 @@
+import { storage } from "./storage.js";
+
 export class Bookmark {
     constructor(_id, _url, _name, _category) {
         this.id = _id;
@@ -9,19 +11,23 @@ export class Bookmark {
 }
 
 export class BookmarkDB {
-    constructor(_key) {
+    constructor(_key, initialized = Promise.resolve()) {
         this.key = _key;
         this.bookmarks = [];
         // Wait for the initial read so an early mutation cannot overwrite
         // bookmarks already saved in chrome.storage.local.
-        this.ready = chrome.storage.local.get({ [_key]: [] }).then((data) => {
-            this.bookmarks = Array.isArray(data[_key]) ? data[_key] : [];
-            return this.bookmarks;
-        });
+        this.ready = initialized
+            .then(() => storage.get({ [_key]: [] }))
+            .then((data) => {
+                this.bookmarks = Array.isArray(data[_key]) ? data[_key] : [];
+                return this.bookmarks;
+            });
     }
 
     async get(...args) {
         await this.ready;
+        const data = await storage.get({ [this.key]: [] });
+        this.bookmarks = Array.isArray(data[this.key]) ? data[this.key] : [];
         if (args.length > 0) {
             return this.bookmarks.find((bookmark) => bookmark.id === args[0]);
         }
@@ -42,7 +48,7 @@ export class BookmarkDB {
             savedAt: newBookmark.savedAt ?? Date.now(),
         };
         bookmarks.push(bookmark);
-        await chrome.storage.local.set({ [this.key]: bookmarks });
+        await storage.set({ [this.key]: bookmarks });
         return bookmark;
     }
 
@@ -51,7 +57,7 @@ export class BookmarkDB {
         if (!bookmark) return false;
 
         this.bookmarks = this.bookmarks.filter((item) => item.id !== id);
-        await chrome.storage.local.set({ [this.key]: this.bookmarks });
+        await storage.set({ [this.key]: this.bookmarks });
         return bookmark;
     }
 
@@ -65,7 +71,7 @@ export class BookmarkDB {
         for (const field of ["url", "name", "category"]) {
             if (changes[field] !== undefined) bookmark[field] = changes[field];
         }
-        await chrome.storage.local.set({ [this.key]: this.bookmarks });
+        await storage.set({ [this.key]: this.bookmarks });
         return bookmark;
     }
 }

@@ -10,9 +10,12 @@
 | `manifest.json` | 확장 설정(Manifest V3). 새 탭과 팝업을 연결하고 권한(`storage`, `activeTab`)을 선언 |
 | `db/` | 저장소 계층. `chrome.storage.local`을 직접 다루는 유일한 곳 |
 | `popup/` | 툴바 아이콘을 누르면 뜨는 팝업. 현재 탭을 카테고리에 저장 |
-| `homepage/` | 새 탭 페이지. 저장된 북마크를 카테고리별로 보여주고 수정·삭제 |
+| `homepage/` | 새 탭 지도. 카테고리별 자동 건물 배치, 설명 카드, 사이트 방문, 링크 복사 |
+| `homepage/layout.js` | 구역별 에셋과 자동 배치 슬롯. 저장된 배열 순서를 사용해 추가 시 기존 좌표 유지 |
+| `db/storage.js` | Chrome 저장소 및 웹 미리보기 어댑터, 저장 변경 알림 |
+| `demo/seed-data.js` | 화면 로직과 분리된 시연용 카테고리 4개·북마크 8개 |
 | `style.css` | 두 페이지가 공유하는 디자인 토큰(CSS 변수)과 기본 스타일 |
-| `assets/` | 아이콘과 건물 이미지. 출처는 README.md |
+| `assets/` | 아이콘과 건물 이미지. `assets/figma/`는 Figma 원본 구역 SVG. 출처는 README.md |
 | `biome.json` | 포맷·린트 설정 |
 | `.github/workflows/biome.yml` | PR과 `main` push 때 Biome 검사 |
 
@@ -26,15 +29,21 @@
 ## 호출 관계
 
 ```
+homepage/homepage.js ──> homepage/layout.js
 homepage/homepage.js ─┐
-                      ├─> db/db.js ──> db/bookmark.js (BookmarkDB) ──┐
-popup/popup.js ───────┘            └─> db/category.js (CategoryDB) ──┴─> chrome.storage.local
+                      ├─> db/db.js ──> db/bookmark.js / db/category.js ──> db/storage.js
+popup/popup.js ───────┘          └─> demo/seed-data.js                       ├─> chrome.storage.local
+                                                                           └─> localStorage (웹 미리보기)
 popup/popup.js ──> chrome.tabs.query (현재 탭 제목·URL)
 ```
 
-- `db/db.js`가 저장 키를 정하고 `bookmarks`, `categories` 싱글턴을 만듭니다. 페이지는 이 둘만 import합니다.
-- `popup.js`는 새 객체를 만들 때만 `Bookmark`, `Category` 클래스를 직접 import합니다.
-- 두 페이지는 서로를 부르지 않습니다. 데이터는 `chrome.storage.local`을 거쳐서만 공유됩니다.
+- `db/db.js`가 저장 키와 `bookmarks`, `categories` 싱글턴, 초기화 Promise인 `ready`, 변경 알림 `subscribe`를 제공합니다.
+- `popup.js`는 새 객체를 만들 때만 `Bookmark`, `Category` 클래스를 직접 import합니다. 기존 팝업은 그대로 사용합니다.
+- DB는 초기화가 끝난 뒤 저장소를 읽습니다. 조회 시 최신 데이터를 다시 읽어 다른 탭의 저장을 반영합니다.
+- 두 저장 키가 모두 없는 최초 환경에서만 시연 데이터를 넣습니다. 기존 배열은 빈 배열이어도 덮어쓰지 않습니다. Web Locks로 여러 탭의 초기화를 직렬화합니다.
+- 지도는 저장 변경 알림, 탭 포커스 복귀, 새 탭 로드 시 데이터를 갱신합니다. 기존 팝업과 같은 저장소와 객체 형식을 사용합니다.
+- 건물 위치는 카테고리 및 카테고리 내부 북마크의 저장 배열 순서로 결정합니다. 새 북마크 추가 시 기존 위치가 유지되며 별도 위치 필드는 추가하지 않습니다.
+- Chrome 확장프로그램에서는 `chrome.storage.local`, 웹 미리보기에서는 별도의 `localStorage`를 사용합니다.
 
 ## 데이터 구조
 
