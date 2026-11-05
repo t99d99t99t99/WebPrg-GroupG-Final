@@ -7,6 +7,7 @@ export class Bookmark {
         this.name = _name;
         this.category = _category;
         this.savedAt = Date.now();
+        this.clickCount = 0;
     }
 }
 
@@ -46,6 +47,8 @@ export class BookmarkDB {
             name: newBookmark.name,
             category: newBookmark.category,
             savedAt: newBookmark.savedAt ?? Date.now(),
+            clickCount:
+                Number.isInteger(newBookmark.clickCount) && newBookmark.clickCount >= 0 ? newBookmark.clickCount : 0,
         };
         bookmarks.push(bookmark);
         await storage.set({ [this.key]: bookmarks });
@@ -73,5 +76,16 @@ export class BookmarkDB {
         }
         await storage.set({ [this.key]: this.bookmarks });
         return bookmark;
+    }
+
+    async incrementClickCount(id) {
+        const bookmark = await this.get(id);
+        if (!bookmark) return false;
+
+        const currentCount =
+            Number.isInteger(bookmark.clickCount) && bookmark.clickCount >= 0 ? bookmark.clickCount : 0;
+        bookmark.clickCount = currentCount + 1;
+        await storage.set({ [this.key]: this.bookmarks });
+        return bookmark.clickCount;
     }
 }

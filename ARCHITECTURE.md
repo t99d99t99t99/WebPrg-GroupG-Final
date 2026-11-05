@@ -54,10 +54,11 @@ popup/popup.js ──> chrome.tabs.query (현재 탭 제목·URL)
 | `webprg-bookmarkmap-bookmarks` | 북마크 객체 배열 |
 | `webprg-bookmarkmap-categories` | 카테고리 객체 배열 |
 
-**북마크:** `{ id, url, name, category, savedAt }`
+**북마크:** `{ id, url, name, category, savedAt, clickCount }`
 - `id`: `crypto.randomUUID()` 문자열
 - `category`: 카테고리의 `id`. 일치하는 카테고리가 없으면 새 탭에서 "분류 없음"에 표시됩니다
 - `savedAt`: 저장 시각(`Date.now()`)
+- `clickCount`: 지도에서 사이트를 방문한 횟수. 기존 북마크는 클릭 전까지 필드가 없으며, 클릭하면 1부터 저장됩니다
 
 **카테고리:** `{ id, name, createdAt }`
 

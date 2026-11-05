@@ -132,7 +132,21 @@ function createBuilding(bookmark, category, layout, slot, categoryIndex) {
         if (!url) {
             event.preventDefault();
             toast("올바른 웹페이지 주소가 아닙니다.");
+            return;
         }
+
+        const keepDefaultNavigation =
+            event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
+        if (keepDefaultNavigation) {
+            bookmarks.incrementClickCount(bookmark.id).catch((error) => console.error(error));
+            return;
+        }
+
+        event.preventDefault();
+        bookmarks
+            .incrementClickCount(bookmark.id)
+            .catch((error) => console.error(error))
+            .finally(() => window.location.assign(url.href));
     });
     return wrapper;
 }
