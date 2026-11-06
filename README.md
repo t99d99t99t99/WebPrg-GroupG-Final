@@ -66,6 +66,11 @@ VS Code를 쓰면 Biome 확장을 설치해 저장할 때 자동으로 맞출 �
 - [Sanctuary 3D Icon](https://thridy.com/sanctuary-3d-icon) by Thridy
 - [Villa 3D Icon](https://thridy.com/villa-3d-icon) by Thridy
 
+아이소메트릭 도시 에셋 출처: [Isometric City - Starter Pack](https://buggystudio.itch.io/isometric-city-starter-pack) by Buggy Studio (`assets/Isometric City/`)
+
+- 라이선스: CC0. 제작자가 itch.io 페이지 댓글에서 "They are CC0. You are free to use on any personal or commercial project."라고 밝혔습니다(페이지 본문에는 별도 라이선스 표기 없음).
+- 지도 그리드 한 칸에 맞지 않는 256px 폭(2×2칸) 건물 이미지는 지웠습니다. 나머지 파일은 수정하지 않았습니다.
+
 
 ## 도시형 북마크 프로토타입
 
