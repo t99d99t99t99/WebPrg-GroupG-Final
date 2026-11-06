@@ -164,6 +164,45 @@ button:disabled {
     pointer-events: none;
     image-rendering: pixelated;
 }
+.category-grass-tile {
+    position: absolute;
+    width: 128px;
+    height: 64px;
+    isolation: isolate;
+    pointer-events: none;
+}
+.category-grass-tile img,
+.category-grass-tint,
+.category-grass-light {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+.category-grass-tile img {
+    image-rendering: pixelated;
+}
+.category-grass-tint,
+.category-grass-light {
+    -webkit-mask-image: url("../assets/Isometric%20City/Roads%20and%20Grounds/tile_ground_grass.png");
+    mask-image: url("../assets/Isometric%20City/Roads%20and%20Grounds/tile_ground_grass.png");
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+}
+.category-grass-tint {
+    z-index: 1;
+    background: var(--grass-color);
+    mix-blend-mode: color;
+}
+.category-grass-light {
+    z-index: 2;
+    background: var(--grass-light-color);
+    mix-blend-mode: var(--grass-light-mode);
+    opacity: var(--grass-light-opacity);
+}
 .zone {
     position: absolute;
     z-index: 1;
