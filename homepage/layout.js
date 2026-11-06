@@ -6,28 +6,11 @@
 export const TILE_WIDTH = 128;
 export const TILE_HEIGHT = 64;
 
-export const colors = ["#a6bce9", "#6aab92", "#e78674", "#e9b962", "#b69be0", "#7fc6d6"];
-
-// Placeholder set of one-cell (128px wide) buildings; the final choice is made elsewhere.
 const BUILDING_DIR = "../assets/Isometric City/Buildings/";
-const buildingNames = [
-    "bld_house_small_blue_a",
-    "bld_house_small_red_a",
-    "bld_house_small_yellow_a",
-    "bld_house_medium_green_a",
-    "bld_house_medium_white_a",
-    "bld_house_tall_blue_a",
-    "bld_house_tall_brickbrown_a",
-    "bld_cafe_a",
-    "bld_pizza_a",
-    "bld_icecream_a",
-    "bld_clinic_a",
-];
 
-export function buildingImage(id) {
-    let hash = 0;
-    for (const char of String(id)) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-    return `${BUILDING_DIR}${buildingNames[hash % buildingNames.length]}.png`;
+export function buildingTexture(clickCount = 0) {
+    const size = clickCount >= 15 ? "tall" : clickCount >= 5 ? "medium" : "small";
+    return { src: `${BUILDING_DIR}bld_house_${size}_blue_a.png`, size };
 }
 
 // 2x2 -> 2x3 -> 3x3 -> 3x4 -> 4x4 ... returned as [short, long].

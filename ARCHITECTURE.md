@@ -12,10 +12,11 @@
 | `popup/` | 툴바 아이콘을 누르면 뜨는 팝업. 현재 탭을 카테고리에 저장 |
 | `homepage/` | 새 탭 지도. 카테고리별 자동 도시 배치, 설명 카드, 사이트 방문, 링크 복사 |
 | `homepage/layout.js` | 도시 배치 계산(순수 함수). 그리드 위 구역·건물 칸 결정, 구역 둘레 도로 타일, 아이소메트릭 좌표 변환 |
+| `homepage/category-colors.js` | 카테고리 기본 색 배정, 집 벽면 마스크와 명도 보정 |
 | `db/storage.js` | Chrome 저장소 및 웹 미리보기 어댑터, 저장 변경 알림 |
 | `demo/seed-data.js` | 화면 로직과 분리된 시연용 카테고리 4개·북마크 8개 |
 | `style.css` | 두 페이지가 공유하는 디자인 토큰(CSS 변수)과 기본 스타일 |
-| `assets/` | 아이콘과 건물 이미지. `assets/Isometric City/`는 지도에 쓰는 도로·바닥 타일과 건물. `assets/figma/`는 Figma 원본 구역 SVG. 출처는 README.md |
+| `assets/` | 아이콘과 건물 이미지. `assets/Isometric City/`는 지도에 쓰는 도로·바닥 타일과 건물. `wall-mask-house-*.png`는 집 크기별 벽면 색상 마스크. `assets/figma/`는 Figma 원본 구역 SVG. 출처는 README.md |
 | `biome.json` | 포맷·린트 설정 |
 | `.github/workflows/biome.yml` | PR과 `main` push 때 Biome 검사 |
 
@@ -30,6 +31,7 @@
 
 ```
 homepage/homepage.js ──> homepage/layout.js (planCity, planRoads)
+homepage/homepage.js ──> homepage/category-colors.js
 homepage/homepage.js ─┐
                       ├─> db/db.js ──> db/bookmark.js / db/category.js ──> db/storage.js
 popup/popup.js ───────┘          └─> demo/seed-data.js                       ├─> chrome.storage.local
@@ -43,6 +45,7 @@ popup/popup.js ──> chrome.tabs.query (현재 탭 제목·URL)
 - 두 저장 키가 모두 없는 최초 환경에서만 시연 데이터를 넣습니다. 기존 배열은 빈 배열이어도 덮어쓰지 않습니다. Web Locks로 여러 탭의 초기화를 직렬화합니다.
 - 지도는 저장 변경 알림, 탭 포커스 복귀, 새 탭 로드 시 데이터를 갱신합니다. 기존 팝업과 같은 저장소와 객체 형식을 사용합니다.
 - 새 탭은 그릴 때마다 `planCity`로 배치를 계산하고, 바뀐 위치만 `db.js`의 `saveLayout`으로 한 번에 저장합니다. Web Locks(`webprg-bookmarkmap-layout`)로 여러 탭의 계산을 직렬화합니다. 같은 데이터면 다시 계산해도 바뀌는 것이 없습니다.
+- 새 탭은 색이 없는 카테고리 색을 `category-colors.js` 규칙으로 정하고 `db.js`에서 저장합니다. 카테고리 색상 편집은 입력 즉시 지도에 반영되고 `CategoryDB.edit`로 저장하며, 집의 벽면에만 크기별 마스크를 적용합니다.
 - 도시 배치 규칙 (`homepage/layout.js`):
   - 그리드 한 칸에 건물 하나. 카테고리 구역은 2×2 → 2×3 → 3×3 → 3×4 … 순서로 북마크 수에 맞춰 커지고 줄어듭니다.
   - 모든 구역 둘레에 1칸 도로가 있고, 이웃 구역과 도로를 공유합니다(구역 사이 최소 1칸).
@@ -69,9 +72,10 @@ popup/popup.js ──> chrome.tabs.query (현재 탭 제목·URL)
 - `clickCount`: 지도에서 사이트를 방문한 횟수. 기존 북마크는 클릭 전까지 필드가 없으며, 클릭하면 1부터 저장됩니다
 - `cell`: 지도 그리드에서 건물이 놓인 칸 `{ x, y }`(절대 좌표). 새 탭이 처음 그릴 때 채웁니다. 카테고리를 바꾸면(`edit`) 지워지고 새로 배정됩니다
 
-**카테고리:** `{ id, name, createdAt, area }`
+**카테고리:** `{ id, name, createdAt, area, color }`
 
 - `area`: 지도 그리드에서 구역이 차지하는 칸 `{ x, y, w, h }`. 새 탭이 처음 그릴 때 채웁니다
+- `color`: 카테고리 구역과 집 벽면에 적용하는 6자리 hex 색상. 비어 있는 기존 카테고리는 지도에서 자동 지정해 저장합니다.
 
 키 이름이나 필드를 바꾸면 이미 저장된 데이터를 읽지 못하게 됩니다. 바꾸기 전에 팀에 묻습니다.
 

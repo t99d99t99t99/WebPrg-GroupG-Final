@@ -36,6 +36,15 @@ export async function saveLayout(areas, cells) {
     await storage.set({ [BOOKMARK_DB_KEY]: savedBookmarks, [CATEGORY_DB_KEY]: savedCategories });
 }
 
+export async function saveCategoryColors(colors) {
+    await ready;
+    const data = await storage.get({ [CATEGORY_DB_KEY]: [] });
+    const savedCategories = data[CATEGORY_DB_KEY].map((category) =>
+        colors.has(category.id) ? { ...category, color: colors.get(category.id) } : category,
+    );
+    await storage.set({ [CATEGORY_DB_KEY]: savedCategories });
+}
+
 export function subscribe(listener) {
     return subscribeStorage((changes) => {
         if (Object.keys(changes).length === 0 || BOOKMARK_DB_KEY in changes || CATEGORY_DB_KEY in changes) listener();

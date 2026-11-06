@@ -51,6 +51,15 @@
                 <div class="calendar-heading">일정표<span>구글 캘린더 연동 예정</span></div>
             </aside>
 
+            <section id="category-color-picker" class="category-color-picker" aria-label="카테고리 색상 선택" hidden>
+                <button class="picker-saturation" type="button" aria-label="채도와 밝기 선택">
+                    <span class="picker-selector"></span>
+                </button>
+                <label class="picker-hue-label">색조<input class="picker-hue" type="range" min="0" max="359" value="220" aria-label="색조"></label>
+                <label class="picker-hex-label">Hex <input class="picker-hex" maxlength="6" value="A6BCE9" aria-label="16진수 색상"></label>
+                <span class="picker-preview" aria-hidden="true"></span>
+            </section>
+
             <footer class="page-footer">
                 <div class="country">대한민국</div>
                 <div class="footer-links">

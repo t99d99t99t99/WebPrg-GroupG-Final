@@ -43,6 +43,12 @@ export class CategoryDB {
             name: newCategory.name,
             createdAt: newCategory.createdAt ?? Date.now(),
         };
+        if (newCategory.color !== undefined) {
+            if (typeof newCategory.color !== "string" || !/^#[\da-f]{6}$/i.test(newCategory.color)) {
+                throw new TypeError("Category color must be a six-digit hex color.");
+            }
+            category.color = newCategory.color;
+        }
         categories.push(category);
         await storage.set({ [this.key]: categories });
         return category;
@@ -65,6 +71,12 @@ export class CategoryDB {
         }
 
         if (changes.name !== undefined) category.name = changes.name;
+        if (changes.color !== undefined) {
+            if (typeof changes.color !== "string" || !/^#[\da-f]{6}$/i.test(changes.color)) {
+                throw new TypeError("Category color must be a six-digit hex color.");
+            }
+            category.color = changes.color;
+        }
         await storage.set({ [this.key]: this.categories });
         return category;
     }
