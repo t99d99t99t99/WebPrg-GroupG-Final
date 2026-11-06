@@ -71,6 +71,8 @@ export class BookmarkDB {
             throw new TypeError("Bookmark changes must be an object.");
         }
 
+        // A building's cell belongs to its old category's area; the map assigns a new one.
+        if (changes.category !== undefined && changes.category !== bookmark.category) delete bookmark.cell;
         for (const field of ["url", "name", "category"]) {
             if (changes[field] !== undefined) bookmark[field] = changes[field];
         }
