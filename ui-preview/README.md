@@ -28,7 +28,7 @@ npm.cmd run watch
 
 ## 수정 위치
 
-- [src/theme.css](src/theme.css): Export한 `@plugin "daisyui/theme" { ... }` 블록을 붙여넣는 위치입니다. 현재는 빈 상태로 기본 `light`의 색상·둥글기·그림자를 유지합니다.
+- [src/theme.css](src/theme.css): Export한 `@plugin "daisyui/theme" { ... }` 블록을 붙여넣는 위치입니다. 현재는 제공받은 `livingtaco` 테마의 색상·둥글기·그림자·노이즈 값을 그대로 사용합니다.
 - [src/additional.css](src/additional.css): 테마 토큰과 분리해서 추가할 개별 스타일입니다.
 - [preview.html](preview.html): 사용한 클래스가 드러나는 샘플 HTML입니다. 마우스를 올려 hover, `Tab`으로 focus, 비활성 버튼으로 disabled 상태를 확인합니다. 버튼은 실제 저장이나 이동을 실행하지 않습니다.
 - [src/input.css](src/input.css): Tailwind, daisyUI 기본 light 테마, 위 두 CSS 파일을 연결합니다. 클래스 탐색은 샘플 HTML로 한정됩니다.
@@ -36,7 +36,7 @@ npm.cmd run watch
 - [dist/styles.css](dist/styles.css): 빌드 또는 감시 명령으로 생성하는 CSS입니다. 직접 수정하거나 커밋하지 않습니다.
 - [biome.json](biome.json): 프로젝트 포맷 규칙을 상속하고, 이 폴더에서만 Tailwind CSS 문법 검사를 허용합니다.
 
-테마를 붙여넣은 뒤에는 [preview.html](preview.html)의 `<html data-theme="light">`를 Export 블록의 `name`과 동일하게 바꿉니다. 예를 들어 `name: "mytheme";`이면 `data-theme="mytheme"`입니다. 기본 daisyUI 플러그인 설정은 [src/daisyui.css](src/daisyui.css)에 있으므로 Export할 때 지워지지 않습니다. [공식 테마 사용법](https://daisyui.com/docs/themes/)
+테마를 붙여넣은 뒤에는 [preview.html](preview.html)의 `<html data-theme="livingtaco">`를 Export 블록의 `name`과 동일하게 바꿉니다. 예를 들어 `name: "mytheme";`이면 `data-theme="mytheme"`입니다. 현재 테마의 `default: false`는 그대로 유지하고 HTML에서 명시적으로 선택합니다. 기본 daisyUI 플러그인 설정은 [src/daisyui.css](src/daisyui.css)에 있으므로 Export할 때 지워지지 않습니다. [공식 테마 사용법](https://daisyui.com/docs/themes/)
 
 ## 전달 및 복원
 
