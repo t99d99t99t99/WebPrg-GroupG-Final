@@ -1,5 +1,11 @@
 import { bookmarks, categories, ready, saveCategoryColors, saveLayout, subscribe } from "../db/db.js";
-import { assignCategoryColors, colors, wallColorAdjustments, wallMaskForSize } from "./category-colors.js";
+import {
+    assignCategoryColors,
+    colors,
+    grassAppearanceForCategory,
+    wallColorAdjustments,
+    wallMaskForSize,
+} from "./category-colors.js";
 import { buildingTexture, planCity, planRoads, project, TILE_HEIGHT, TILE_WIDTH } from "./layout.js";
 
 // Canvas region the city is fitted into (left of the category panel, below search).
@@ -129,6 +135,9 @@ function paintCategory(categoryId, color) {
     for (const zone of $("zones").children) {
         if (zone.dataset.category === String(categoryId)) zone.querySelector("polygon").setAttribute("fill", color);
     }
+    for (const tile of $("ground").children) {
+        if (tile.dataset.category === String(categoryId)) styleGrassTile(tile, color);
+    }
     for (const row of $("category-list").children) {
         if (row.dataset.category === String(categoryId)) row.style.setProperty("--zone-color", color);
     }
@@ -204,6 +213,32 @@ function groundTile(x, y, src) {
     tile.alt = "";
     tile.style.left = `${left - TILE_WIDTH / 2}px`;
     tile.style.top = `${top}px`;
+    return tile;
+}
+
+function styleGrassTile(tile, categoryColor) {
+    const appearance = grassAppearanceForCategory(categoryColor);
+    tile.style.setProperty("--grass-color", appearance.color);
+    tile.style.setProperty("--grass-light-color", appearance.lightColor);
+    tile.style.setProperty("--grass-light-opacity", String(appearance.lightOpacity));
+    tile.style.setProperty("--grass-light-mode", appearance.lightMode);
+}
+
+function categoryGrassTile(x, y, category) {
+    const { left, top } = project(x, y);
+    const tile = element("div", "category-grass-tile");
+    tile.setAttribute("aria-hidden", "true");
+    tile.dataset.category = String(category.id);
+    tile.style.left = `${left - TILE_WIDTH / 2}px`;
+    tile.style.top = `${top}px`;
+    styleGrassTile(tile, category.color);
+
+    const image = element("img");
+    image.src = "../assets/Isometric City/Roads and Grounds/tile_ground_grass.png";
+    image.alt = "";
+    const tint = element("span", "category-grass-tint");
+    const light = element("span", "category-grass-light");
+    tile.append(image, tint, light);
     return tile;
 }
 
@@ -297,7 +332,7 @@ async function render() {
             const color = category.color;
             for (let y = area.y; y < area.y + area.h; y++) {
                 for (let x = area.x; x < area.x + area.w; x++) {
-                    ground.append(groundTile(x, y, "../assets/Isometric City/Roads and Grounds/tile_ground_grass.png"));
+                    ground.append(categoryGrassTile(x, y, category));
                 }
             }
             zones.append(createZone(category, area, color));
