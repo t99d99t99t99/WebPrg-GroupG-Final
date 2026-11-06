@@ -1,0 +1,12 @@
+{
+    "root": false,
+    "extends": "//",
+    "files": {
+        "includes": ["**", "!**/*.md", "!**/package-lock.json"]
+    },
+    "css": {
+        "parser": {
+            "tailwindDirectives": true
+        }
+    }
+}

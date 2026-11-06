@@ -16,6 +16,9 @@
 | `db/storage.js` | Chrome 저장소 및 웹 미리보기 어댑터, 저장 변경 알림 |
 | `demo/seed-data.js` | 화면 로직과 분리된 시연용 카테고리 4개·북마크 8개 |
 | `style.css` | 두 페이지가 공유하는 디자인 토큰(CSS 변수)과 기본 스타일 |
+| `ui-preview/` | 서비스와 연결하지 않는 Tailwind CSS 4·CLI 4·daisyUI 5 스타일 작업 공간. 전용 npm 설정·잠금 파일·Biome 설정·사용 설명 포함 |
+| `ui-preview/src/` | `input.css`는 빌드 진입점, `daisyui.css`는 기본 플러그인 설정, `theme.css`는 Export 테마, `additional.css`는 개별 추가 스타일 |
+| `ui-preview/preview.html` | 고정 샘플 컴포넌트와 상태 확인. 생성된 `dist/styles.css`만 로드하며 프로젝트 기능·데이터를 사용하지 않음 |
 | `assets/` | 아이콘과 건물 이미지. `assets/Isometric City/`는 지도에 쓰는 도로·바닥 타일과 건물. `wall-mask-house-*.png`는 집 크기별 벽면 색상 마스크. `assets/figma/`는 Figma 원본 구역 SVG. 출처는 README.md |
 | `biome.json` | 포맷·린트 설정 |
 | `.github/workflows/biome.yml` | PR과 `main` push 때 Biome 검사 |
@@ -28,6 +31,8 @@
 | 팝업 | `action.default_popup` | `popup/popup.html` → `style.css`, `popup.css`, `popup.js`(module) |
 
 ## 호출 관계
+
+스타일 미리보기는 `ui-preview/src/input.css`가 기본 플러그인 설정·테마·추가 스타일 CSS를 불러오고, 전용 Tailwind CLI가 `preview.html`의 클래스를 탐색해 `ui-preview/dist/styles.css`를 생성합니다. 아래 서비스 호출 관계와 독립적입니다.
 
 ```
 homepage/homepage.js ──> homepage/layout.js (planCity, planRoads)

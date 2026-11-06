@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>daisyUI 스타일 미리보기</title>
+    <link rel="stylesheet" href="./dist/styles.css" />
+  </head>
+  <body class="bg-base-200 text-base-content">
+    <main class="mx-auto flex max-w-7xl flex-col gap-8 p-6 md:p-10">
+      <header class="hero rounded-box bg-base-100 shadow-sm">
+        <div class="hero-content w-full justify-between gap-6 p-8">
+          <div>
+            <p class="badge badge-primary mb-3">daisyUI 5</p>
+            <h1 class="text-3xl font-bold md:text-4xl">Bookmark Map UI Preview</h1>
+            <p class="text-base-content/70 mt-3 max-w-2xl">
+              실제 프로젝트 기능과 연결하지 않은 컴포넌트 스타일 확인용 화면입니다.
+            </p>
+          </div>
+          <button type="button" class="btn btn-primary">기본 버튼</button>
+        </div>
+      </header>
+
+      <section class="preview-section">
+        <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-xl font-bold">버튼과 상태</h2>
+            <p class="text-base-content/60 text-sm">기본, 외곽선, 링크, 비활성 상태</p>
+          </div>
+          <div class="join">
+            <button type="button" class="btn btn-sm join-item">목록</button>
+            <button type="button" class="btn btn-sm btn-active join-item">카드</button>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <button type="button" class="btn btn-primary">Primary</button>
+          <button type="button" class="btn btn-secondary">Secondary</button>
+          <button type="button" class="btn btn-outline btn-primary">Outline</button>
+          <button type="button" class="btn btn-ghost">Ghost</button>
+          <button type="button" class="btn btn-link">Link</button>
+          <button type="button" class="btn btn-success">저장 완료</button>
+          <button type="button" class="btn btn-error">삭제</button>
+          <button type="button" class="btn btn-primary" disabled>Disabled</button>
+        </div>
+      </section>
+
+      <section class="preview-section grid gap-8 lg:grid-cols-2">
+        <div>
+          <h2 class="mb-5 text-xl font-bold">입력 폼</h2>
+          <div class="flex flex-col gap-4">
+            <label class="floating-label">
+              <span>북마크 이름</span>
+              <input class="input input-bordered w-full" placeholder="예: 웹프로그래밍 과제" />
+            </label>
+            <label>
+              <span class="preview-label">URL</span>
+              <input class="input input-bordered input-primary w-full" type="url" value="https://example.com" />
+            </label>
+            <label>
+              <span class="preview-label">카테고리</span>
+              <select class="select select-bordered w-full">
+                <option disabled selected>카테고리를 선택하세요</option>
+                <option>즐겨찾기</option>
+                <option>공부</option>
+                <option>도구</option>
+              </select>
+            </label>
+            <label class="flex cursor-pointer items-center gap-3">
+              <input type="checkbox" class="checkbox checkbox-primary" checked />
+              <span>새 탭에서 열기</span>
+            </label>
+            <div class="flex gap-3">
+              <button type="button" class="btn btn-primary">저장</button>
+              <button type="button" class="btn btn-ghost">취소</button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h2 class="mb-5 text-xl font-bold">알림과 선택</h2>
+          <div class="flex flex-col gap-4">
+            <div class="alert alert-info">
+              <span>정보 메시지를 확인해 보세요.</span>
+            </div>
+            <div class="alert alert-success">
+              <span>변경사항이 저장되었습니다.</span>
+            </div>
+            <div class="alert alert-warning">
+              <span>저장하지 않은 변경사항이 있습니다.</span>
+            </div>
+            <div class="join w-full">
+              <input class="input input-bordered join-item w-full" placeholder="검색어" />
+              <button type="button" class="btn btn-primary join-item">검색</button>
+            </div>
+            <div class="tabs tabs-box">
+              <button type="button" class="tab tab-active">전체</button>
+              <button type="button" class="tab">즐겨찾기</button>
+              <button type="button" class="tab">최근 저장</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="preview-section">
+        <div class="mb-5 flex items-center justify-between">
+          <h2 class="text-xl font-bold">카드</h2>
+          <span class="badge badge-outline">3개 항목</span>
+        </div>
+        <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <article class="card card-border bg-base-100">
+            <div class="card-body">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <h3 class="card-title">웹 개발 문서</h3>
+                  <p class="text-base-content/60 text-sm">developer.example.com</p>
+                </div>
+                <div class="avatar placeholder">
+                  <div class="bg-primary text-primary-content w-10 rounded-full"><span>W</span></div>
+                </div>
+              </div>
+              <p class="mt-3 text-sm">자주 참고하는 웹 개발 학습 자료입니다.</p>
+              <div class="card-actions mt-4 justify-end">
+                <button type="button" class="btn btn-sm btn-ghost">편집</button>
+                <button type="button" class="btn btn-sm btn-primary">열기</button>
+              </div>
+            </div>
+          </article>
+          <article class="card card-border bg-base-100">
+            <div class="card-body">
+              <h3 class="card-title">팀 디자인 보드</h3>
+              <p class="text-base-content/60 text-sm">design.example.com</p>
+              <progress class="progress progress-secondary mt-5" value="72" max="100"></progress>
+              <div class="card-actions mt-4 justify-end">
+                <button type="button" class="btn btn-sm btn-secondary">확인하기</button>
+              </div>
+            </div>
+          </article>
+          <article class="card card-border bg-base-100 opacity-70">
+            <div class="card-body">
+              <h3 class="card-title">보관된 링크</h3>
+              <p class="text-base-content/60 text-sm">archive.example.com</p>
+              <div class="card-actions mt-4 justify-end">
+                <button type="button" class="btn btn-sm" disabled>보관됨</button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <footer class="text-base-content/60 text-center text-sm">
+        <p>이 화면은 스타일 전달용 샘플이며 실제 북마크 데이터나 프로젝트 기능을 사용하지 않습니다.</p>
+      </footer>
+    </main>
+  </body>
+</html>

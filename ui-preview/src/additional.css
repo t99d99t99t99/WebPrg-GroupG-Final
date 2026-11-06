@@ -1,0 +1,8 @@
+/* 테마 토큰과 분리된 미리보기 전용 추가 스타일입니다. */
+.preview-section {
+    @apply border-base-300 bg-base-100 rounded-box border p-6 shadow-sm;
+}
+
+.preview-label {
+    @apply text-base-content/70 mb-2 block text-sm font-semibold;
+}

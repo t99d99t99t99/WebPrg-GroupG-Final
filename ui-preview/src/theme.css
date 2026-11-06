@@ -1,0 +1,5 @@
+/*
+ * 이 주석 아래에 Export한 @plugin "daisyui/theme" { ... } 블록을 붙여넣습니다.
+ * preview.html의 data-theme 값을 Export 블록의 name과 동일하게 맞춥니다.
+ * 현재는 비워 두어 daisyui.css에서 설정한 기본 light 테마를 그대로 사용합니다.
+ */
