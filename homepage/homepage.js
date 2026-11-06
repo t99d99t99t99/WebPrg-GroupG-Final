@@ -1,5 +1,9 @@
-import { bookmarks, categories, ready, subscribe } from "../db/db.js";
-import { buildings, getLayout, getPosition } from "./layout.js";
+import { bookmarks, categories, ready, saveLayout, subscribe } from "../db/db.js";
+import { buildingImage, colors, planCity, planRoads, project, TILE_HEIGHT, TILE_WIDTH } from "./layout.js";
+
+// Canvas region the city is fitted into (left of the category panel, below search).
+const MAP_AREA = { left: 40, top: 290, width: 1450, height: 860 };
+const MAX_ZOOM = 1.5;
 
 const $ = (id) => document.getElementById(id);
 const tooltip = $("bookmark-tooltip");
@@ -56,7 +60,7 @@ function scheduleHide() {
     hideTimer = setTimeout(hideTooltip, 160);
 }
 
-function showTooltip(bookmark, category, asset, link) {
+function showTooltip(bookmark, category, image, link) {
     clearTimeout(hideTimer);
     if (activeLink && activeLink !== link) activeLink.removeAttribute("aria-describedby");
     activeLink = link;
@@ -68,8 +72,7 @@ function showTooltip(bookmark, category, asset, link) {
     $("preview-domain").textContent = url?.hostname ?? "주소를 확인해 주세요";
     $("tooltip-url").textContent = bookmark.url;
     $("tooltip-memo").textContent = bookmark.memo || "메모가 없습니다.";
-    $("tooltip-image").src = `../assets/${asset}.png`;
-    $("tooltip-image").className = `asset-${asset}`;
+    $("tooltip-image").src = image;
     $("copy-link").textContent = "링크 복사";
     tooltip.hidden = false;
     link.setAttribute("aria-describedby", "bookmark-tooltip");
@@ -95,22 +98,23 @@ function applyFilter() {
     highlightCategory(selectedCategory);
 }
 
-function createBuilding(bookmark, category, layout, slot, categoryIndex) {
-    const position = getPosition(layout, slot);
-    const asset = buildings[(categoryIndex * 2 + slot) % buildings.length];
+function createBuilding(bookmark, category, cell) {
+    // Anchor the building's base at the bottom corner of its cell.
+    const position = project(cell.x + 1, cell.y + 1);
+    const asset = buildingImage(bookmark.id);
     const wrapper = element("div", "building");
     wrapper.dataset.bookmark = bookmark.id;
     wrapper.dataset.category = category.id;
-    wrapper.style.left = `${position.x}px`;
-    wrapper.style.top = `${position.y}px`;
-    wrapper.style.zIndex = String(Math.round(position.y));
+    wrapper.style.left = `${position.left}px`;
+    wrapper.style.top = `${position.top}px`;
+    wrapper.style.zIndex = String(1000 + cell.x + cell.y);
     const link = element("a", "building-link");
     const url = safeUrl(bookmark.url);
     if (url) link.href = url.href;
     else link.tabIndex = 0;
     link.setAttribute("aria-label", `${bookmark.name} · ${category.name} · 사이트 방문`);
-    const image = element("img", `building-image asset-${asset}`);
-    image.src = `../assets/${asset}.png`;
+    const image = element("img", "building-image");
+    image.src = asset;
     image.alt = "";
     image.draggable = false;
     const badge = element("span", "building-badge", bookmark.name.slice(0, 1));
@@ -151,44 +155,114 @@ function createBuilding(bookmark, category, layout, slot, categoryIndex) {
     return wrapper;
 }
 
+function groundTile(x, y, src) {
+    const { left, top } = project(x, y);
+    const tile = element("img", "tile");
+    tile.src = src;
+    tile.alt = "";
+    tile.style.left = `${left - TILE_WIDTH / 2}px`;
+    tile.style.top = `${top}px`;
+    return tile;
+}
+
+// Coloured outline of a category area, shown when the category is highlighted.
+function createZone(category, area, color) {
+    const corners = [
+        project(area.x, area.y),
+        project(area.x + area.w, area.y),
+        project(area.x + area.w, area.y + area.h),
+        project(area.x, area.y + area.h),
+    ];
+    const left = corners[3].left;
+    const top = corners[0].top;
+    const zone = element("div", "zone");
+    zone.dataset.category = String(category.id);
+    zone.style.left = `${left}px`;
+    zone.style.top = `${top}px`;
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("width", String(corners[1].left - left));
+    svg.setAttribute("height", String(corners[2].top - top));
+    svg.setAttribute("aria-hidden", "true");
+    const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    polygon.setAttribute("points", corners.map((point) => `${point.left - left},${point.top - top}`).join(" "));
+    polygon.setAttribute("fill", color);
+    svg.append(polygon);
+    const label = element("span", "zone-label", category.name);
+    label.style.left = `${corners[0].left - left}px`;
+    zone.append(svg, label);
+    return zone;
+}
+
+// Zoom the whole city so every tile fits the map region, like zooming out.
+function fitCity(tiles) {
+    if (!tiles.length) return;
+    let minLeft = Infinity;
+    let maxRight = -Infinity;
+    let minTop = Infinity;
+    let maxBottom = -Infinity;
+    for (const { x, y } of tiles) {
+        const { left, top } = project(x, y);
+        minLeft = Math.min(minLeft, left - TILE_WIDTH / 2);
+        maxRight = Math.max(maxRight, left + TILE_WIDTH / 2);
+        minTop = Math.min(minTop, top);
+        maxBottom = Math.max(maxBottom, top + TILE_HEIGHT);
+    }
+    minTop -= TILE_HEIGHT; // room for buildings and labels above the top row
+    const width = maxRight - minLeft;
+    const height = maxBottom - minTop;
+    const zoom = Math.min(MAX_ZOOM, MAP_AREA.width / width, MAP_AREA.height / height);
+    const x = MAP_AREA.left + (MAP_AREA.width - width * zoom) / 2 - minLeft * zoom;
+    const y = MAP_AREA.top + (MAP_AREA.height - height * zoom) / 2 - minTop * zoom;
+    const world = $("world");
+    const first = !world.style.transform;
+    world.style.transform = `translate(${x}px, ${y}px) scale(${zoom})`;
+    if (first) {
+        // Animate later zoom changes only, not the first placement on page load.
+        void world.offsetWidth;
+        world.classList.add("animated");
+    }
+}
+
+// Plan positions and save what changed. The lock keeps several new tabs from planning at once.
+async function arrangeCity() {
+    const run = async () => {
+        await ready;
+        const [savedCategories, savedBookmarks] = await Promise.all([categories.get(), bookmarks.get()]);
+        const plan = planCity(savedCategories, savedBookmarks);
+        if (plan.changed.areas.size || plan.changed.cells.size) {
+            await saveLayout(plan.changed.areas, plan.changed.cells);
+        }
+        return { groups: plan.groups, total: savedBookmarks.length };
+    };
+    return globalThis.navigator?.locks ? navigator.locks.request("webprg-bookmarkmap-layout", run) : run();
+}
+
 async function render() {
     const version = ++renderVersion;
     try {
-        await ready;
-        const [savedCategories, savedBookmarks] = await Promise.all([categories.get(), bookmarks.get()]);
+        const { groups, total } = await arrangeCity();
         if (version !== renderVersion) return;
         hideTooltip();
-        const known = new Set(savedCategories.map((category) => String(category.id)));
-        const unassigned = savedBookmarks.filter((bookmark) => !known.has(String(bookmark.category)));
-        const groups = savedCategories.map((category) => ({
-            category,
-            items: savedBookmarks.filter((bookmark) => String(bookmark.category) === String(category.id)),
-        }));
-        if (unassigned.length) groups.push({ category: { id: "uncategorized", name: "분류 없음" }, items: unassigned });
+        const ground = document.createDocumentFragment();
         const zones = document.createDocumentFragment();
         const map = document.createDocumentFragment();
         const rows = document.createDocumentFragment();
-        groups.forEach(({ category, items }, index) => {
-            const layout = getLayout(index);
-            const zone = element("div", "zone");
-            zone.dataset.category = String(category.id);
-            zone.style.left = `${layout.x}px`;
-            zone.style.top = `${layout.y}px`;
-            const floor = element("img");
-            floor.src = `../assets/figma/${layout.floor}-zone.svg`;
-            floor.alt = "";
-            const label = element("span", "zone-label", category.name);
-            label.style.left = `${layout.label[0]}px`;
-            label.style.top = `${layout.label[1]}px`;
-            zone.append(floor, label);
-            zones.append(zone);
-            items.forEach((bookmark, slot) => {
-                map.append(createBuilding(bookmark, category, layout, slot, index));
-            });
+        const tiles = [];
+        groups.forEach(({ category, items, area, cells }, index) => {
+            const color = colors[index % colors.length];
+            for (let y = area.y; y < area.y + area.h; y++) {
+                for (let x = area.x; x < area.x + area.w; x++) {
+                    ground.append(groundTile(x, y, "../assets/Isometric City/Roads and Grounds/tile_ground_grass.png"));
+                }
+            }
+            zones.append(createZone(category, area, color));
+            for (const bookmark of items) {
+                map.append(createBuilding(bookmark, category, cells.get(bookmark.id)));
+            }
             const row = element("button", "category-row");
             row.type = "button";
             row.dataset.category = String(category.id);
-            row.style.setProperty("--zone-color", layout.color);
+            row.style.setProperty("--zone-color", color);
             row.setAttribute("aria-label", `${category.name}, 북마크 ${items.length}개, 구역 강조`);
             row.append(
                 element("span", "category-color"),
@@ -203,11 +277,17 @@ async function render() {
             });
             rows.append(row);
         });
+        for (const road of planRoads(groups.map((group) => group.area))) {
+            ground.append(groundTile(road.x, road.y, road.tile));
+            tiles.push(road);
+        }
+        fitCity(tiles);
+        $("ground").replaceChildren(ground);
         $("zones").replaceChildren(zones);
         $("buildings").replaceChildren(map);
         $("category-list").replaceChildren(rows);
-        $("total-count").textContent = String(savedBookmarks.length).padStart(2, "0");
-        $("map-status").textContent = savedBookmarks.length
+        $("total-count").textContent = String(total).padStart(2, "0");
+        $("map-status").textContent = total
             ? ""
             : "저장한 페이지가 아직 없습니다. 확장프로그램에서 첫 페이지를 저장해 보세요.";
         applyFilter();
