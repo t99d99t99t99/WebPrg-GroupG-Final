@@ -252,7 +252,8 @@ export function planCity(savedCategories, savedBookmarks) {
     const placed = [];
     for (const group of groups) {
         const area = group.category.area;
-        if (validArea(area) && isFree(area, placed.map((item) => item.area))) {
+        const others = placed.map((item) => item.area);
+        if (validArea(area) && isFree(area, others)) {
             group.area = { x: area.x, y: area.y, w: area.w, h: area.h };
             placed.push(group);
         }
@@ -287,11 +288,12 @@ export function planCity(savedCategories, savedBookmarks) {
     const unassigned = savedBookmarks.filter((bookmark) => !known.has(String(bookmark.category)));
     if (unassigned.length) {
         const [short, long] = shapeFor(unassigned.length);
+        const others = placed.map((item) => item.area);
         groups.push({
             category: { id: "uncategorized", name: "분류 없음" },
             items: unassigned,
             count: unassigned.length,
-            area: findSpot(long, short, placed.map((item) => item.area), 0, 0),
+            area: findSpot(long, short, others, 0, 0),
             dx: 0,
             dy: 0,
             keepCells: false,
