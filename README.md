@@ -45,6 +45,18 @@ gh auth login               # 처음 한 번, GitHub 계정으로 로그인
 * 팝업 콘솔: 팝업 안에서 우클릭 → "검사"
 * 새 탭 콘솔: 새 탭에서 F12
 
+## daisyUI 스타일 빌드와 미리보기
+
+스타일 작업과 서비스용 daisyUI CSS 빌드는 별도 [daisyUI 미리보기 사용 설명](ui-preview/README.md)을 따릅니다. 의존성은 `ui-preview/`에만 설치하고, 서비스 화면은 미리 생성한 루트의 `daisyui.generated.css`를 정적으로 불러옵니다.
+
+```powershell
+cd ui-preview
+npm.cmd ci
+npm.cmd run build:all
+```
+
+테마 또는 서비스 HTML의 daisyUI 클래스를 바꾸면 `npm.cmd run build:app`으로 서비스 CSS를 다시 생성합니다. 미리보기는 기존 `npm.cmd run build`와 `npm.cmd run watch` 명령을 그대로 사용합니다.
+
 ## 코드 검사 (Biome)
 커밋 전에 바꾼 파일의 포맷과 린트를 맞춥니다. PR을 올리면 GitHub에서 같은 검사가 자동으로 돕니다.
 ```bash
@@ -54,17 +66,6 @@ npx biome ci .                   # 전체 검사 (GitHub에서 도는 것과 같
 VS Code를 쓰면 Biome 확장을 설치해 저장할 때 자동으로 맞출 수 있습니다.
 
 ## 에셋 출처
-
-3D 건물 에셋 출처: [Thridy](https://thridy.com/)
-
-- [Building 3D Icon](https://thridy.com/building-3d-icon) by Thridy
-- [Scandinavian Apartment Building 3D Icon](https://thridy.com/scandinavian-apartment-building-3d-icon) by Thridy
-- [Home 3D Icon](https://thridy.com/home-3d-icon) by Thridy
-- [Property 3D Icon](https://thridy.com/property-3d-icon) by Thridy
-- [Apartment Building 3D Icon](https://thridy.com/apartment-building-3d-icon) by Thridy
-- [Modern House 3D Icon](https://thridy.com/modern-house-3d-icon) by Thridy
-- [Sanctuary 3D Icon](https://thridy.com/sanctuary-3d-icon) by Thridy
-- [Villa 3D Icon](https://thridy.com/villa-3d-icon) by Thridy
 
 아이소메트릭 도시 에셋 출처: [Isometric City - Starter Pack](https://buggystudio.itch.io/isometric-city-starter-pack) by Buggy Studio (`assets/Isometric City/`)
 
@@ -86,7 +87,5 @@ VS Code를 쓰면 Biome 확장을 설치해 저장할 때 자동으로 맞출 �
 - 수업 공지·팀 과제 안내는 시연용 `example.com` 주소입니다.
 
 웹에서 화면만 확인하려면 저장소 폴더에서 `python3 -m http.server 8766 --bind 127.0.0.1`을 실행한 뒤 `http://127.0.0.1:8766/homepage/homepage.html`에 접속합니다. 웹 미리보기의 저장소는 확장프로그램과 별개입니다. 현재 탭 URL을 가져오는 실제 저장 팝업은 확장프로그램에서 사용합니다.
-
-추가 에셋: `assets/figma/*-zone.svg` 4개는 위 Figma 시안에서 내려받은 구역 도형입니다. 도형은 유지하고 접근성 제목을 추가했습니다. 지금 지도는 이 도형과 Thridy 건물 이미지 대신 `assets/Isometric City/`의 도로·바닥 타일과 건물을 사용합니다.
 
 벽면 마스크: `assets/wall-mask-house-{small,medium,tall}.png`는 제공된 집 텍스쳐에서 지붕·창문·문을 제외하고 벽면 영역만 지정한 로컬 마스크입니다.

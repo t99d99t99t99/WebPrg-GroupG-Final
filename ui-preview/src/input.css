@@ -1,0 +1,6 @@
+@import "tailwindcss" source(none);
+@import "./daisyui.css";
+@import "./theme.css";
+@import "./additional.css";
+
+@source "../preview.html";

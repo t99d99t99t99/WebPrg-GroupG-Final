@@ -1,0 +1,39 @@
+/*
+ * Export한 livingtaco 테마입니다. 테마를 바꾸려면 아래 블록을 교체합니다.
+ * preview.html의 data-theme 값을 Export 블록의 name과 동일하게 맞춥니다.
+ */
+
+@plugin "daisyui/theme" {
+    name: "livingtaco";
+    default: false;
+    prefersdark: false;
+    color-scheme: "light";
+    --color-base-100: #f7f7f2;
+    --color-base-200: #ebeee7;
+    --color-base-300: #cdd4c8;
+    --color-base-content: #202823;
+    --color-primary: #355c32;
+    --color-primary-content: oklch(100% 0 0);
+    --color-secondary: #485b78;
+    --color-secondary-content: oklch(98% 0.031 120.757);
+    --color-accent: #e5ad1f;
+    --color-accent-content: oklch(98% 0 0);
+    --color-neutral: oklch(0% 0 0);
+    --color-neutral-content: oklch(98% 0.003 247.858);
+    --color-info: #256fcb;
+    --color-info-content: oklch(100% 0 0);
+    --color-success: #25813b;
+    --color-success-content: oklch(100% 0 0);
+    --color-warning: #f4c928;
+    --color-warning-content: #302600;
+    --color-error: #d32f2f;
+    --color-error-content: oklch(100% 0 0);
+    --radius-selector: 2rem;
+    --radius-field: 1rem;
+    --radius-box: 1rem;
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1.5px;
+    --depth: 1;
+    --noise: 1;
+}

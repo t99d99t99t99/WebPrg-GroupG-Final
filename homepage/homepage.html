@@ -1,36 +1,22 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="livingtaco">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" href="../assets/icon.png">
+    <link rel="stylesheet" href="../daisyui.generated.css">
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="homepage.css">
     <title>새로고침 — 나의 북마크 도시</title>
 </head>
-<body>
+<body class="bg-base-100 text-base-content">
     <div id="viewport">
         <div id="canvas">
             <nav class="account-nav" aria-label="Google 바로가기">
-                <a href="https://mail.google.com/">Gmail</a>
-                <a href="https://www.google.com/imghp">이미지</a>
-                <a class="apps-button" href="https://about.google/products/" aria-label="Google 앱">⠿</a>
-                <a class="account-avatar" href="https://myaccount.google.com/" aria-label="Google 계정">K</a>
+                <a class="link link-hover" href="https://mail.google.com/">Gmail</a>
+                <a class="link link-hover" href="https://www.google.com/imghp">이미지</a>
+                <a class="apps-button btn btn-ghost btn-circle btn-sm" href="https://about.google/products/" aria-label="Google 앱">⠿</a>
             </nav>
-
-            <search class="search-bar" aria-label="웹 검색">
-                <form action="https://www.google.com/search" class="search-box">
-                    <span class="google-mark" aria-hidden="true">G</span>
-                    <input name="q" aria-label="Google 검색" placeholder="Google 검색" required autocomplete="off">
-                    <button type="submit" aria-label="Google에서 검색">↗</button>
-                </form>
-                <form action="https://search.naver.com/search.naver" class="search-box">
-                    <span class="naver-mark" aria-hidden="true">N</span>
-                    <input name="query" aria-label="Naver 검색" placeholder="Naver 검색" required autocomplete="off">
-                    <button type="submit" aria-label="네이버에서 검색">↗</button>
-                </form>
-                <button type="button" class="add-search" disabled aria-label="검색엔진 추가 (준비 중)" title="검색엔진 추가는 준비 중입니다">＋</button>
-            </search>
 
             <main id="city" aria-label="카테고리별 북마크 지도">
                 <div id="world">
@@ -41,17 +27,17 @@
                 <p id="map-status" role="status" aria-live="polite"></p>
             </main>
 
-            <aside class="category-panel" aria-labelledby="category-title">
+            <aside class="category-panel card border border-base-300 bg-base-100 shadow-sm" aria-labelledby="category-title">
                 <div class="panel-heading">
                     <h1 id="category-title">내 카테고리</h1>
-                    <button type="button" class="edit-categories" disabled title="카테고리 편집은 이번 프로토타입 범위에 포함되지 않습니다">수정</button>
+                    <button type="button" class="edit-categories btn btn-outline btn-sm" disabled title="카테고리 편집은 이번 프로토타입 범위에 포함되지 않습니다">수정</button>
                 </div>
-                <div id="category-list" class="category-list"></div>
+                <div id="category-list" class="category-list list"></div>
                 <div class="total-row"><span>전체 북마크</span><strong id="total-count">00</strong></div>
                 <div class="calendar-heading">일정표<span>구글 캘린더 연동 예정</span></div>
             </aside>
 
-            <section id="category-color-picker" class="category-color-picker" aria-label="카테고리 색상 선택" hidden>
+            <section id="category-color-picker" class="category-color-picker card" aria-label="카테고리 색상 선택" hidden>
                 <button class="picker-saturation" type="button" aria-label="채도와 밝기 선택">
                     <span class="picker-selector"></span>
                 </button>
@@ -60,23 +46,16 @@
                 <span class="picker-preview" aria-hidden="true"></span>
             </section>
 
-            <footer class="page-footer">
-                <div class="country">대한민국</div>
-                <div class="footer-links">
-                    <div><a href="https://ads.google.com/">광고</a><a href="https://business.google.com/">비즈니스</a><a href="https://www.google.com/search/howsearchworks/">검색의 작동 방식</a></div>
-                    <div><a href="https://policies.google.com/privacy">개인정보처리방침</a><a href="https://policies.google.com/terms">약관</a><button id="help-button" type="button">도움말</button></div>
-                </div>
-            </footer>
         </div>
     </div>
 
-    <section id="bookmark-tooltip" class="bookmark-tooltip" aria-label="북마크 설명" hidden>
+    <section id="bookmark-tooltip" class="bookmark-tooltip card border border-base-300 bg-base-100 shadow-xl" aria-label="북마크 설명" hidden>
         <div class="tooltip-heading"><h2 id="tooltip-name">북마크</h2><span id="tooltip-category"></span></div>
         <div class="page-preview"><img id="tooltip-image" alt=""><div><span class="preview-caption">저장한 페이지</span><strong id="preview-title"></strong><span id="preview-domain"></span></div></div>
         <div class="memo-heading">메모<span></span></div><p id="tooltip-memo">메모가 없습니다.</p>
-        <div class="tooltip-bottom"><span id="tooltip-url"></span><button id="copy-link" type="button">링크 복사</button></div>
+        <div class="tooltip-bottom"><span id="tooltip-url"></span><button id="copy-link" class="btn btn-link btn-xs" type="button">링크 복사</button></div>
     </section>
-    <p id="toast" class="toast" role="status" aria-live="polite" hidden></p>
+    <p id="toast" class="app-toast alert alert-success" role="status" aria-live="polite" hidden></p>
     <script type="module" src="homepage.js"></script>
 </body>
 </html>

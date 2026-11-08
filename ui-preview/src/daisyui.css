@@ -1,0 +1,4 @@
+/* 기본 플러그인 설정입니다. Export 테마는 theme.css에 붙여넣습니다. */
+@plugin "daisyui" {
+    themes: light --default;
+}
