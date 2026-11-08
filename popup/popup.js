@@ -1,42 +1,91 @@
 import { Bookmark } from "../db/bookmark.js";
 import { Category } from "../db/category.js";
 import { bookmarks, categories } from "../db/db.js";
+import { categorySelect } from "../shared/category-select.js";
+import { categoryError as getCategoryError, nameError } from "../shared/validation.js";
 
-const form = document.getElementById("bookmarkForm");
-const categorySelect = document.getElementById("categorySelect");
-const newCategoryButton = document.getElementById("newCategoryButton");
-const newCategoryFields = document.getElementById("newCategoryFields");
-const newCategoryName = document.getElementById("newCategoryName");
-const saveCategoryButton = document.getElementById("saveCategoryButton");
-const bookmarkName = document.getElementById("bookmarkName");
-const status = document.getElementById("status");
-const previewCategory = document.getElementById("previewCategory");
-const cancelButton = document.getElementById("cancelButton");
-const selectWrap = categorySelect.closest(".select-wrap");
+const $ = (id) => document.getElementById(id);
+const form = $("bookmarkForm");
+const categoryHost = $("categorySelect");
+const newCategoryButton = $("newCategoryButton");
+const newCategoryFields = $("newCategoryFields");
+const newCategoryName = $("newCategoryName");
+const existingCategoryButton = $("existingCategoryButton");
+const bookmarkName = $("bookmarkName");
+const bookmarkMemo = $("bookmarkMemo");
+const status = $("status");
+const saveButton = $("saveButton");
 
 let currentTab;
+let savedCategories = [];
+let creatingCategory = false;
 
 function showStatus(message) {
     status.textContent = message;
 }
 
-async function loadCategories(selectedId = "") {
-    const savedCategories = await categories.get();
-    categorySelect.replaceChildren();
-
-    for (const category of savedCategories) {
-        categorySelect.add(new Option(category.name, category.id));
-    }
-
-    categorySelect.value = selectedId;
-    updatePreviewCategory();
+function showFieldError(input, messageElement, message) {
+    input.setAttribute("aria-invalid", String(Boolean(message)));
+    messageElement.textContent = message;
+    messageElement.hidden = !message;
 }
 
-function updatePreviewCategory() {
-    const selectedOption = categorySelect.selectedOptions[0];
-    const hasCategory = Boolean(categorySelect.value);
-    previewCategory.textContent = hasCategory ? selectedOption.textContent : "분류 없음";
-    selectWrap.classList.toggle("has-selection", hasCategory);
+function validateBookmarkName() {
+    const error = nameError(bookmarkName.value, 20, "페이지 이름");
+    showFieldError(bookmarkName, $("bookmarkNameError"), error);
+    return !error;
+}
+
+function validateNewCategory() {
+    const error = getCategoryError(newCategoryName.value, savedCategories);
+    showFieldError(newCategoryName, $("newCategoryNameError"), error);
+    existingCategoryButton.style.top = error ? "68px" : "";
+    return !error;
+}
+
+function showCategorySelectionError(message) {
+    const error = $("categorySelectionError");
+    const trigger = categoryPicker.trigger;
+    trigger.setAttribute("aria-invalid", String(Boolean(message)));
+    trigger.setAttribute("aria-describedby", error.id);
+    error.textContent = message;
+    error.hidden = !message;
+    newCategoryButton.style.top = message ? "92px" : "";
+}
+
+function validateMemo() {
+    const error = Array.from(bookmarkMemo.value).length > 50 ? "메모는 50자 이내로 입력해 주세요." : "";
+    showFieldError(bookmarkMemo, $("bookmarkMemoError"), error);
+    return !error;
+}
+
+async function loadCategories(selectedId = "") {
+    savedCategories = await categories.get();
+    categoryPicker.setItems(savedCategories, selectedId);
+}
+
+const categoryPicker = categorySelect(categoryHost, {
+    label: "카테고리 선택",
+    placeholder: "카테고리 선택",
+    onChange() {
+        showCategorySelectionError("");
+        showStatus("");
+    },
+});
+
+function setCategoryMode(createNew) {
+    creatingCategory = createNew;
+    categoryHost.hidden = createNew;
+    newCategoryButton.hidden = createNew;
+    newCategoryFields.hidden = !createNew;
+    showCategorySelectionError("");
+    if (!createNew) {
+        showFieldError(newCategoryName, $("newCategoryNameError"), "");
+        existingCategoryButton.style.top = "";
+    }
+    showStatus("");
+    if (createNew) newCategoryName.focus();
+    else categoryPicker.trigger.focus();
 }
 
 async function initialize() {
@@ -51,66 +100,81 @@ async function initialize() {
     }
 }
 
-newCategoryButton.addEventListener("click", () => {
-    newCategoryFields.hidden = !newCategoryFields.hidden;
-    if (!newCategoryFields.hidden) newCategoryName.focus();
+newCategoryButton.addEventListener("click", () => setCategoryMode(true));
+existingCategoryButton.addEventListener("click", () => setCategoryMode(false));
+bookmarkName.addEventListener("input", () => {
+    if (bookmarkName.hasAttribute("aria-invalid")) validateBookmarkName();
+    showStatus("");
 });
-
-categorySelect.addEventListener("change", updatePreviewCategory);
-
-cancelButton.addEventListener("click", () => window.close());
-
-saveCategoryButton.addEventListener("click", async () => {
-    const name = newCategoryName.value.trim();
-    if (!name) {
-        newCategoryName.focus();
-        return;
-    }
-
-    try {
-        const category = new Category(crypto.randomUUID(), name);
-        await categories.add(category);
-        await loadCategories(category.id);
-        newCategoryName.value = "";
-        newCategoryFields.hidden = true;
-        showStatus("카테고리를 추가했습니다.");
-    } catch (error) {
-        showStatus("카테고리를 저장하지 못했습니다.");
-        console.error(error);
-    }
+newCategoryName.addEventListener("input", () => {
+    if (newCategoryName.hasAttribute("aria-invalid")) validateNewCategory();
+    showStatus("");
 });
+bookmarkMemo.addEventListener("input", () => {
+    validateMemo();
+    showStatus("");
+});
+$("cancelButton").addEventListener("click", () => window.close());
 
 form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const name = bookmarkName.value.trim() || currentTab?.title?.trim();
+    showStatus("");
 
-    if (!categorySelect.value) {
-        showStatus(
-            categorySelect.options.length === 0 ? "먼저 카테고리를 추가해 주세요." : "카테고리를 선택해 주세요.",
+    const validName = validateBookmarkName();
+    const validMemo = validateMemo();
+    let validCategory = true;
+    if (creatingCategory) validCategory = validateNewCategory();
+    else if (!categoryPicker.value) {
+        validCategory = false;
+        showCategorySelectionError(
+            savedCategories.length ? "카테고리를 선택해 주세요." : "카테고리를 만들거나 선택해 주세요.",
         );
-        categorySelect.focus();
+    } else showCategorySelectionError("");
+
+    if (!validName) bookmarkName.focus();
+    else if (!validCategory) (creatingCategory ? newCategoryName : categoryPicker.trigger).focus();
+    else if (!validMemo) bookmarkMemo.focus();
+    if (!validName || !validCategory || !validMemo) return;
+
+    if (!currentTab?.url) {
+        showStatus("현재 페이지 주소를 북마크로 저장할 수 없습니다.");
         return;
     }
 
-    if (!currentTab?.url || !name) {
-        showStatus("페이지 주소와 북마크 이름이 필요합니다.");
-        return;
-    }
-
+    saveButton.disabled = true;
     try {
-        const selectedCategory = await categories.get(categorySelect.value);
-        if (!selectedCategory) {
-            showStatus("선택한 카테고리를 찾을 수 없습니다. 다시 선택해 주세요.");
-            await loadCategories();
-            return;
+        let selectedCategory;
+        if (creatingCategory) {
+            savedCategories = await categories.get();
+            if (!validateNewCategory()) {
+                newCategoryName.focus();
+                return;
+            }
+            selectedCategory = await categories.add(new Category(crypto.randomUUID(), newCategoryName.value.trim()));
+        } else {
+            selectedCategory = await categories.get(categoryPicker.value);
+            if (!selectedCategory) {
+                showCategorySelectionError("카테고리가 변경되었습니다. 다시 선택해 주세요.");
+                await loadCategories();
+                categoryPicker.trigger.focus();
+                return;
+            }
         }
 
-        const bookmark = new Bookmark(crypto.randomUUID(), currentTab.url, name, selectedCategory.id);
+        const bookmark = new Bookmark(
+            crypto.randomUUID(),
+            currentTab.url,
+            bookmarkName.value.trim(),
+            selectedCategory.id,
+            bookmarkMemo.value,
+        );
         await bookmarks.add(bookmark);
-        showStatus("저장했습니다.");
+        window.close();
     } catch (error) {
-        showStatus("저장 중 오류가 발생했습니다.");
+        showStatus("저장하지 못했습니다. 입력 내용을 확인한 뒤 다시 시도해 주세요.");
         console.error(error);
+    } finally {
+        saveButton.disabled = false;
     }
 });
 
