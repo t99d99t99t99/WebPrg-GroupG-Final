@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>전체 건물 색상 테스트 — 새로고침</title>
+        <link rel="stylesheet" href="./building-color-test.css">
+    </head>
+    <body>
+        <main class="page debug-page">
+            <a class="debug-back" href="./index.html">← 디버그 도구</a>
+            <header class="page-heading">
+                <p class="eyebrow">BUILDING COLOR TEST</p>
+                <h1>전체 건물 색상 테스트</h1>
+                <p>건물 원본 색상, 벽 마스크, 파손 상태, a/b 방향을 한 화면에서 비교합니다. 조절은 이 미리보기에만 적용됩니다.</p>
+            </header>
+
+            <div class="workspace debug-workspace">
+                <section class="building-browser" aria-label="건물 에셋">
+                    <div class="asset-toolbar">
+                        <label class="asset-search-label" for="assetSearch">건물 이름 검색</label>
+                        <input id="assetSearch" class="asset-search" type="search" placeholder="예: clinic, damaged">
+                        <label class="asset-family-label" for="familyFilter">계열</label>
+                        <select id="familyFilter" class="asset-family-filter">
+                            <option value="all">전체</option>
+                            <option value="homes">주택 계열</option>
+                            <option value="food-market">먹거리 상점</option>
+                            <option value="service-market">생활 상점</option>
+                            <option value="other">기타 에셋</option>
+                        </select>
+                        <output id="assetCount" class="asset-count" aria-live="polite"></output>
+                    </div>
+                    <div id="assetGrid" class="building-grid"></div>
+                </section>
+
+                <aside class="picker-section" aria-labelledby="picker-heading">
+                    <div class="picker-label">
+                        <span class="picker-dot" aria-hidden="true"></span>
+                        <div>
+                            <p class="eyebrow">COLOR CONTROL</p>
+                            <h2 id="picker-heading">컬러 피커</h2>
+                        </div>
+                    </div>
+                    <label class="preview-mode-label" for="previewMode">표시 방식</label>
+                    <select id="previewMode" class="preview-mode">
+                        <option value="color">색상 적용</option>
+                        <option value="mask">마스크 강조</option>
+                        <option value="original">원본</option>
+                    </select>
+                    <section class="picker" aria-label="색상 선택기">
+                        <div id="colorSquare" class="color-square" role="slider" tabindex="0" aria-label="색상 채도와 밝기" aria-valuemin="0" aria-valuemax="100" aria-valuenow="87" aria-valuetext="채도 65%, 밝기 87%">
+                            <span id="colorHandle" class="color-handle" aria-hidden="true"></span>
+                        </div>
+                        <label class="visually-hidden" for="hueRange">색조</label>
+                        <input id="hueRange" class="hue-range" type="range" min="0" max="359" value="218">
+                        <div class="alpha-control">
+                            <span class="alpha-icon" aria-hidden="true">◈</span>
+                            <label class="visually-hidden" for="alphaRange">불투명도</label>
+                            <input id="alphaRange" class="alpha-range" type="range" min="0" max="100" value="100">
+                            <output id="alphaValue" for="alphaRange">100%</output>
+                        </div>
+                        <div class="picker-footer">
+                            <button class="format-button" type="button" aria-label="색상 형식">Hex <span>⌄</span></button>
+                            <label class="visually-hidden" for="hexInput">Hex 색상 코드</label>
+                            <input id="hexInput" class="hex-input" type="text" value="#4F80DD" maxlength="7" spellcheck="false">
+                            <label class="visually-hidden" for="opacityInput">불투명도 퍼센트</label>
+                            <input id="opacityInput" class="opacity-input" type="number" min="0" max="100" value="100">
+                            <span class="percent-sign">%</span>
+                        </div>
+                    </section>
+                    <section class="grass-adjustments" aria-labelledby="grass-adjustments-heading">
+                        <h3 id="grass-adjustments-heading">잔디 조정</h3>
+                        <label class="grass-adjustment-control" for="grassSaturationRange">
+                            <span>잔디 채도 <output id="grassSaturationValue" for="grassSaturationRange">60%</output></span>
+                            <input id="grassSaturationRange" type="range" min="0" max="100" value="60">
+                        </label>
+                        <label class="grass-adjustment-control" for="grassDarknessRange">
+                            <span>어두운 정도 <output id="grassDarknessValue" for="grassDarknessRange">50%</output></span>
+                            <input id="grassDarknessRange" type="range" min="0" max="100" value="50">
+                        </label>
+                        <label class="grass-adjustment-control" for="grassMinBrightnessRange">
+                            <span>잔디 명도 하한 <output id="grassMinBrightnessValue" for="grassMinBrightnessRange">0%</output></span>
+                            <input id="grassMinBrightnessRange" type="range" min="0" max="100" value="0">
+                        </label>
+                    </section>
+                    <div class="grass-demo">
+                        <span class="grass-demo-tile"><img src="../assets/Isometric%20City/Roads%20and%20Grounds/tile_ground_grass.png" alt=""><i class="grass-demo-tint" aria-hidden="true"></i><i class="grass-demo-light" aria-hidden="true"></i></span>
+                        <span>잔디 미리보기</span>
+                    </div>
+                    <p class="picker-note">외부 벽면과 상점 지붕 테두리·문틀·창틀·벽 접합부에 색을 적용합니다. 벽돌 줄눈·유리·문짝·차양·상품·지붕 중앙 바닥은 제외합니다. 어두운 색은 파손 얼룩의 명암을 남기도록 밝기 보정을 제한합니다. 이 페이지에서 바꾼 값은 저장되지 않습니다.</p>
+                </aside>
+            </div>
+        </main>
+        <script type="module" src="./building-color-test.js"></script>
+    </body>
+</html>

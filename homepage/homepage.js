@@ -2,9 +2,9 @@ import { bookmarks, categories, dismissNewBefore, subscribe, updateCity } from "
 import { categorySelect } from "../shared/category-select.js";
 import { nameError, webUrl } from "../shared/validation.js";
 import { clearBookmarkPreview, renderBookmarkPreview } from "./bookmark-preview.js";
-import { prepareBuildingAppearance } from "./building-appearance.js";
-import { assignBuildingFamilies, buildingTexture, isDamaged } from "./building-rules.js";
-import { assignCategoryColors, colors } from "./category-colors.js";
+import { applyPreparedWallMask, prepareBuildingAppearance } from "./building-appearance.js";
+import { buildingTexture, isDamaged } from "./building-rules.js";
+import { assignCategoryColors, colors, grassAppearanceForCategory, wallColorAdjustments } from "./category-colors.js";
 import { categoryManager } from "./category-manager.js";
 import { setGoogleAccount } from "./google-account.js";
 import { planCity, planRoads, project, TILE_HEIGHT, TILE_WIDTH } from "./layout.js";
@@ -208,18 +208,45 @@ function applyFilter() {
 
 function paintCategory(categoryId, color) {
     for (const zone of $("zones").children) {
-        if (zone.dataset.category === String(categoryId)) zone.querySelector("polygon").setAttribute("stroke", color);
+        if (zone.dataset.category === String(categoryId)) zone.querySelector("polygon").setAttribute("fill", color);
     }
     for (const row of $("category-list").children) {
         if (row.dataset.category === String(categoryId)) row.style.setProperty("--zone-color", color);
     }
+    for (const node of document.querySelectorAll("#buildings .building, #ground .category-grass-tile")) {
+        if (node.dataset.category !== String(categoryId)) continue;
+        if (node.matches(".category-grass-tile")) styleGrassTile(node, color);
+        else
+            applyWallColor(
+                node.querySelector(".building-wall-tint"),
+                node.querySelector(".building-wall-light"),
+                color,
+                node.dataset.houseSize,
+            );
+    }
+}
+
+function applyWallColor(tint, light, color, size) {
+    tint.style.setProperty("--wall-color", color);
+    const adjustments = wallColorAdjustments(color, size);
+    light.style.setProperty("--light-color", adjustments.lightColor);
+    light.style.setProperty("--light-opacity", String(adjustments.lightOpacity));
+    light.style.setProperty("--light-mode", adjustments.lightMode);
+}
+
+function styleGrassTile(tile, categoryColor) {
+    const appearance = grassAppearanceForCategory(categoryColor);
+    tile.style.setProperty("--grass-color", appearance.color);
+    tile.style.setProperty("--grass-light-color", appearance.lightColor);
+    tile.style.setProperty("--grass-light-opacity", String(appearance.lightOpacity));
+    tile.style.setProperty("--grass-light-mode", appearance.lightMode);
 }
 
 function createBuilding(bookmark, category, cell, labels) {
     // Anchor the building's base at the bottom corner of its cell.
     const position = project(cell.x + 1, cell.y + 1);
     const damaged = isDamaged(bookmark);
-    const texture = buildingTexture(bookmark.clickCount, category.buildingFamily, bookmark.id, damaged);
+    const texture = buildingTexture(bookmark.clickCount, bookmark.id, damaged);
     const wrapper = element("div", "building");
     wrapper.dataset.bookmark = bookmark.id;
     wrapper.dataset.category = category.id;
@@ -241,6 +268,9 @@ function createBuilding(bookmark, category, cell, labels) {
     image.draggable = false;
     const hitArea = element("span", "building-hit-area");
     hitArea.setAttribute("aria-hidden", "true");
+    const tint = element("span", "building-wall-tint");
+    const light = element("span", "building-wall-light");
+    applyWallColor(tint, light, category.color, texture.size);
     const badge = element("span", "building-badge", bookmark.name);
     badge.setAttribute("aria-hidden", "true");
     badge.dataset.category = category.id;
@@ -251,7 +281,8 @@ function createBuilding(bookmark, category, cell, labels) {
         console.error(error);
         toast("건물 표시를 불러오지 못했습니다. 새로고침해 주세요.");
     });
-    link.append(image, hitArea);
+    applyPreparedWallMask(image, tint, light);
+    link.append(image, tint, light, hitArea);
     if (bookmark.isNew) {
         wrapper.classList.add("is-new");
         link.append(element("span", "new-badge", "NEW"));
@@ -310,13 +341,16 @@ function categoryGrassTile(x, y, category) {
     const tile = element("div", "category-grass-tile");
     tile.setAttribute("aria-hidden", "true");
     tile.dataset.category = String(category.id);
+    styleGrassTile(tile, category.color);
     tile.style.left = `${left - TILE_WIDTH / 2}px`;
     tile.style.top = `${top}px`;
 
     const image = element("img");
     image.src = "../assets/Isometric City/Roads and Grounds/tile_ground_grass.png";
     image.alt = "";
-    tile.append(image);
+    const tint = element("span", "category-grass-tint");
+    const light = element("span", "category-grass-light");
+    tile.append(image, tint, light);
     return tile;
 }
 
@@ -340,8 +374,7 @@ function createZone(category, area, color) {
     svg.setAttribute("aria-hidden", "true");
     const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
     polygon.setAttribute("points", corners.map((point) => `${point.left - left},${point.top - top}`).join(" "));
-    polygon.setAttribute("fill", "none");
-    polygon.setAttribute("stroke", color);
+    polygon.setAttribute("fill", color);
     svg.append(polygon);
     zone.append(svg);
     return zone;
@@ -382,11 +415,9 @@ function fitCity(tiles) {
 async function arrangeCity() {
     return updateCity((savedCategories, savedBookmarks) => {
         const assigned = assignCategoryColors(savedCategories);
-        const families = assignBuildingFamilies(assigned.categories);
         return {
-            plan: planCity(families.categories, savedBookmarks),
+            plan: planCity(assigned.categories, savedBookmarks),
             colors: assigned.changes,
-            families: families.changes,
         };
     });
 }
