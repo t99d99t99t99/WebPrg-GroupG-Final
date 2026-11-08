@@ -213,6 +213,19 @@ function paintCategory(categoryId, color) {
     for (const row of $("category-list").children) {
         if (row.dataset.category === String(categoryId)) row.style.setProperty("--zone-color", color);
     }
+    for (const node of document.querySelectorAll("#buildings .building, #ground .category-grass-tile")) {
+        if (node.dataset.category === String(categoryId)) node.style.setProperty("--category-color", color);
+    }
+}
+
+// Recolor an image with its category color; the image itself masks the tint layer.
+function colorTint(image) {
+    const tint = element("span", "color-tint");
+    tint.setAttribute("aria-hidden", "true");
+    const mask = `url("${image.src}")`;
+    tint.style.maskImage = mask;
+    tint.style.webkitMaskImage = mask;
+    return tint;
 }
 
 function createBuilding(bookmark, category, cell, labels) {
@@ -224,6 +237,7 @@ function createBuilding(bookmark, category, cell, labels) {
     wrapper.dataset.bookmark = bookmark.id;
     wrapper.dataset.category = category.id;
     wrapper.dataset.houseSize = texture.size;
+    wrapper.style.setProperty("--category-color", category.color);
     wrapper.style.left = `${position.left}px`;
     wrapper.style.top = `${position.top}px`;
     wrapper.style.zIndex = String(1000 + cell.x + cell.y);
@@ -251,7 +265,7 @@ function createBuilding(bookmark, category, cell, labels) {
         console.error(error);
         toast("건물 표시를 불러오지 못했습니다. 새로고침해 주세요.");
     });
-    link.append(image, hitArea);
+    link.append(image, colorTint(image), hitArea);
     if (bookmark.isNew) {
         wrapper.classList.add("is-new");
         link.append(element("span", "new-badge", "NEW"));
@@ -310,13 +324,14 @@ function categoryGrassTile(x, y, category) {
     const tile = element("div", "category-grass-tile");
     tile.setAttribute("aria-hidden", "true");
     tile.dataset.category = String(category.id);
+    tile.style.setProperty("--category-color", category.color);
     tile.style.left = `${left - TILE_WIDTH / 2}px`;
     tile.style.top = `${top}px`;
 
     const image = element("img");
     image.src = "../assets/Isometric City/Roads and Grounds/tile_ground_grass.png";
     image.alt = "";
-    tile.append(image);
+    tile.append(image, colorTint(image));
     return tile;
 }
 

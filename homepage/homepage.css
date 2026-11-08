@@ -224,6 +224,23 @@ a:hover {
     width: 128px;
     height: 64px;
     pointer-events: none;
+    isolation: isolate;
+    --tint-strength: 0.4;
+}
+/* Category color over a building or grass image, keeping its shading. */
+.color-tint {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: var(--category-color, transparent);
+    mix-blend-mode: color;
+    opacity: var(--tint-strength, 0.55);
+    mask-size: 100% 100%;
+    -webkit-mask-size: 100% 100%;
+    mask-repeat: no-repeat;
+    -webkit-mask-repeat: no-repeat;
+    transition: transform 0.18s;
+    transform-origin: bottom center;
 }
 .category-grass-tile img {
     position: absolute;
@@ -276,6 +293,7 @@ a:hover {
     width: max-content;
     position: relative;
     pointer-events: none;
+    isolation: isolate;
 }
 .building-link:hover,
 .building-link:focus-visible {
@@ -308,7 +326,8 @@ a:hover {
     /* biome-ignore lint/complexity/noImportantStyles: selected building must be above per-cell inline depth. */
     z-index: 1999 !important;
 }
-.building.focused-building .building-image {
+.building.focused-building .building-image,
+.building.focused-building .color-tint {
     transform: translateY(-7px) scale(1.15);
 }
 /* Keep this order: the hover outline replaces the NEW outline on the same building. */
