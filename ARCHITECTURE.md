@@ -50,12 +50,13 @@ homepage/homepage.js ─┐
 popup/popup.js ───────┘          └─> demo/seed-data.js                       ├─> chrome.storage.local
                                                                            └─> localStorage (웹 미리보기)
 popup/popup.js ──> chrome.tabs.query (현재 탭 제목·URL)
+popup/popup.js ──> shared/category-select.js / shared/validation.js
 homepage/category-manager.js ──> db/db.js
 homepage/homepage.js ──> shared/
 ```
 
 - `db/db.js`가 저장 키와 `bookmarks`, `categories` 싱글턴, 초기화 Promise인 `ready`, 변경 알림 `subscribe`를 제공합니다.
-- 팝업은 기존 `Bookmark`, `Category` 클래스와 `add` API를 사용합니다. 팝업 파일과 공용 `style.css`는 이번 홈페이지 구현 작업에서 변경하지 않습니다. 홈페이지 폼은 `shared/`의 입력 검증과 카테고리 선택 목록을 사용합니다.
+- 팝업은 `Bookmark`, `Category` 클래스와 `add` API로 현재 페이지를 저장합니다. 새 카테고리 이름은 `shared/validation.js`로 검사하고, 카테고리 목록은 `shared/category-select.js`를 사용합니다. 북마크 이름은 20자, 메모는 50자까지 저장하며 메모는 기존 `memo` 필드에 기록합니다. 홈페이지 폼도 같은 공유 모듈을 사용합니다.
 - 상세 카드의 메모 입력은 `BookmarkDB.edit`, 북마크 수정도 같은 메서드를 사용합니다. 수정 창은 팝업에서 저장한 제목·주소가 홈페이지 규칙과 달라도 저장할 수 있도록, 바뀐 이름·URL만 검사해서 보냅니다. 북마크 삭제는 상세 카드의 삭제 버튼에서 확인 창을 거쳐 `BookmarkDB.remove`를 사용합니다. 카테고리 삭제는 `deleteCategory`가 카테고리와 포함된 북마크를 함께 삭제합니다. 순서는 카테고리 배열 순서로 저장합니다.
 - DB는 초기화가 끝난 뒤 저장소를 읽습니다. 조회 시 최신 데이터를 다시 읽어 다른 탭의 저장을 반영합니다.
 - 두 저장 키가 모두 없는 최초 환경에서만 시연 데이터를 넣습니다. 기존 배열은 빈 배열이어도 덮어쓰지 않습니다. Web Locks로 여러 탭의 초기화를 직렬화합니다.

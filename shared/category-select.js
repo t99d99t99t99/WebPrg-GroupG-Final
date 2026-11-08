@@ -1,5 +1,8 @@
 // A shared four-row dropdown; native button keyboard behavior is preserved.
-export function categorySelect(host, { label = "카테고리", onChange = () => {} } = {}) {
+export function categorySelect(
+    host,
+    { label = "카테고리", placeholder = "카테고리를 선택해 주세요.", onChange = () => {} } = {},
+) {
     const trigger = document.createElement("button");
     trigger.type = "button";
     trigger.className = "field category-select-trigger";
@@ -28,7 +31,7 @@ export function categorySelect(host, { label = "카테고리", onChange = () => 
     }
     function select(id) {
         value = items.some((item) => item.id === id) ? id : "";
-        trigger.textContent = items.find((item) => item.id === value)?.name ?? "카테고리를 선택해 주세요.";
+        trigger.textContent = items.find((item) => item.id === value)?.name ?? placeholder;
         trigger.classList.toggle("has-selection", Boolean(value));
         for (const option of list.children) option.setAttribute("aria-selected", String(option.dataset.id === value));
     }
