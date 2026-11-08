@@ -41,3 +41,12 @@ export function subscribeStorage(listener) {
     listeners.add(listener);
     return () => listeners.delete(listener);
 }
+
+// All read/modify/write operations use the same lock, including map planning.
+let writeQueue = Promise.resolve();
+export function withWriteLock(action) {
+    if (globalThis.navigator?.locks) return navigator.locks.request("webprg-bookmarkmap-data", action);
+    const next = writeQueue.then(action, action);
+    writeQueue = next.catch(() => {});
+    return next;
+}

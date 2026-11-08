@@ -6,13 +6,6 @@
 export const TILE_WIDTH = 128;
 export const TILE_HEIGHT = 64;
 
-const BUILDING_DIR = "../assets/Isometric City/Buildings/";
-
-export function buildingTexture(clickCount = 0) {
-    const size = clickCount >= 15 ? "tall" : clickCount >= 5 ? "medium" : "small";
-    return { src: `${BUILDING_DIR}bld_house_${size}_blue_a.png`, size };
-}
-
 // 2x2 -> 2x3 -> 3x3 -> 3x4 -> 4x4 ... returned as [short, long].
 function shapeFor(count) {
     let short = 2;

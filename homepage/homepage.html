@@ -15,7 +15,7 @@
             <nav class="account-nav" aria-label="Google 바로가기">
                 <a class="link link-hover" href="https://mail.google.com/">Gmail</a>
                 <a class="link link-hover" href="https://www.google.com/imghp">이미지</a>
-                <a class="apps-button btn btn-ghost btn-circle btn-sm" href="https://about.google/products/" aria-label="Google 앱">⠿</a>
+                <button id="apps-button" class="apps-button icon-button" type="button" aria-label="Google 서비스 표시" aria-expanded="false" aria-controls="google-services"><span class="apps-dots" aria-hidden="true"></span></button>
             </nav>
 
             <main id="city" aria-label="카테고리별 북마크 지도">
@@ -23,18 +23,32 @@
                     <div id="ground" aria-hidden="true"></div>
                     <div id="zones"></div>
                     <div id="buildings"></div>
+                    <div id="building-labels" aria-hidden="true"></div>
                 </div>
                 <p id="map-status" role="status" aria-live="polite"></p>
             </main>
 
-            <aside class="category-panel card border border-base-300 bg-base-100 shadow-sm" aria-labelledby="category-title">
-                <div class="panel-heading">
-                    <h1 id="category-title">내 카테고리</h1>
-                    <button type="button" class="edit-categories btn btn-outline btn-sm" disabled title="카테고리 편집은 이번 프로토타입 범위에 포함되지 않습니다">수정</button>
-                </div>
-                <div id="category-list" class="category-list list"></div>
-                <div class="total-row"><span>전체 북마크</span><strong id="total-count">00</strong></div>
-                <div class="calendar-heading">일정표<span>구글 캘린더 연동 예정</span></div>
+            <aside class="category-panel" aria-labelledby="category-title">
+                <section id="google-services" hidden>
+                    <h2 class="google-heading">Google Service</h2>
+                    <div class="google-grid">
+                        <a id="google-account-link" href="https://myaccount.google.com/" aria-label="Google 계정">
+                            <span class="google-service-icon account-avatar"><span id="google-account-fallback" class="account-fallback" aria-hidden="true"></span><img id="google-account-photo" alt="" referrerpolicy="no-referrer" hidden></span>
+                            <span id="google-account-label">계정</span>
+                        </a>
+                        <a href="https://www.google.com/" aria-label="Google 검색"><img class="google-service-icon" src="../assets/ui/google/search.png" width="52" height="52" alt=""><span>검색</span></a>
+                        <a href="https://maps.google.com/" aria-label="Google 지도"><img class="google-service-icon" src="../assets/ui/google/maps.png" width="52" height="52" alt=""><span>지도</span></a>
+                        <a href="https://play.google.com/" aria-label="Google Play"><img class="google-service-icon" src="../assets/ui/google/play.png" width="52" height="52" alt=""><span>Play</span></a>
+                        <a href="https://news.google.com/" aria-label="Google 뉴스"><img class="google-service-icon" src="../assets/ui/google/news.png" width="52" height="52" alt=""><span>뉴스</span></a>
+                        <a href="https://mail.google.com/" aria-label="Gmail"><img class="google-service-icon" src="../assets/ui/google/gmail.png" width="52" height="52" alt=""><span>Gmail</span></a>
+                        <a href="https://drive.google.com/" aria-label="Google Drive"><img class="google-service-icon" src="../assets/ui/google/drive.png" width="52" height="52" alt=""><span>드라이브</span></a>
+                        <a href="https://meet.google.com/" aria-label="Google Meet"><img class="google-service-icon" src="../assets/ui/google/meet.png" width="52" height="52" alt=""><span>Meet</span></a>
+                        <a href="https://contacts.google.com/" aria-label="Google 주소록"><img class="google-service-icon" src="../assets/ui/google/contacts.png" width="52" height="52" alt=""><span>주소록</span></a>
+                    </div>
+                </section>
+                <div class="panel-heading"><h1 id="category-title">카테고리 관리</h1><button id="add-category" class="icon-button" type="button" aria-label="카테고리 추가"><img src="../assets/ui/add.svg" alt=""></button></div>
+                <div id="category-list" class="category-list"></div>
+                <p id="category-status" class="field-error" role="status"></p>
             </aside>
 
             <section id="category-color-picker" class="category-color-picker card" aria-label="카테고리 색상 선택" hidden>
@@ -43,18 +57,37 @@
                 </button>
                 <label class="picker-hue-label">색조<input class="picker-hue" type="range" min="0" max="359" value="220" aria-label="색조"></label>
                 <label class="picker-hex-label">Hex <input class="picker-hex" maxlength="6" value="A6BCE9" aria-label="16진수 색상"></label>
-                <span class="picker-preview" aria-hidden="true"></span>
+                <div class="picker-tools"><button id="picker-eyedropper" type="button" aria-label="화면에서 색상 추출">⌁</button><span class="picker-preview" aria-hidden="true"></span><span>100 %</span></div>
             </section>
 
         </div>
     </div>
 
-    <section id="bookmark-tooltip" class="bookmark-tooltip card border border-base-300 bg-base-100 shadow-xl" aria-label="북마크 설명" hidden>
+    <div id="bookmark-hover-bridge" aria-hidden="true" hidden></div>
+    <section id="bookmark-tooltip" class="bookmark-tooltip" aria-label="북마크 설명" hidden>
         <div class="tooltip-heading"><h2 id="tooltip-name">북마크</h2><span id="tooltip-category"></span></div>
-        <div class="page-preview"><img id="tooltip-image" alt=""><div><span class="preview-caption">저장한 페이지</span><strong id="preview-title"></strong><span id="preview-domain"></span></div></div>
-        <div class="memo-heading">메모<span></span></div><p id="tooltip-memo">메모가 없습니다.</p>
-        <div class="tooltip-bottom"><span id="tooltip-url"></span><button id="copy-link" class="btn btn-link btn-xs" type="button">링크 복사</button></div>
+        <p id="preview-domain" class="tooltip-domain"></p>
+        <section class="page-preview" aria-label="페이지 미리보기" hidden></section>
+        <label class="memo-heading" for="tooltip-memo">메모</label>
+        <textarea id="tooltip-memo" maxlength="50" placeholder="메모를 입력해 주세요. (최대 50자)" aria-label="북마크 메모"></textarea>
+        <div class="tooltip-bottom"><button id="edit-bookmark" type="button">수정</button><button id="copy-link" type="button">링크 복사</button></div>
     </section>
+    <dialog id="bookmark-editor" class="app-dialog bookmark-editor" aria-labelledby="editor-title">
+        <form id="edit-form" novalidate>
+            <div class="dialog-heading"><h2 id="editor-title">북마크 수정</h2><button id="close-editor" class="icon-button" type="button" aria-label="북마크 수정 닫기">×</button></div>
+            <label class="field-label" for="edit-name">이름</label><input id="edit-name" class="field" aria-describedby="edit-name-error" autocomplete="off"><p id="edit-name-error" class="field-error"></p>
+            <span class="field-label">카테고리</span><div id="edit-category"></div>
+            <label class="field-label url-label" for="edit-url">URL</label><input id="edit-url" class="field" type="url" aria-describedby="edit-url-error"><p id="edit-url-error" class="field-error"></p>
+            <p id="edit-status" class="field-error" role="status"></p>
+            <div class="form-actions"><button id="cancel-editor" class="action" type="button">취소</button><button id="save-editor" class="action action-primary" type="submit">저장</button></div>
+        </form>
+    </dialog>
+    <dialog id="category-delete" class="app-dialog category-delete" aria-labelledby="delete-title">
+        <h2 id="delete-title">카테고리를 삭제하시겠습니까?</h2>
+        <p><span id="delete-name"></span><br>삭제한 내용은 복구할 수 없습니다.</p>
+        <p id="delete-status" class="field-error" role="status"></p>
+        <div class="form-actions"><button id="cancel-delete" class="action" type="button">취소</button><button id="confirm-delete" class="action action-primary" type="button">삭제</button></div>
+    </dialog>
     <p id="toast" class="app-toast alert alert-success" role="status" aria-live="polite" hidden></p>
     <script type="module" src="homepage.js"></script>
 </body>
