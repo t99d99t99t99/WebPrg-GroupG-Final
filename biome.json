@@ -6,7 +6,7 @@
         "useIgnoreFile": true
     },
     "files": {
-        "includes": ["**", "!**/*.md", "!package-lock.json"]
+        "includes": ["**", "!**/*.md", "!package-lock.json", "!daisyui.generated.css"]
     },
     "formatter": {
         "indentStyle": "space",
