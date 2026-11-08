@@ -647,6 +647,30 @@ $("copy-link").addEventListener("click", async () => {
         console.error(error);
     }
 });
+// Bookmark delete: the card closes and a confirm dialog names what will be removed.
+let deletingBookmark = null;
+$("delete-bookmark").addEventListener("click", () => {
+    if (!activeBookmark) return;
+    deletingBookmark = { id: activeBookmark.id, name: activeBookmark.name };
+    hideTooltip();
+    $("bookmark-delete-name").textContent = `‘${deletingBookmark.name}’ 북마크가 삭제됩니다.`;
+    $("bookmark-delete-status").textContent = "";
+    $("bookmark-delete").showModal();
+});
+$("cancel-bookmark-delete").addEventListener("click", () => $("bookmark-delete").close());
+$("confirm-bookmark-delete").addEventListener("click", async () => {
+    $("confirm-bookmark-delete").disabled = true;
+    try {
+        const removed = await bookmarks.remove(deletingBookmark.id);
+        $("bookmark-delete").close();
+        toast(removed ? "북마크를 삭제했습니다." : "이미 삭제된 북마크입니다.");
+    } catch (error) {
+        $("bookmark-delete-status").textContent = "삭제하지 못했습니다. 다시 시도해 주세요.";
+        console.error(error);
+    } finally {
+        $("confirm-bookmark-delete").disabled = false;
+    }
+});
 document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
         hideTooltip();

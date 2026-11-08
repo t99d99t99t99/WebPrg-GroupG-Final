@@ -876,6 +876,9 @@ a:hover {
 #copy-link {
     color: var(--color-link);
 }
+#delete-bookmark {
+    color: var(--color-error);
+}
 
 /* Dialogs */
 .app-dialog {
@@ -948,10 +951,12 @@ a:hover {
     width: auto;
     height: 42px;
 }
-#delete-status:empty {
+#delete-status:empty,
+#bookmark-delete-status:empty {
     display: none;
 }
-#delete-status:not(:empty) {
+#delete-status:not(:empty),
+#bookmark-delete-status:not(:empty) {
     margin-top: 12px;
     font-size: 12px;
 }

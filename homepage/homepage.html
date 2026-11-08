@@ -70,7 +70,7 @@
         <section class="page-preview" aria-label="페이지 미리보기" hidden></section>
         <label class="memo-heading" for="tooltip-memo">메모</label>
         <textarea id="tooltip-memo" maxlength="50" placeholder="메모를 입력해 주세요. (최대 50자)" aria-label="북마크 메모"></textarea>
-        <div class="tooltip-bottom"><button id="edit-bookmark" type="button">수정</button><button id="copy-link" type="button">링크 복사</button></div>
+        <div class="tooltip-bottom"><button id="delete-bookmark" type="button">삭제</button><button id="edit-bookmark" type="button">수정</button><button id="copy-link" type="button">링크 복사</button></div>
     </section>
     <dialog id="bookmark-editor" class="app-dialog bookmark-editor" aria-labelledby="editor-title">
         <form id="edit-form" novalidate>
@@ -87,6 +87,12 @@
         <p><span id="delete-name"></span><br>삭제한 내용은 복구할 수 없습니다.</p>
         <p id="delete-status" class="field-error" role="status"></p>
         <div class="form-actions"><button id="cancel-delete" class="action" type="button">취소</button><button id="confirm-delete" class="action action-primary" type="button">삭제</button></div>
+    </dialog>
+    <dialog id="bookmark-delete" class="app-dialog category-delete" aria-labelledby="bookmark-delete-title">
+        <h2 id="bookmark-delete-title">북마크를 삭제하시겠습니까?</h2>
+        <p><span id="bookmark-delete-name"></span><br>삭제한 내용은 복구할 수 없습니다.</p>
+        <p id="bookmark-delete-status" class="field-error" role="status"></p>
+        <div class="form-actions"><button id="cancel-bookmark-delete" class="action" type="button">취소</button><button id="confirm-bookmark-delete" class="action action-primary" type="button">삭제</button></div>
     </dialog>
     <p id="toast" class="app-toast alert alert-success" role="status" aria-live="polite" hidden></p>
     <script type="module" src="homepage.js"></script>
