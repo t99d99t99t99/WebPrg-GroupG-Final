@@ -3,7 +3,7 @@ import { categorySelect } from "../shared/category-select.js";
 import { nameError, webUrl } from "../shared/validation.js";
 import { clearBookmarkPreview, renderBookmarkPreview } from "./bookmark-preview.js";
 import { prepareBuildingAppearance } from "./building-appearance.js";
-import { assignBuildingFamilies, buildingTexture } from "./building-rules.js";
+import { assignBuildingFamilies, buildingTexture, isDamaged } from "./building-rules.js";
 import { assignCategoryColors, colors } from "./category-colors.js";
 import { categoryManager } from "./category-manager.js";
 import { setGoogleAccount } from "./google-account.js";
@@ -218,7 +218,8 @@ function paintCategory(categoryId, color) {
 function createBuilding(bookmark, category, cell, labels) {
     // Anchor the building's base at the bottom corner of its cell.
     const position = project(cell.x + 1, cell.y + 1);
-    const texture = buildingTexture(bookmark.clickCount, category.buildingFamily, bookmark.id);
+    const damaged = isDamaged(bookmark);
+    const texture = buildingTexture(bookmark.clickCount, category.buildingFamily, bookmark.id, damaged);
     const wrapper = element("div", "building");
     wrapper.dataset.bookmark = bookmark.id;
     wrapper.dataset.category = category.id;
@@ -230,7 +231,10 @@ function createBuilding(bookmark, category, cell, labels) {
     const url = safeUrl(bookmark.url);
     if (url) link.href = url.href;
     else link.tabIndex = 0;
-    link.setAttribute("aria-label", `${bookmark.name} · ${category.name} · 사이트 방문`);
+    link.setAttribute(
+        "aria-label",
+        `${bookmark.name} · ${category.name}${damaged ? " · 7일 넘게 방문하지 않음" : ""} · 사이트 방문`,
+    );
     const image = element("img", "building-image");
     image.src = texture.src;
     image.alt = "";

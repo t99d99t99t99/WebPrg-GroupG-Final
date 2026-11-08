@@ -1,4 +1,4 @@
-// Pure appearance rules: category family, bookmark variation, visit-count growth.
+// Pure appearance rules: category family, bookmark variation, visit-count growth, disrepair.
 const BUILDING_DIR = "../assets/Isometric City/Buildings/";
 
 export const BUILDING_FAMILIES = [
@@ -58,7 +58,16 @@ export function assignBuildingFamilies(categories) {
     };
 }
 
-export function buildingTexture(clickCount = 0, familyId = "blue-homes", bookmarkId = "") {
+// A building falls into disrepair after a week without a visit from the map.
+// Bookmarks never visited count from when they were saved.
+export const DAMAGE_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
+
+export function isDamaged(bookmark, now = Date.now()) {
+    const lastSeen = Number.isFinite(bookmark.lastVisitedAt) ? bookmark.lastVisitedAt : bookmark.savedAt;
+    return Number.isFinite(lastSeen) && now - lastSeen >= DAMAGE_AFTER_MS;
+}
+
+export function buildingTexture(clickCount = 0, familyId = "blue-homes", bookmarkId = "", damaged = false) {
     const stage = clickCount >= 15 ? 2 : clickCount >= 5 ? 1 : 0;
     const family = BUILDING_FAMILIES.find((item) => item.id === familyId) ?? BUILDING_FAMILIES[0];
     const identity = identityHash(bookmarkId);
@@ -66,9 +75,10 @@ export function buildingTexture(clickCount = 0, familyId = "blue-homes", bookmar
     const pool = family.stages[stage];
     const form = pool[Math.floor(identity / 2) % pool.length];
     return {
-        src: `${BUILDING_DIR}bld_${form}_${variant}.png`,
+        src: `${BUILDING_DIR}bld_${form}_${variant}${damaged ? "_damaged" : ""}.png`,
         size: ["small", "medium", "tall"][stage],
         family: family.id,
         variant,
+        damaged,
     };
 }

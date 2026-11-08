@@ -267,10 +267,13 @@ a:hover {
     width: 128px;
     transform: translate(-50%, -100%);
     z-index: 2;
+    /* Only the silhouette (.building-hit-area) takes the pointer, so overlapped buildings stay clickable. */
+    pointer-events: none;
 }
+/* Draw each asset at its own pixel size; a few are 129–132px wide and would blur if fitted to 128px. */
 .building-link {
     display: block;
-    width: 100%;
+    width: max-content;
     position: relative;
     pointer-events: none;
 }
@@ -280,7 +283,8 @@ a:hover {
 }
 .building-image {
     display: block;
-    width: 100%;
+    width: auto;
+    max-width: none;
     height: auto;
     pointer-events: none;
     image-rendering: pixelated;
@@ -309,8 +313,8 @@ a:hover {
 }
 /* Keep this order: the hover outline replaces the NEW outline on the same building. */
 .building.is-new .building-image {
-    filter: drop-shadow(2px 0 0 var(--color-error)) drop-shadow(-2px 0 0 var(--color-error))
-        drop-shadow(0 -2px 0 var(--color-error));
+    filter: drop-shadow(2px 0 0 var(--color-accent-blue)) drop-shadow(-2px 0 0 var(--color-accent-blue))
+        drop-shadow(0 -2px 0 var(--color-accent-blue));
 }
 .building-link:hover .building-image,
 .building-link:focus-visible .building-image,

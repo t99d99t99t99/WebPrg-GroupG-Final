@@ -12,7 +12,7 @@
 | `popup/` | 툴바 아이콘을 누르면 뜨는 팝업. 현재 탭을 카테고리에 저장 |
 | `homepage/` | 새 탭 지도. 카테고리별 자동 도시 배치, 설명 카드, 사이트 방문, 링크 복사 |
 | `homepage/layout.js` | 도시 배치 계산(순수 함수). 그리드 위 구역·건물 칸 결정, 구역 둘레 도로 타일, 아이소메트릭 좌표 변환 |
-| `homepage/building-rules.js` | 6개 계열의 3단계 에셋 목록, 카테고리별 최소 사용 배정, 북마크 ID 기반 a/b·형태 선택 |
+| `homepage/building-rules.js` | 6개 계열의 3단계 에셋 목록, 카테고리별 최소 사용 배정, 북마크 ID 기반 a/b·형태 선택, 7일 미방문 파손 판정 |
 | `homepage/building-appearance.js` | 그림자를 제외한 호버 윤곽, 에셋별 계산 결과 캐시 |
 | `homepage/category-colors.js` | 색이 없는 카테고리의 기본 색 배정 |
 | `db/storage.js` | Chrome 저장소 및 웹 미리보기 어댑터, 저장 변경 알림, 공통 쓰기 잠금 |
@@ -81,11 +81,12 @@ homepage/homepage.js ──> shared/
 | `webprg-bookmarkmap-bookmarks` | 북마크 객체 배열 |
 | `webprg-bookmarkmap-categories` | 카테고리 객체 배열 |
 
-**북마크:** `{ id, url, name, category, savedAt, clickCount, cell, memo?, isNew?, preview? }`
+**북마크:** `{ id, url, name, category, savedAt, clickCount, cell, lastVisitedAt?, memo?, isNew?, preview? }`
 - `id`: `crypto.randomUUID()` 문자열
 - `category`: 카테고리의 `id`. 일치하는 카테고리가 없으면 새 탭에서 "분류 없음"에 표시됩니다
 - `savedAt`: 저장 시각(`Date.now()`)
 - `clickCount`: 지도에서 사이트를 방문한 횟수(일반 클릭, Ctrl/⌘ 클릭, 휠 클릭). 기존 북마크는 클릭 전까지 필드가 없으며, 클릭하면 1부터 저장됩니다
+- `lastVisitedAt`: 지도에서 마지막으로 방문한 시각(`Date.now()`). `clickCount`를 올릴 때 함께 저장합니다. 방문한 적 없는 북마크에는 없으며, 이때 파손 판정은 `savedAt`을 기준으로 합니다
 - `cell`: 지도 그리드에서 건물이 놓인 칸 `{ x, y }`(절대 좌표). 새 탭이 처음 그릴 때 채웁니다. 카테고리를 바꾸면(`edit`) 지워지고 새로 배정됩니다
 
 - `memo`: 최대 50자 메모. 기존 데이터에 없으면 빈 메모로 표시합니다.
@@ -111,7 +112,7 @@ homepage/homepage.js ──> shared/
 | 두 페이지 공통 색·크기 | `style.css` 변수 |
 | 새 Chrome API 사용 | `manifest.json` `permissions` (먼저 팀에 묻기) |
 
-- 건물 규칙은 `building-rules.js`에 모읍니다. 카테고리 계열은 현재 사용 수가 가장 적은 계열 중 ID 해시로 동률을 해소하며, 미배정 카테고리는 생성 시각·ID 순으로 처리하므로 입력 정렬에 영향받지 않습니다. 정상 에셋 48종을 6개 계열의 3단계로 사용합니다. 방문 0~4/5~14/15회 이상에 small/medium/tall 에셋을 선택하며 표시 폭은 모두 128px로 동일합니다. a/b는 북마크 ID 해시의 짝홀, 단계별 세부 형태는 같은 해시의 나머지 값으로 정합니다. 카테고리 이동 시 이동한 계열을 따르며 ID와 방문 횟수는 유지합니다. 파손·공사 중 에셋은 제외합니다.
+- 건물 규칙은 `building-rules.js`에 모읍니다. 카테고리 계열은 현재 사용 수가 가장 적은 계열 중 ID 해시로 동률을 해소하며, 미배정 카테고리는 생성 시각·ID 순으로 처리하므로 입력 정렬에 영향받지 않습니다. 정상 에셋 48종을 6개 계열의 3단계로 사용합니다. 방문 0~4/5~14/15회 이상에 small/medium/tall 에셋을 선택합니다. 에셋은 원본 픽셀 크기로 그립니다(대부분 128px 폭, 일부 129~132px). a/b는 북마크 ID 해시의 짝홀, 단계별 세부 형태는 같은 해시의 나머지 값으로 정합니다. 카테고리 이동 시 이동한 계열을 따르며 ID와 방문 횟수는 유지합니다. 마지막 방문(없으면 저장 시각)부터 7일이 지나면 같은 형태의 `_damaged` 에셋으로 바뀌고, 지도에서 방문하면 바로 원래 건물로 돌아옵니다. 시간 경과는 새 탭을 열거나 화면에 다시 들어올 때 반영됩니다. 공사 중 에셋은 사용하지 않습니다.
 - `building-appearance.js`는 알파 128 미만의 그림자·여백을 제외한 호버 윤곽을 이미지 URL별 Promise로 캐시합니다. 건물은 착색하지 않고 원본 에셋 색상을 유지합니다. 기존 마스크 에셋과 `customColor` 값은 보존하지만 건물 렌더링에는 사용하지 않습니다.
 
 ## Google 계정 표시 연결

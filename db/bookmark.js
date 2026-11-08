@@ -119,6 +119,7 @@ export class BookmarkDB {
             const currentCount =
                 Number.isInteger(bookmark.clickCount) && bookmark.clickCount >= 0 ? bookmark.clickCount : 0;
             bookmark.clickCount = currentCount + 1;
+            bookmark.lastVisitedAt = Date.now();
             await storage.set({ [this.key]: this.bookmarks });
             return bookmark.clickCount;
         });
