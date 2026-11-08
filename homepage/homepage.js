@@ -1,30 +1,34 @@
-import { bookmarks, categories, ready, saveCategoryColors, saveLayout, subscribe } from "../db/db.js";
-import {
-    assignCategoryColors,
-    colors,
-    grassAppearanceForCategory,
-    wallColorAdjustments,
-    wallMaskForSize,
-} from "./category-colors.js";
-import { buildingTexture, planCity, planRoads, project, TILE_HEIGHT, TILE_WIDTH } from "./layout.js";
+import { bookmarks, categories, dismissNewBefore, subscribe, updateCity } from "../db/db.js";
+import { categorySelect } from "../shared/category-select.js";
+import { nameError, webUrl } from "../shared/validation.js";
+import { clearBookmarkPreview, renderBookmarkPreview } from "./bookmark-preview.js";
+import { prepareBuildingAppearance } from "./building-appearance.js";
+import { assignBuildingFamilies, buildingTexture, isDamaged } from "./building-rules.js";
+import { assignCategoryColors, colors } from "./category-colors.js";
+import { categoryManager } from "./category-manager.js";
+import { setGoogleAccount } from "./google-account.js";
+import { planCity, planRoads, project, TILE_HEIGHT, TILE_WIDTH } from "./layout.js";
 
 // Canvas region the city is fitted into (left of the category panel).
-const MAP_AREA = { left: 40, top: 290, width: 1450, height: 860 };
-const MAX_ZOOM = 1.5;
+const MAP_AREA = { left: 24, top: 200, width: 1400, height: 800 };
+const MAX_ZOOM = 1.7;
 
 const $ = (id) => document.getElementById(id);
 const tooltip = $("bookmark-tooltip");
+const hoverBridge = $("bookmark-hover-bridge");
 let activeBookmark;
 let activeLink;
-let hideTimer;
+let hoverCorridor = [];
 let toastTimer;
 let renderVersion = 0;
+let lastCityTiles = [];
 let selectedCategory = null;
 let pickerCategory = null;
 let pickerColor = "#a6bce9";
 let pickerHue = 220;
 let colorSaveTimer;
 let pendingColorChange = null;
+let draftColorChange = null;
 
 function element(tag, className, text) {
     const node = document.createElement(tag);
@@ -34,21 +38,30 @@ function element(tag, className, text) {
 }
 
 function fitCanvas() {
-    // Keep the wireframe's complete composition visible at laptop sizes.
-    const scale = Math.max(0.38, Math.min(innerWidth / 1995, innerHeight / 1280));
+    // Fill the window width; adapt the map and panel to the available height.
+    const scale = innerWidth / 1920;
+    const canvasHeight = Math.max(600, innerHeight / scale);
     $("canvas").style.transform = `scale(${scale})`;
-    $("viewport").style.width = `${1995 * scale}px`;
-    $("viewport").style.height = `${1280 * scale}px`;
+    $("canvas").style.height = `${canvasHeight}px`;
+    $("viewport").style.width = `${innerWidth}px`;
+    $("viewport").style.height = `${canvasHeight * scale}px`;
+    MAP_AREA.top = Math.min(200, canvasHeight * 0.18);
+    MAP_AREA.height = Math.max(250, canvasHeight - MAP_AREA.top - 70);
+    fitCity(lastCityTiles);
     hideTooltip();
 }
 
-function toast(message) {
+function toast(message, tone = "default") {
     clearTimeout(toastTimer);
+    $("toast").classList.toggle("toast-subtle", tone === "subtle");
     $("toast").textContent = message;
     $("toast").hidden = false;
-    toastTimer = setTimeout(() => {
-        $("toast").hidden = true;
-    }, 3500);
+    toastTimer = setTimeout(
+        () => {
+            $("toast").hidden = true;
+        },
+        tone === "subtle" ? 2200 : 3500,
+    );
 }
 
 function safeUrl(raw) {
@@ -61,40 +74,116 @@ function safeUrl(raw) {
 }
 
 function hideTooltip() {
-    clearTimeout(hideTimer);
     tooltip.hidden = true;
+    hoverBridge.hidden = true;
+    hoverCorridor = [];
+    clearBookmarkPreview(tooltip.querySelector(".page-preview"));
     if (activeLink) activeLink.removeAttribute("aria-describedby");
     activeLink = null;
+    $("world").classList.remove("detail-focus");
+    for (const item of $("buildings").children) item.classList.remove("focused-building");
 }
 
-function scheduleHide() {
-    clearTimeout(hideTimer);
-    hideTimer = setTimeout(hideTooltip, 160);
+function scheduleHide(event) {
+    if ($("bookmark-editor").open) return;
+    const next = event.relatedTarget;
+    if (next && (tooltip.contains(next) || hoverBridge.contains(next) || activeLink?.contains(next))) return;
+    if (event.type === "mouseleave" && inHoverCorridor(event.clientX, event.clientY)) return;
+    hideTooltip();
 }
 
-function showTooltip(bookmark, category, image, link) {
-    clearTimeout(hideTimer);
+function inHoverCorridor(x, y) {
+    if (hoverCorridor.length !== 4) return false;
+    let direction = 0;
+    for (let i = 0; i < hoverCorridor.length; i++) {
+        const a = hoverCorridor[i];
+        const b = hoverCorridor[(i + 1) % hoverCorridor.length];
+        const cross = (b.x - a.x) * (y - a.y) - (b.y - a.y) * (x - a.x);
+        if (Math.abs(cross) < 0.01) continue;
+        if (direction && Math.sign(cross) !== direction) return false;
+        direction = Math.sign(cross);
+    }
+    return true;
+}
+
+function positionHoverBridge() {
+    if (!activeLink || tooltip.hidden) return;
+    const anchor = activeLink.getBoundingClientRect();
+    const card = tooltip.getBoundingClientRect();
+    const center = anchor.left + anchor.width / 2;
+    const cardOnLeft = card.left + card.width / 2 < center;
+    const edge = cardOnLeft ? card.right + 1 : card.left - 1;
+    const near = [
+        { x: center, y: anchor.top - 12 },
+        { x: center, y: anchor.bottom + 12 },
+    ];
+    const far = [
+        { x: edge, y: card.top - 6 },
+        { x: edge, y: card.bottom + 6 },
+    ];
+    hoverCorridor = cardOnLeft ? [far[0], near[0], near[1], far[1]] : [near[0], far[0], far[1], near[1]];
+    const left = Math.min(center, edge);
+    const right = Math.max(center, edge);
+    const top = Math.min(near[0].y, far[0].y);
+    const bottom = Math.max(near[1].y, far[1].y);
+    const width = right - left;
+    const height = bottom - top;
+    hoverBridge.hidden = width <= 0 || height <= 0;
+    if (hoverBridge.hidden) {
+        hoverCorridor = [];
+        return;
+    }
+    hoverBridge.style.left = `${left}px`;
+    hoverBridge.style.top = `${top}px`;
+    hoverBridge.style.width = `${width}px`;
+    hoverBridge.style.height = `${height}px`;
+    hoverBridge.style.clipPath = `polygon(${hoverCorridor.map((point) => `${((point.x - left) / width) * 100}% ${((point.y - top) / height) * 100}%`).join(",")})`;
+}
+
+function showTooltip(bookmark, category, link) {
     if (activeLink && activeLink !== link) activeLink.removeAttribute("aria-describedby");
     activeLink = link;
     activeBookmark = bookmark;
+    $("world").classList.add("detail-focus");
+    for (const item of $("buildings").children)
+        item.classList.toggle("focused-building", item.dataset.bookmark === bookmark.id);
     const url = safeUrl(bookmark.url);
     $("tooltip-name").textContent = bookmark.name;
     $("tooltip-category").textContent = category.name;
-    $("preview-title").textContent = bookmark.name;
+
     $("preview-domain").textContent = url?.hostname ?? "주소를 확인해 주세요";
-    $("tooltip-url").textContent = bookmark.url;
-    $("tooltip-memo").textContent = bookmark.memo || "메모가 없습니다.";
-    $("tooltip-image").src = image;
+
+    $("tooltip-memo").value = bookmark.memo || "";
+    if (bookmark.isNew) {
+        bookmark.isNew = false;
+        link.closest(".building").classList.remove("is-new");
+        link.querySelector(".new-badge")?.remove();
+        bookmarks.edit(bookmark.id, { isNew: false }).catch((error) => {
+            console.error(error);
+            toast("새 북마크 표시를 저장하지 못했습니다.");
+        });
+    }
     $("copy-link").textContent = "링크 복사";
     tooltip.hidden = false;
+    renderBookmarkPreview(tooltip.querySelector(".page-preview"), bookmark);
     link.setAttribute("aria-describedby", "bookmark-tooltip");
     const anchor = link.getBoundingClientRect();
     const box = tooltip.getBoundingClientRect();
-    let x = anchor.right + 8;
-    if (x + box.width > innerWidth - 12) x = anchor.left - box.width - 8;
+    const zone = [...$("zones").children].find((item) => item.dataset.category === String(category.id));
+    const area = zone?.querySelector("svg").getBoundingClientRect();
+    const building = link.closest(".building").getBoundingClientRect();
+    const preferRight = area && building.left + building.width / 2 > area.left + area.width / 2 + 0.5;
+    const left = anchor.left - box.width - 16;
+    const right = anchor.right + 16;
+    const leftFits = left >= 12;
+    const rightFits = right + box.width <= innerWidth - 12;
+    let x = preferRight ? right : left;
+    if (preferRight && !rightFits && leftFits) x = left;
+    if (!preferRight && !leftFits && rightFits) x = right;
     const y = Math.max(12, Math.min(anchor.top, innerHeight - box.height - 12));
     tooltip.style.left = `${Math.max(12, Math.min(x, innerWidth - box.width - 12))}px`;
     tooltip.style.top = `${y}px`;
+    positionHoverBridge();
 }
 
 function highlightCategory(id) {
@@ -105,8 +194,11 @@ function applyFilter() {
     for (const item of $("buildings").children) {
         item.classList.toggle("dimmed", selectedCategory !== null && item.dataset.category !== selectedCategory);
     }
+    for (const label of $("building-labels").children) {
+        label.classList.toggle("dimmed", selectedCategory !== null && label.dataset.category !== selectedCategory);
+    }
     for (const row of $("category-list").children) {
-        row.querySelector(".category-filter").setAttribute(
+        row.querySelector(".category-filter")?.setAttribute(
             "aria-pressed",
             String(row.dataset.category === selectedCategory),
         );
@@ -114,39 +206,20 @@ function applyFilter() {
     highlightCategory(selectedCategory);
 }
 
-function applyWallColor(tint, light, color, size) {
-    tint.style.setProperty("--wall-color", color);
-    const adjustments = wallColorAdjustments(color, size);
-    light.style.setProperty("--light-color", adjustments.lightColor);
-    light.style.setProperty("--light-opacity", String(adjustments.lightOpacity));
-    light.style.setProperty("--light-mode", adjustments.lightMode);
-}
-
 function paintCategory(categoryId, color) {
-    for (const building of $("buildings").children) {
-        if (building.dataset.category !== String(categoryId)) continue;
-        applyWallColor(
-            building.querySelector(".building-wall-tint"),
-            building.querySelector(".building-wall-light"),
-            color,
-            building.dataset.houseSize,
-        );
-    }
     for (const zone of $("zones").children) {
-        if (zone.dataset.category === String(categoryId)) zone.querySelector("polygon").setAttribute("fill", color);
-    }
-    for (const tile of $("ground").children) {
-        if (tile.dataset.category === String(categoryId)) styleGrassTile(tile, color);
+        if (zone.dataset.category === String(categoryId)) zone.querySelector("polygon").setAttribute("stroke", color);
     }
     for (const row of $("category-list").children) {
         if (row.dataset.category === String(categoryId)) row.style.setProperty("--zone-color", color);
     }
 }
 
-function createBuilding(bookmark, category, cell) {
+function createBuilding(bookmark, category, cell, labels) {
     // Anchor the building's base at the bottom corner of its cell.
     const position = project(cell.x + 1, cell.y + 1);
-    const texture = buildingTexture(bookmark.clickCount);
+    const damaged = isDamaged(bookmark);
+    const texture = buildingTexture(bookmark.clickCount, category.buildingFamily, bookmark.id, damaged);
     const wrapper = element("div", "building");
     wrapper.dataset.bookmark = bookmark.id;
     wrapper.dataset.category = category.id;
@@ -158,30 +231,41 @@ function createBuilding(bookmark, category, cell) {
     const url = safeUrl(bookmark.url);
     if (url) link.href = url.href;
     else link.tabIndex = 0;
-    link.setAttribute("aria-label", `${bookmark.name} · ${category.name} · 사이트 방문`);
+    link.setAttribute(
+        "aria-label",
+        `${bookmark.name} · ${category.name}${damaged ? " · 7일 넘게 방문하지 않음" : ""} · 사이트 방문`,
+    );
     const image = element("img", "building-image");
     image.src = texture.src;
     image.alt = "";
     image.draggable = false;
-    const badge = element("span", "building-badge badge badge-neutral", bookmark.name.slice(0, 1));
+    const hitArea = element("span", "building-hit-area");
+    hitArea.setAttribute("aria-hidden", "true");
+    const badge = element("span", "building-badge", bookmark.name);
     badge.setAttribute("aria-hidden", "true");
-    const name = element("span", "building-name", bookmark.name);
-    const tint = element("span", "building-wall-tint");
-    const light = element("span", "building-wall-light");
-    tint.style.setProperty("--wall-mask", `url("${wallMaskForSize(texture.size)}")`);
-    light.style.setProperty("--wall-mask", `url("${wallMaskForSize(texture.size)}")`);
-    applyWallColor(tint, light, category.color, texture.size);
-    link.append(image, tint, light, badge, name);
+    badge.dataset.category = category.id;
+    badge.style.left = `${position.left}px`;
+    badge.style.top = `${position.top - 6}px`;
+    labels.append(badge);
+    prepareBuildingAppearance(image, hitArea).catch((error) => {
+        console.error(error);
+        toast("건물 표시를 불러오지 못했습니다. 새로고침해 주세요.");
+    });
+    link.append(image, hitArea);
+    if (bookmark.isNew) {
+        wrapper.classList.add("is-new");
+        link.append(element("span", "new-badge", "NEW"));
+    }
     wrapper.append(link);
     link.addEventListener("mouseenter", () => {
         highlightCategory(category.id);
-        showTooltip(bookmark, category, texture.src, link);
+        showTooltip(bookmark, category, link);
     });
-    link.addEventListener("mouseleave", () => {
+    link.addEventListener("mouseleave", (event) => {
         highlightCategory(selectedCategory);
-        scheduleHide();
+        scheduleHide(event);
     });
-    link.addEventListener("focus", () => showTooltip(bookmark, category, texture.src, link));
+    link.addEventListener("focus", () => showTooltip(bookmark, category, link));
     link.addEventListener("blur", scheduleHide);
     link.addEventListener("click", (event) => {
         if (!url) {
@@ -203,6 +287,11 @@ function createBuilding(bookmark, category, cell) {
             .catch((error) => console.error(error))
             .finally(() => window.location.assign(url.href));
     });
+    // Chrome sends a middle-button click as auxclick, not click.
+    link.addEventListener("auxclick", (event) => {
+        if (event.button === 1 && url)
+            bookmarks.incrementClickCount(bookmark.id).catch((error) => console.error(error));
+    });
     return wrapper;
 }
 
@@ -216,14 +305,6 @@ function groundTile(x, y, src) {
     return tile;
 }
 
-function styleGrassTile(tile, categoryColor) {
-    const appearance = grassAppearanceForCategory(categoryColor);
-    tile.style.setProperty("--grass-color", appearance.color);
-    tile.style.setProperty("--grass-light-color", appearance.lightColor);
-    tile.style.setProperty("--grass-light-opacity", String(appearance.lightOpacity));
-    tile.style.setProperty("--grass-light-mode", appearance.lightMode);
-}
-
 function categoryGrassTile(x, y, category) {
     const { left, top } = project(x, y);
     const tile = element("div", "category-grass-tile");
@@ -231,14 +312,11 @@ function categoryGrassTile(x, y, category) {
     tile.dataset.category = String(category.id);
     tile.style.left = `${left - TILE_WIDTH / 2}px`;
     tile.style.top = `${top}px`;
-    styleGrassTile(tile, category.color);
 
     const image = element("img");
     image.src = "../assets/Isometric City/Roads and Grounds/tile_ground_grass.png";
     image.alt = "";
-    const tint = element("span", "category-grass-tint");
-    const light = element("span", "category-grass-light");
-    tile.append(image, tint, light);
+    tile.append(image);
     return tile;
 }
 
@@ -262,16 +340,16 @@ function createZone(category, area, color) {
     svg.setAttribute("aria-hidden", "true");
     const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
     polygon.setAttribute("points", corners.map((point) => `${point.left - left},${point.top - top}`).join(" "));
-    polygon.setAttribute("fill", color);
+    polygon.setAttribute("fill", "none");
+    polygon.setAttribute("stroke", color);
     svg.append(polygon);
-    const label = element("span", "zone-label", category.name);
-    label.style.left = `${corners[0].left - left}px`;
-    zone.append(svg, label);
+    zone.append(svg);
     return zone;
 }
 
 // Zoom the whole city so every tile fits the map region, like zooming out.
 function fitCity(tiles) {
+    lastCityTiles = tiles;
     if (!tiles.length) return;
     let minLeft = Infinity;
     let maxRight = -Infinity;
@@ -302,19 +380,25 @@ function fitCity(tiles) {
 
 // Plan positions and save what changed. The lock keeps several new tabs from planning at once.
 async function arrangeCity() {
-    const run = async () => {
-        await ready;
-        const [savedCategories, savedBookmarks] = await Promise.all([categories.get(), bookmarks.get()]);
+    return updateCity((savedCategories, savedBookmarks) => {
         const assigned = assignCategoryColors(savedCategories);
-        if (assigned.changes.size) await saveCategoryColors(assigned.changes);
-        const plan = planCity(assigned.categories, savedBookmarks);
-        if (plan.changed.areas.size || plan.changed.cells.size) {
-            await saveLayout(plan.changed.areas, plan.changed.cells);
-        }
-        return { groups: plan.groups, total: savedBookmarks.length };
-    };
-    return globalThis.navigator?.locks ? navigator.locks.request("webprg-bookmarkmap-layout", run) : run();
+        const families = assignBuildingFamilies(assigned.categories);
+        return {
+            plan: planCity(families.categories, savedBookmarks),
+            colors: assigned.changes,
+            families: families.changes,
+        };
+    });
 }
+const renderCategories = categoryManager({
+    openColorPicker,
+    highlightCategory: (id) => highlightCategory(id ?? selectedCategory),
+    toast,
+    toggleCategory(id) {
+        selectedCategory = selectedCategory === id ? null : id;
+        applyFilter();
+    },
+});
 
 async function render() {
     const version = ++renderVersion;
@@ -325,7 +409,8 @@ async function render() {
         const ground = document.createDocumentFragment();
         const zones = document.createDocumentFragment();
         const map = document.createDocumentFragment();
-        const rows = document.createDocumentFragment();
+        const labels = document.createDocumentFragment();
+
         const tiles = [];
         groups.forEach(({ category: savedCategory, items, area, cells }, index) => {
             const category = { ...savedCategory, color: savedCategory.color ?? colors[index % colors.length] };
@@ -337,33 +422,8 @@ async function render() {
             }
             zones.append(createZone(category, area, color));
             for (const bookmark of items) {
-                map.append(createBuilding(bookmark, category, cells.get(bookmark.id)));
+                map.append(createBuilding(bookmark, category, cells.get(bookmark.id), labels));
             }
-            const row = element("div", "category-row list-row");
-            row.dataset.category = String(category.id);
-            row.style.setProperty("--zone-color", color);
-            const colorButton = element("button", "category-color btn btn-ghost btn-circle btn-sm");
-            colorButton.type = "button";
-            colorButton.setAttribute("aria-label", `${category.name} 색상 변경`);
-            colorButton.addEventListener("click", (event) => {
-                event.stopPropagation();
-                openColorPicker(category.id, colorButton, color);
-            });
-            const filterButton = element("button", "category-filter");
-            filterButton.type = "button";
-            filterButton.setAttribute("aria-label", `${category.name}, 북마크 ${items.length}개, 구역 강조`);
-            filterButton.append(
-                element("span", "category-name", category.name),
-                element("span", "category-count", String(items.length).padStart(2, "0")),
-            );
-            row.append(colorButton, filterButton);
-            row.addEventListener("mouseenter", () => highlightCategory(String(category.id)));
-            row.addEventListener("mouseleave", () => highlightCategory(selectedCategory));
-            filterButton.addEventListener("click", () => {
-                selectedCategory = selectedCategory === String(category.id) ? null : String(category.id);
-                applyFilter();
-            });
-            rows.append(row);
         });
         for (const road of planRoads(groups.map((group) => group.area))) {
             ground.append(groundTile(road.x, road.y, road.tile));
@@ -373,8 +433,12 @@ async function render() {
         $("ground").replaceChildren(ground);
         $("zones").replaceChildren(zones);
         $("buildings").replaceChildren(map);
-        $("category-list").replaceChildren(rows);
-        $("total-count").textContent = String(total).padStart(2, "0");
+        $("building-labels").replaceChildren(labels);
+        if (selectedCategory && !groups.some((group) => group.category.id === selectedCategory))
+            selectedCategory = null;
+        renderCategories(groups);
+        if (activeBookmark && !groups.some((group) => group.items.some((item) => item.id === activeBookmark.id)))
+            hideTooltip();
         $("map-status").textContent = total
             ? ""
             : "저장한 페이지가 아직 없습니다. 확장프로그램에서 첫 페이지를 저장해 보세요.";
@@ -386,12 +450,17 @@ async function render() {
     }
 }
 
-function openColorPicker(categoryId, trigger, color) {
+function openColorPicker(categoryId, trigger, color, onDraftChange = null) {
+    draftColorChange = onDraftChange;
     if (pendingColorChange && pendingColorChange.categoryId !== categoryId) {
         clearTimeout(colorSaveTimer);
         persistPendingColor();
     }
     const picker = $("category-color-picker");
+    if (pickerCategory === categoryId && !picker.hidden) {
+        picker.hidden = true;
+        return;
+    }
     pickerCategory = categoryId;
     pickerColor = color;
     const [r, g, b] = color.match(/[\da-f]{2}/gi).map((part) => Number.parseInt(part, 16) / 255);
@@ -426,7 +495,7 @@ function positionColorPicker(trigger) {
     const scaleX = bounds.width / canvas.offsetWidth,
         scaleY = bounds.height / canvas.offsetHeight;
     picker.style.left = `${Math.max(8, (anchor.left - bounds.left) / scaleX - picker.offsetWidth - 10)}px`;
-    picker.style.top = `${Math.max(8, (anchor.top - bounds.top + anchor.height / 2 - picker.offsetHeight / 2) / scaleY)}px`;
+    picker.style.top = `${Math.max(8, (anchor.top - bounds.top + anchor.height / 2) / scaleY - picker.offsetHeight / 2)}px`;
 }
 
 function updatePickerColor(color) {
@@ -437,6 +506,10 @@ function updatePickerColor(color) {
     picker.querySelector(".picker-saturation").style.backgroundColor = `hsl(${pickerHue} 100% 50%)`;
     picker.style.setProperty("--picker-color", pickerColor);
     paintCategory(pickerCategory, pickerColor);
+    if (draftColorChange) {
+        draftColorChange(pickerColor);
+        return;
+    }
     pendingColorChange = { categoryId: pickerCategory, color: pickerColor };
     clearTimeout(colorSaveTimer);
     colorSaveTimer = setTimeout(persistPendingColor, 180);
@@ -535,8 +608,15 @@ $("category-color-picker")
     .querySelector(".picker-hex")
     .addEventListener("change", (event) => {
         const value = event.currentTarget.value.trim();
-        if (/^[\da-f]{6}$/i.test(value)) updatePickerColor(`#${value}`);
-        else event.currentTarget.value = pickerColor.slice(1).toUpperCase();
+        if (/^[\da-f]{6}$/i.test(value)) {
+            const id = pickerCategory;
+            const anchor = [...$("category-list").children]
+                .find((row) => row.dataset.category === id)
+                ?.querySelector(".category-color");
+            $("category-color-picker").hidden = true;
+            if (anchor) openColorPicker(id, anchor, `#${value}`, draftColorChange);
+            updatePickerColor(`#${value}`);
+        } else event.currentTarget.value = pickerColor.slice(1).toUpperCase();
     });
 document.addEventListener("pointerdown", (event) => {
     const picker = $("category-color-picker");
@@ -547,20 +627,48 @@ document.addEventListener("pointerdown", (event) => {
     }
 });
 
-tooltip.addEventListener("mouseenter", () => clearTimeout(hideTimer));
 tooltip.addEventListener("mouseleave", scheduleHide);
-tooltip.addEventListener("focusin", () => clearTimeout(hideTimer));
+document.addEventListener("mousemove", (event) => {
+    if (!activeLink || tooltip.hidden || $("bookmark-editor").open) return;
+    if (activeLink.contains(event.target) || tooltip.contains(event.target)) return;
+    if (inHoverCorridor(event.clientX, event.clientY)) return;
+    hideTooltip();
+});
 tooltip.addEventListener("focusout", (event) => {
-    if (!tooltip.contains(event.relatedTarget)) scheduleHide();
+    if (!tooltip.contains(event.relatedTarget)) scheduleHide(event);
 });
 $("copy-link").addEventListener("click", async () => {
     try {
         await navigator.clipboard.writeText(activeBookmark.url);
         $("copy-link").textContent = "복사 완료";
-        toast("원본 링크를 복사했습니다.");
+        toast("클립보드에 복사되었습니다.", "subtle");
     } catch (error) {
         toast("링크를 복사하지 못했습니다. 다시 시도해 주세요.");
         console.error(error);
+    }
+});
+// Bookmark delete: the card closes and a confirm dialog names what will be removed.
+let deletingBookmark = null;
+$("delete-bookmark").addEventListener("click", () => {
+    if (!activeBookmark) return;
+    deletingBookmark = { id: activeBookmark.id, name: activeBookmark.name };
+    hideTooltip();
+    $("bookmark-delete-name").textContent = `‘${deletingBookmark.name}’ 북마크가 삭제됩니다.`;
+    $("bookmark-delete-status").textContent = "";
+    $("bookmark-delete").showModal();
+});
+$("cancel-bookmark-delete").addEventListener("click", () => $("bookmark-delete").close());
+$("confirm-bookmark-delete").addEventListener("click", async () => {
+    $("confirm-bookmark-delete").disabled = true;
+    try {
+        const removed = await bookmarks.remove(deletingBookmark.id);
+        $("bookmark-delete").close();
+        toast(removed ? "북마크를 삭제했습니다." : "이미 삭제된 북마크입니다.");
+    } catch (error) {
+        $("bookmark-delete-status").textContent = "삭제하지 못했습니다. 다시 시도해 주세요.";
+        console.error(error);
+    } finally {
+        $("confirm-bookmark-delete").disabled = false;
     }
 });
 document.addEventListener("keydown", (event) => {
@@ -575,10 +683,159 @@ document.addEventListener("keydown", (event) => {
     }
 });
 window.addEventListener("resize", fitCanvas);
-window.addEventListener("focus", render);
+// NEW stays until the user has seen it: bookmarks saved before this visit began are
+// acknowledged when the user leaves, so a fresh tab still shows them.
+let visibleSince = document.hidden ? null : Date.now();
 document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) render();
+    if (document.hidden) {
+        if (visibleSince === null) return;
+        const seenBefore = visibleSince;
+        visibleSince = null;
+        dismissNewBefore(seenBefore).catch((error) => console.error(error));
+        return;
+    }
+    visibleSince = Date.now();
+    render();
 });
-subscribe(render);
+subscribe((changes) => {
+    const keys = Object.keys(changes);
+    const bookmarkChange = changes["webprg-bookmarkmap-bookmarks"];
+    if (keys.length === 1 && bookmarkChange?.oldValue && bookmarkChange.newValue) {
+        const mapFields = (items) => items.map(({ memo: _memo, isNew: _new, preview: _preview, ...item }) => item);
+        if (JSON.stringify(mapFields(bookmarkChange.oldValue)) === JSON.stringify(mapFields(bookmarkChange.newValue))) {
+            if (activeBookmark) {
+                const updated = bookmarkChange.newValue.find((item) => item.id === activeBookmark.id);
+                if (updated && document.activeElement !== $("tooltip-memo")) {
+                    activeBookmark = updated;
+                    $("tooltip-memo").value = updated.memo ?? "";
+                }
+            }
+            return;
+        }
+    }
+    render();
+});
 fitCanvas();
 render();
+
+let memoQueue = Promise.resolve();
+$("tooltip-memo").addEventListener("input", (event) => {
+    if (!activeBookmark) return;
+    const id = activeBookmark.id,
+        memo = event.currentTarget.value;
+    activeBookmark.memo = memo;
+    memoQueue = memoQueue
+        .then(() => bookmarks.edit(id, { memo }))
+        .catch((error) => {
+            console.error(error);
+            toast("메모를 저장하지 못했습니다.");
+        });
+});
+$("apps-button").addEventListener("click", () => {
+    const section = $("google-services");
+    section.hidden = !section.hidden;
+    $("apps-button").setAttribute("aria-expanded", String(!section.hidden));
+});
+const editSelect = categorySelect($("edit-category"));
+let editingBookmark;
+function closeEditor() {
+    $("bookmark-editor").close();
+    hideTooltip();
+}
+$("close-editor").addEventListener("click", closeEditor);
+$("cancel-editor").addEventListener("click", closeEditor);
+$("edit-bookmark").addEventListener("click", async () => {
+    const id = activeBookmark?.id;
+    try {
+        editingBookmark = await bookmarks.get(id);
+        if (!editingBookmark) {
+            toast("삭제된 북마크입니다.");
+            hideTooltip();
+            return;
+        }
+        editSelect.setItems(await categories.get(), editingBookmark.category);
+        $("edit-name").value = editingBookmark.name;
+        $("edit-url").value = editingBookmark.url;
+        for (const field of ["edit-name", "edit-url"]) $(field).removeAttribute("aria-invalid");
+        for (const field of ["edit-name-error", "edit-url-error", "edit-status"]) $(field).textContent = "";
+        const left = tooltip.style.left,
+            top = tooltip.style.top;
+        tooltip.hidden = true;
+        clearBookmarkPreview(tooltip.querySelector(".page-preview"));
+        $("bookmark-editor").style.left = left;
+        $("bookmark-editor").style.top = top;
+        $("bookmark-editor").showModal();
+        const editorHeight = $("bookmark-editor").getBoundingClientRect().height;
+        $("bookmark-editor").style.top =
+            `${Math.max(12, Math.min(Number.parseFloat(top), innerHeight - editorHeight - 12))}px`;
+    } catch (error) {
+        toast("북마크를 불러오지 못했습니다.");
+        console.error(error);
+    }
+});
+// Popup-saved names and URLs may not follow the homepage rules, so only edited values are checked.
+const nameChanged = () => $("edit-name").value.trim() !== editingBookmark?.name;
+const urlChanged = () => $("edit-url").value.trim() !== editingBookmark?.url;
+function validateEditor() {
+    const nameMessage = nameChanged() ? nameError($("edit-name").value, 20, "북마크 이름") : "";
+    const urlMessage = !urlChanged() || webUrl($("edit-url").value) ? "" : "http 또는 https 주소를 입력해 주세요.";
+    $("edit-name-error").textContent = nameMessage;
+    $("edit-url-error").textContent = urlMessage;
+    $("edit-name").setAttribute("aria-invalid", String(Boolean(nameMessage)));
+    $("edit-url").setAttribute("aria-invalid", String(Boolean(urlMessage)));
+    return !nameMessage && !urlMessage;
+}
+$("edit-name").addEventListener("input", validateEditor);
+$("edit-url").addEventListener("input", validateEditor);
+$("edit-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!validateEditor()) return;
+    if (!editSelect.value) {
+        $("edit-status").textContent = "카테고리를 선택해 주세요.";
+        editSelect.trigger.focus();
+        return;
+    }
+    $("save-editor").disabled = true;
+    try {
+        if (!(await categories.get(editSelect.value)))
+            throw new Error("카테고리가 삭제되었습니다. 다시 선택해 주세요.");
+        const changes = { category: editSelect.value };
+        if (nameChanged()) changes.name = $("edit-name").value.trim();
+        if (urlChanged()) changes.url = $("edit-url").value.trim();
+        const result = await bookmarks.edit(editingBookmark.id, changes);
+        if (!result) throw new Error("삭제된 북마크입니다.");
+        closeEditor();
+        toast("북마크를 수정했습니다.");
+    } catch (error) {
+        $("edit-status").textContent = error.message || "저장하지 못했습니다.";
+        console.error(error);
+    } finally {
+        $("save-editor").disabled = false;
+    }
+});
+$("bookmark-editor").addEventListener("close", hideTooltip);
+
+$("picker-eyedropper").addEventListener("click", async () => {
+    if (!globalThis.EyeDropper) {
+        toast("이 브라우저에서는 화면 색상 추출을 지원하지 않습니다.");
+        return;
+    }
+    try {
+        const { sRGBHex } = await new EyeDropper().open();
+        const trigger = [...$("category-list").children]
+            .find((row) => row.dataset.category === pickerCategory)
+            ?.querySelector(".category-color");
+        if (trigger) {
+            $("category-color-picker").hidden = true;
+            openColorPicker(pickerCategory, trigger, sRGBHex, draftColorChange);
+            updatePickerColor(sRGBHex);
+        }
+    } catch (error) {
+        if (error.name !== "AbortError") {
+            console.error(error);
+            toast("화면 색상을 가져오지 못했습니다.");
+        }
+    }
+});
+
+setGoogleAccount();
