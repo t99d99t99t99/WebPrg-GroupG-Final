@@ -2,13 +2,14 @@ import { nameError, webUrl } from "../shared/validation.js";
 import { storage, withWriteLock } from "./storage.js";
 
 export class Bookmark {
-    constructor(_id, _url, _name, _category) {
+    constructor(_id, _url, _name, _category, _memo = "") {
         this.id = _id;
         this.url = _url;
         this.name = _name;
         this.category = _category;
         this.savedAt = Date.now();
         this.clickCount = 0;
+        this.memo = _memo;
     }
 }
 
@@ -56,6 +57,12 @@ export class BookmarkDB {
                         ? newBookmark.clickCount
                         : 0,
             };
+            if (
+                newBookmark.memo !== undefined &&
+                (typeof newBookmark.memo !== "string" || Array.from(newBookmark.memo).length > 50)
+            )
+                throw new Error("메모는 50자 이내로 입력해 주세요.");
+            if (newBookmark.memo) bookmark.memo = newBookmark.memo;
             bookmark.isNew = newBookmark.isNew ?? true;
             bookmarks.push(bookmark);
             await storage.set({ [this.key]: bookmarks });
