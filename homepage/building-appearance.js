@@ -44,16 +44,9 @@ export async function prepareBuildingAppearance(image, hitArea) {
     }
 }
 
-// Load the prepared wall mask paired with this exact asset. The three original
-// blue-house masks keep their existing filenames; every other sprite has a
-// matching prebuilt mask in wall-mask-buildings/.
+// Load the prepared wall mask paired with this exact asset.
 export function applyPreparedWallMask(image, tint, light) {
-    const legacy = {
-        "bld_house_small_blue_a.png": "../assets/wall-mask-house-small.png",
-        "bld_house_medium_blue_a.png": "../assets/wall-mask-house-medium.png",
-        "bld_house_tall_blue_a.png": "../assets/wall-mask-house-tall.png",
-    }[image.src.split("/").pop()];
-    const maskPath = legacy ?? `../assets/wall-mask-buildings/wall-mask-${image.src.split("/").pop()}`;
+    const maskPath = `../assets/wall-mask-buildings/wall-mask-${image.src.split("/").pop()}`;
     const maskUrl = `url("${maskPath}")`;
     for (const layer of [tint, light]) {
         layer.style.setProperty("--wall-mask", maskUrl);

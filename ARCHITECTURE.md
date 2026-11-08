@@ -7,12 +7,13 @@
 
 | 경로 | 책임 |
 |---|---|
+| `BUILDING_FAMILIES.md` | 사용 중인 5개 건물 계열, 성장 단계별 에셋, 통합·미사용 목록, 이미지·마스크 파일명 규칙 |
 | `manifest.json` | 확장 설정(Manifest V3). 새 탭과 팝업을 연결하고 권한(`storage`, `activeTab`)을 선언 |
 | `db/` | 저장소 계층. `chrome.storage.local`을 직접 다루는 유일한 곳 |
 | `popup/` | 툴바 아이콘을 누르면 뜨는 팝업. 현재 탭을 카테고리에 저장 |
 | `homepage/` | 새 탭 지도. 카테고리별 자동 도시 배치, 설명 카드, 사이트 방문, 링크 복사 |
 | `homepage/layout.js` | 도시 배치 계산(순수 함수). 그리드 위 구역·건물 칸 결정, 구역 둘레 도로 타일, 아이소메트릭 좌표 변환 |
-| `homepage/building-rules.js` | 6개 계열의 3단계 에셋 목록, 북마크 ID 기반 계열·a/b·형태 선택, 7일 미방문 파손 판정 |
+| `homepage/building-rules.js` | 5개 계열의 3단계 에셋 목록, 북마크 ID 기반 계열·a/b·형태 선택, 7일 미방문 파손 판정 |
 | `homepage/building-appearance.js` | 그림자를 제외한 호버 윤곽, 건물별 사전 제작 벽면 마스크 연결 |
 | `homepage/category-colors.js` | 카테고리 기본 색 배정, 벽면 명도와 잔디 채도·명도 보정 |
 | `db/storage.js` | Chrome 저장소 및 웹 미리보기 어댑터, 저장 변경 알림, 공통 쓰기 잠금 |
@@ -22,14 +23,14 @@
 | `homepage/category-manager.js` | 카테고리 생성·이름 수정·순서 이동·삭제 확인 |
 | `debug/` | 개발자용 정적 디버그 도구 모음. 앱 저장소나 Chrome API를 사용하지 않음 |
 | `debug/index.html` | 디버그 도구 진입 페이지 |
-| `debug/building-color-test.html` | 모든 건물 PNG의 벽면 색상·명도와 잔디 색을 시험하는 페이지 |
+| `debug/building-color-test.html` | 사용 중인 건물과 공사 에셋의 벽면 색상·명도, 잔디 색을 시험하는 페이지 |
 | `demo/seed-data.js` | 화면 로직과 분리된 시연용 카테고리 4개·북마크 8개 |
 | `style.css` | 두 페이지가 공유하는 디자인 토큰(CSS 변수)과 기본 스타일 |
 | `ui-preview/` | Tailwind CSS 4·CLI 4·daisyUI 5 스타일 작업 및 빌드 공간. 미리보기와 서비스용 정적 CSS를 같은 테마에서 생성하며 전용 npm 설정·잠금 파일·Biome 설정·사용 설명 포함 |
 | `ui-preview/src/` | `input.css`는 미리보기 빌드 진입점, `app.css`는 서비스 빌드 진입점, `daisyui.css`는 기본 플러그인 설정, `theme.css`는 Export 테마, `additional.css`는 미리보기 개별 스타일 |
 | `ui-preview/preview.html` | 고정 샘플 컴포넌트와 상태 확인. 생성된 `dist/styles.css`만 로드하며 프로젝트 기능·데이터를 사용하지 않음 |
 | `daisyui.generated.css` | `homepage/`와 `popup/`이 사용하는 daisyUI 정적 번들. `ui-preview/src/app.css`에서 자동 생성하며 직접 수정하지 않음 |
-| `assets/` | 아이콘과 건물 이미지. `assets/Isometric City/`는 지도에 쓰는 도로·바닥 타일과 건물. `wall-mask-house-*.png` 및 `wall-mask-buildings/`는 건물 에셋별 벽면 마스크. 출처는 README.md |
+| `assets/` | 아이콘과 건물 이미지. `assets/Isometric City/`는 지도에 쓰는 도로·바닥 타일과 건물. `wall-mask-buildings/`는 건물 에셋별 벽면 마스크. 출처는 README.md |
 | `biome.json` | 포맷·린트 설정 |
 | `.github/workflows/biome.yml` | PR과 `main` push 때 Biome 검사 |
 
@@ -60,7 +61,7 @@ debug/building-color-test.js ──> assets/Isometric City/Buildings/ 및 벽면
 debug/building-color-test.js ──> homepage/category-colors.js (벽면 명도 보정)
 ```
 
-`debug/building-color-test.js`는 건물 에셋 파일명을 정적으로 나열하고 카드를 만들어 색상을 미리 봅니다. 입력 색상은 페이지 안에서만 적용하며 데이터베이스에 저장하지 않습니다.
+`debug/building-color-test.js`는 사용 중인 건물 64개와 공사 에셋 2개의 파일명을 정적으로 나열하고 카드를 만들어 색상을 미리 봅니다. 통합·폐지된 주택 32개는 표시하지 않습니다. 입력 색상은 페이지 안에서만 적용하며 데이터베이스에 저장하지 않습니다.
 
 - `db/db.js`가 저장 키와 `bookmarks`, `categories` 싱글턴, 초기화 Promise인 `ready`, 변경 알림 `subscribe`를 제공합니다.
 - 팝업은 `Bookmark`, `Category` 클래스와 `add` API로 현재 페이지를 저장합니다. 새 카테고리 이름은 `shared/validation.js`로 검사하고, 카테고리 목록은 `shared/category-select.js`를 사용합니다. 북마크 이름은 20자, 메모는 50자까지 저장하며 메모는 기존 `memo` 필드에 기록합니다. 홈페이지 폼도 같은 공유 모듈을 사용합니다.
@@ -120,8 +121,8 @@ debug/building-color-test.js ──> homepage/category-colors.js (벽면 명도 
 | 두 페이지 공통 색·크기 | `style.css` 변수 |
 | 새 Chrome API 사용 | `manifest.json` `permissions` (먼저 팀에 묻기) |
 
-- 건물 규칙은 `building-rules.js`에 모읍니다. 정상 에셋 48종을 6개 계열의 3단계로 사용합니다. 방문 0~4/5~14/15회 이상에 small/medium/tall 에셋을 선택합니다. 에셋은 원본 픽셀 크기로 그립니다(대부분 128px 폭, 일부 129~132px). 각 북마크 ID 해시로 계열, a/b 방향, 단계별 세부 형태를 선택하므로 한 카테고리 안에서도 계열이 섞입니다. 마지막 방문(없으면 저장 시각)부터 7일이 지나면 같은 형태의 `_damaged` 에셋으로 바뀌고, 지도에서 방문하면 바로 원래 건물로 돌아옵니다. 시간 경과는 새 탭을 열거나 화면에 다시 들어올 때 반영됩니다. 공사 중 에셋은 사용하지 않습니다.
-- `building-appearance.js`는 알파 128 미만의 그림자·여백을 제외한 호버 윤곽을 이미지 URL별 Promise로 캐시합니다. 벽면 마스크는 에셋별 PNG를 연결합니다. 기본 파란 집 3종은 기존 `wall-mask-house-*.png`를 쓰며, 나머지 선택 가능 스프라이트는 `wall-mask-buildings/`에서 같은 파일명에 대응하는 마스크를 씁니다. `customColor` 값은 보존하지만 건물 렌더링에는 사용하지 않습니다.
+- 건물 규칙은 `building-rules.js`에 모읍니다. 정상 에셋 32종을 5개 계열의 3단계로 사용합니다. 착색 결과가 겹치는 주택은 파란 주택으로 통합하고 정원 주택은 소형 노랑·중형 흰색·대형 초록만 남기며, 갈색 벽돌 주택 계열은 사용하지 않습니다. 통합·미사용 목록은 `BUILDING_FAMILIES.md`에 명시합니다. 방문 0~4/5~14/15회 이상에 small/medium/tall 에셋을 선택합니다. 에셋은 원본 픽셀 크기로 그립니다(대부분 128px 폭, 일부 129~132px). 각 북마크 ID 해시로 계열, a/b 방향, 단계별 세부 형태를 선택하므로 한 카테고리 안에서도 계열이 섞입니다. 마지막 방문(없으면 저장 시각)부터 7일이 지나면 같은 형태의 `_damaged` 에셋으로 바뀌고, 지도에서 방문하면 바로 원래 건물로 돌아옵니다. 시간 경과는 새 탭을 열거나 화면에 다시 들어올 때 반영됩니다. 공사 중 에셋은 사용하지 않습니다.
+- `building-appearance.js`는 알파 128 미만의 그림자·여백을 제외한 호버 윤곽을 이미지 URL별 Promise로 캐시합니다. 벽면 마스크는 모든 건물에 같은 `assets/wall-mask-buildings/wall-mask-<건물 이미지 파일명>` 규칙으로 정적 PNG를 연결하며, 디버그 페이지도 같은 경로를 사용합니다. 계열별 에셋 목록은 `BUILDING_FAMILIES.md`에 정리합니다. `customColor` 값은 보존하지만 건물 렌더링에는 사용하지 않습니다.
 - 집과 잔디는 카테고리 `color`로 착색합니다. 집은 정적 벽면 마스크에 색상층과 명도 보정층을 적용합니다. 상점 지붕 테두리·문틀·창틀·벽 접합부는 포함하고 유리·문짝·벽돌 줄눈은 제외하며, 파손 얼룩과 모서리는 벽면에 포함합니다. 검정 보정층의 불투명도는 0.6 이하로 제한해 원본 명암 차이를 최소 40% 남깁니다. 홈페이지와 디버그 페이지가 같은 `wallColorAdjustments`를 사용합니다. 잔디는 `category-colors.js`에서 채도·명도를 보정한 뒤 색상층과 명도 보정층을 적용합니다. 구역 강조는 카테고리 색으로 채운 영역으로 표시합니다.
 
 ## Google 계정 표시 연결

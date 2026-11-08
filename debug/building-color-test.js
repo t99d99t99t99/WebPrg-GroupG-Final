@@ -31,14 +31,6 @@ const BUILDING_FILES = [
     "bld_house_medium_brickwhite_a_damaged.png",
     "bld_house_medium_brickwhite_b.png",
     "bld_house_medium_brickwhite_b_damaged.png",
-    "bld_house_medium_brown_a.png",
-    "bld_house_medium_brown_a_damaged.png",
-    "bld_house_medium_brown_b.png",
-    "bld_house_medium_brown_b_damaged.png",
-    "bld_house_medium_green_a.png",
-    "bld_house_medium_green_a_damaged.png",
-    "bld_house_medium_green_b.png",
-    "bld_house_medium_green_b_damaged.png",
     "bld_house_medium_white_a.png",
     "bld_house_medium_white_a_damaged.png",
     "bld_house_medium_white_b.png",
@@ -47,22 +39,10 @@ const BUILDING_FILES = [
     "bld_house_small_blue_a_damaged.png",
     "bld_house_small_blue_b.png",
     "bld_house_small_blue_b_damaged.png",
-    "bld_house_small_brickbrown_a.png",
-    "bld_house_small_brickbrown_a_damaged.png",
-    "bld_house_small_brickbrown_b.png",
-    "bld_house_small_brickbrown_b_damaged.png",
     "bld_house_small_brickred_a.png",
     "bld_house_small_brickred_a_damaged.png",
     "bld_house_small_brickred_b.png",
     "bld_house_small_brickred_b_damaged.png",
-    "bld_house_small_purple_a.png",
-    "bld_house_small_purple_a_damaged.png",
-    "bld_house_small_purple_b.png",
-    "bld_house_small_purple_b_damaged.png",
-    "bld_house_small_red_a.png",
-    "bld_house_small_red_a_damaged.png",
-    "bld_house_small_red_b.png",
-    "bld_house_small_red_b_damaged.png",
     "bld_house_small_yellow_a.png",
     "bld_house_small_yellow_a_damaged.png",
     "bld_house_small_yellow_b.png",
@@ -71,26 +51,14 @@ const BUILDING_FILES = [
     "bld_house_tall_blue_a_damaged.png",
     "bld_house_tall_blue_b.png",
     "bld_house_tall_blue_b_damaged.png",
-    "bld_house_tall_brickbrown_a.png",
-    "bld_house_tall_brickbrown_a_damaged.png",
-    "bld_house_tall_brickbrown_b.png",
-    "bld_house_tall_brickbrown_b_damaged.png",
     "bld_house_tall_brickwhite_a.png",
     "bld_house_tall_brickwhite_a_damaged.png",
     "bld_house_tall_brickwhite_b.png",
     "bld_house_tall_brickwhite_b_damaged.png",
-    "bld_house_tall_brown_a.png",
-    "bld_house_tall_brown_a_damaged.png",
-    "bld_house_tall_brown_b.png",
-    "bld_house_tall_brown_b_damaged.png",
     "bld_house_tall_green_a.png",
     "bld_house_tall_green_a_damaged.png",
     "bld_house_tall_green_b.png",
     "bld_house_tall_green_b_damaged.png",
-    "bld_house_tall_purple_a.png",
-    "bld_house_tall_purple_a_damaged.png",
-    "bld_house_tall_purple_b.png",
-    "bld_house_tall_purple_b_damaged.png",
     "bld_icecream_a.png",
     "bld_icecream_a_damaged.png",
     "bld_icecream_b.png",
@@ -159,14 +127,7 @@ function createAssetCard(file) {
     const sprite = document.createElement("div");
     sprite.className = "asset-sprite";
     sprite.dataset.houseSize = size;
-    const maskPath =
-        file === "bld_house_small_blue_a.png"
-            ? "../assets/wall-mask-house-small.png"
-            : file === "bld_house_medium_blue_a.png"
-              ? "../assets/wall-mask-house-medium.png"
-              : file === "bld_house_tall_blue_a.png"
-                ? "../assets/wall-mask-house-tall.png"
-                : `../assets/wall-mask-buildings/wall-mask-${file}`;
+    const maskPath = `../assets/wall-mask-buildings/wall-mask-${file}`;
     sprite.style.setProperty("--wall-mask", `url("${maskPath}")`);
 
     const image = document.createElement("img");

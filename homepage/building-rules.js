@@ -9,18 +9,9 @@ export const BUILDING_FAMILIES = [
         stages: [["house_small_brickred"], ["house_medium_brickwhite"], ["house_tall_brickwhite"]],
     },
     {
-        id: "warm-brick-homes",
-        name: "갈색 벽돌 주택",
-        stages: [["house_small_brickbrown"], ["house_medium_brown"], ["house_tall_brown", "house_tall_brickbrown"]],
-    },
-    {
         id: "garden-homes",
         name: "정원 주택",
-        stages: [
-            ["house_small_red", "house_small_yellow", "house_small_purple"],
-            ["house_medium_green", "house_medium_white"],
-            ["house_tall_green", "house_tall_purple"],
-        ],
+        stages: [["house_small_yellow"], ["house_medium_white"], ["house_tall_green"]],
     },
     { id: "food-market", name: "먹거리 상점", stages: [["fruitstand"], ["cafe", "icecream"], ["pizza"]] },
     { id: "service-market", name: "생활 상점", stages: [["clinic"], ["autoshop"], ["gunshop"]] },
