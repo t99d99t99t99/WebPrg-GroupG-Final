@@ -1,6 +1,6 @@
 # daisyUI 부품 모음
 
-실제 확장 프로그램 코드와 분리된 daisyUI 컴포넌트 확인용 작업 공간입니다. 기존 [preview.html](preview.html) 한 페이지에서 스타일을 비교하고 필요한 부품을 Figma 목업으로 가져가는 용도입니다. 별도 앱·페이지·데이터 연결은 없습니다.
+기존 [preview.html](preview.html) 한 페이지에서 daisyUI 컴포넌트를 비교하고 필요한 부품을 Figma 목업으로 가져가는 작업 공간입니다. 미리보기는 프로젝트 기능·데이터와 연결하지 않지만, 같은 테마와 설치 버전으로 실제 확장 프로그램용 정적 CSS도 생성합니다.
 
 현재 설치된 **daisyUI 5.7.50**과 `livingtaco` 테마를 사용합니다. 테마 및 기존 커스텀 CSS를 유지하며, 모든 예제가 동일한 [dist/styles.css](dist/styles.css)를 참조합니다.
 
@@ -13,7 +13,7 @@ Windows PowerShell에서는 저장소 루트에서 다음을 실행합니다. `n
 ```powershell
 cd ui-preview
 npm.cmd ci
-npm.cmd run build
+npm.cmd run build:all
 py -m http.server 8767 --bind 127.0.0.1
 ```
 
@@ -26,7 +26,9 @@ cd ui-preview
 npm.cmd run watch
 ```
 
-원본 CSS나 샘플 HTML을 저장하면 CSS가 다시 생성됩니다. 브라우저는 직접 새로고침합니다. 각 명령은 `Ctrl+C`로 종료합니다.
+서비스 화면의 클래스나 테마를 수정하면서 서비스 CSS를 자동으로 다시 빌드하려면 `npm.cmd run watch:app`을 사용합니다. 한 번만 생성할 때는 `npm.cmd run build:app`을 사용합니다.
+
+원본 CSS나 샘플 HTML을 저장하면 해당 감시 명령의 CSS가 다시 생성됩니다. 브라우저는 직접 새로고침합니다. 각 명령은 `Ctrl+C`로 종료합니다.
 
 ## 부품 구성과 상태 확인
 
@@ -58,18 +60,20 @@ npm.cmd run watch
 - [src/additional.css](src/additional.css): 테마 토큰과 분리해서 추가할 개별 스타일입니다. 기존 규칙 뒤의 `.catalog-*` 규칙은 부품 모음 전용 배치입니다.
 - [preview.html](preview.html): **부품을 추가하는 파일**입니다. 해당 종류의 `.catalog-group`에서 `figure.catalog-sample`을 복사하고 이름·클래스 설명과 `.catalog-stage` 안의 부품을 함께 수정합니다. 클래스는 HTML에 그대로 적어 기존 빌드에서 탐색되게 합니다.
 - [src/input.css](src/input.css): Tailwind, daisyUI 기본 light 테마, 위 두 CSS 파일을 연결합니다. 클래스 탐색은 샘플 HTML로 한정됩니다.
+- [src/app.css](src/app.css): 실제 `homepage/`와 `popup/`의 클래스만 탐색해 서비스용 정적 CSS를 만드는 진입점입니다. 미리보기 전용 [src/additional.css](src/additional.css)는 불러오지 않습니다.
 - [src/daisyui.css](src/daisyui.css): daisyUI 플러그인과 기본 light 테마 설정입니다. Export 테마와 분리하여 유지합니다.
 - [dist/styles.css](dist/styles.css): 빌드 또는 감시 명령으로 생성하는 CSS입니다. 직접 수정하거나 커밋하지 않습니다.
+- [../daisyui.generated.css](../daisyui.generated.css): `build:app` 또는 `watch:app`으로 생성되며 실제 두 화면이 로드합니다. 직접 수정하지 않습니다.
 - [biome.json](biome.json): 프로젝트 포맷 규칙을 상속하고, 이 폴더에서만 Tailwind CSS 문법 검사를 허용합니다.
 
 테마를 붙여넣은 뒤에는 [preview.html](preview.html)의 `<html data-theme="livingtaco">`를 Export 블록의 `name`과 동일하게 바꿉니다. 예를 들어 `name: "mytheme";`이면 `data-theme="mytheme"`입니다. 현재 테마의 `default: false`는 그대로 유지하고 HTML에서 명시적으로 선택합니다. 기본 daisyUI 플러그인 설정은 [src/daisyui.css](src/daisyui.css)에 있으므로 Export할 때 지워지지 않습니다. [공식 테마 사용법](https://daisyui.com/docs/themes/)
 
 ## 전달 및 복원
 
-팀원에게 전달할 원본은 [테마 CSS](src/theme.css), [추가 스타일 CSS](src/additional.css), [샘플 HTML](preview.html), 이 설명서입니다. 바로 재현하려면 설정과 잠금 파일을 포함한 이 폴더 전체를 전달합니다. 실제 화면 통합은 별도 작업입니다.
+팀원에게 전달할 원본은 [테마 CSS](src/theme.css), [추가 스타일 CSS](src/additional.css), [샘플 HTML](preview.html), 이 설명서입니다. 바로 재현하려면 설정과 잠금 파일을 포함한 이 폴더 전체를 전달합니다. 실제 화면에는 생성된 [../daisyui.generated.css](../daisyui.generated.css)와 각 HTML의 daisyUI 클래스가 적용됩니다.
 
 [package-lock.json](package-lock.json)으로 설치 버전을 보존합니다. 다른 환경에서도 `npm ci` 후 `npm run build`로 복원할 수 있습니다. `node_modules/`와 자동 생성되는 `dist/`는 Git에서 제외하며 원본 파일은 모두 보존합니다.
 
 ## 범위
 
-이 폴더는 스타일 전달용 독립 작업 공간입니다. 실제 `homepage/`, `popup/`, `db/`, `manifest.json`, 공용 `style.css`와 연결되어 있지 않습니다.
+이 폴더는 미리보기와 CSS 빌드 전용 작업 공간입니다. `homepage/`와 `popup/`의 정적 클래스를 읽어 서비스 번들을 만들지만, 프로젝트 기능·저장 데이터·`db/`·`manifest.json`에는 관여하지 않습니다.

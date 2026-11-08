@@ -8,7 +8,7 @@ import {
 } from "./category-colors.js";
 import { buildingTexture, planCity, planRoads, project, TILE_HEIGHT, TILE_WIDTH } from "./layout.js";
 
-// Canvas region the city is fitted into (left of the category panel, below search).
+// Canvas region the city is fitted into (left of the category panel).
 const MAP_AREA = { left: 40, top: 290, width: 1450, height: 860 };
 const MAX_ZOOM = 1.5;
 
@@ -163,7 +163,7 @@ function createBuilding(bookmark, category, cell) {
     image.src = texture.src;
     image.alt = "";
     image.draggable = false;
-    const badge = element("span", "building-badge", bookmark.name.slice(0, 1));
+    const badge = element("span", "building-badge badge badge-neutral", bookmark.name.slice(0, 1));
     badge.setAttribute("aria-hidden", "true");
     const name = element("span", "building-name", bookmark.name);
     const tint = element("span", "building-wall-tint");
@@ -339,10 +339,10 @@ async function render() {
             for (const bookmark of items) {
                 map.append(createBuilding(bookmark, category, cells.get(bookmark.id)));
             }
-            const row = element("div", "category-row");
+            const row = element("div", "category-row list-row");
             row.dataset.category = String(category.id);
             row.style.setProperty("--zone-color", color);
-            const colorButton = element("button", "category-color");
+            const colorButton = element("button", "category-color btn btn-ghost btn-circle btn-sm");
             colorButton.type = "button";
             colorButton.setAttribute("aria-label", `${category.name} 색상 변경`);
             colorButton.addEventListener("click", (event) => {
@@ -574,9 +574,6 @@ document.addEventListener("keydown", (event) => {
         }
     }
 });
-$("help-button").addEventListener("click", () =>
-    toast("건물을 누르면 사이트로 이동합니다. 새 페이지는 크롬 툴바의 확장프로그램에서 저장하세요."),
-);
 window.addEventListener("resize", fitCanvas);
 window.addEventListener("focus", render);
 document.addEventListener("visibilitychange", () => {

@@ -1,0 +1,7 @@
+/* 실제 확장 프로그램에서 사용하는 daisyUI 정적 번들의 진입점입니다. */
+@import "tailwindcss" source(none);
+@import "./daisyui.css";
+@import "./theme.css";
+
+@source "../../homepage";
+@source "../../popup";

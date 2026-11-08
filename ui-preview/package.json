@@ -4,7 +4,10 @@
   "type": "module",
   "scripts": {
     "build": "tailwindcss -i ./src/input.css -o ./dist/styles.css",
-    "watch": "tailwindcss -i ./src/input.css -o ./dist/styles.css --watch"
+    "build:app": "tailwindcss -i ./src/app.css -o ../daisyui.generated.css --minify",
+    "build:all": "npm run build && npm run build:app",
+    "watch": "tailwindcss -i ./src/input.css -o ./dist/styles.css --watch",
+    "watch:app": "tailwindcss -i ./src/app.css -o ../daisyui.generated.css --watch"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.0",

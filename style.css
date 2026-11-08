@@ -1,16 +1,16 @@
 :root {
     /* Shared palette from the homepage and save-popup wireframes */
-    --color-canvas: #f1f4ef;
-    --color-surface: #fffdf8;
-    --color-surface-muted: #f8f2db;
+    --color-canvas: #f7f7f2;
+    --color-surface: #f7f7f2;
+    --color-surface-muted: #ebeee7;
     --color-surface-raised: #ffffff;
-    --color-text: #315c53;
-    --color-text-muted: #73827b;
-    --color-primary: #52bda5;
-    --color-primary-soft: #e2f4ef;
-    --color-primary-border: #9dc9be;
-    --color-border: #d5c99e;
-    --color-divider: #e6e3d6;
+    --color-text: #202823;
+    --color-text-muted: #6d776f;
+    --color-primary: #355c32;
+    --color-primary-soft: #ebeee7;
+    --color-primary-border: #cdd4c8;
+    --color-border: #cdd4c8;
+    --color-divider: #ebeee7;
     --color-road: #f4e6bd;
     --color-accent-gold: #e5b75d;
     --color-accent-coral: #e78674;

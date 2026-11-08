@@ -1,7 +1,7 @@
 :root {
-    --panel: #f5fcfa;
-    --ink: #315c53;
-    --muted: #78938d;
+    --panel: #f7f7f2;
+    --ink: #202823;
+    --muted: #6d776f;
 }
 html,
 body {
@@ -60,88 +60,6 @@ button:disabled {
 .apps-button {
     font-size: 27px;
     line-height: 1;
-}
-.account-avatar {
-    display: grid;
-    width: 46px;
-    height: 46px;
-    place-items: center;
-    border: 1px solid #5b827c;
-    border-radius: 50%;
-    background: white;
-}
-.search-bar {
-    position: absolute;
-    top: 211px;
-    left: 87px;
-    display: flex;
-    gap: 16px;
-    z-index: 3;
-}
-.search-box {
-    display: flex;
-    align-items: center;
-    width: 400px;
-    height: 54px;
-    gap: 18px;
-    padding: 0 20px;
-    border: 1px solid #a8cec5;
-    border-radius: 27px;
-    background: white;
-    transition: box-shadow 0.2s;
-}
-.search-box:focus-within {
-    box-shadow: 0 3px 16px #315c5315;
-}
-.search-box input {
-    width: 100%;
-    min-width: 0;
-    border: 0;
-    outline: 0;
-    background: transparent;
-    font-size: 15px;
-    color: var(--ink);
-}
-.search-box input::placeholder {
-    color: #728984;
-}
-.search-box button {
-    border: 0;
-    padding: 0;
-    background: transparent;
-    color: #77988e;
-    font-size: 20px;
-    opacity: 0;
-}
-.search-box:focus-within button,
-.search-box:hover button {
-    opacity: 1;
-}
-.google-mark {
-    font-size: 20px;
-    font-weight: 700;
-    color: #4285f4;
-}
-.naver-mark {
-    display: grid;
-    place-items: center;
-    width: 25px;
-    height: 25px;
-    flex-shrink: 0;
-    border-radius: 5px;
-    background: #03c75a;
-    color: white;
-    font-size: 15px;
-    font-weight: 800;
-}
-.add-search {
-    width: 54px;
-    height: 54px;
-    border: 1px solid #a8cec5;
-    border-radius: 50%;
-    background: #effaf7;
-    color: #4d8277;
-    font-size: 23px;
 }
 #city {
     position: absolute;
@@ -705,37 +623,6 @@ button:disabled {
     font-size: 12px;
     font-weight: 400;
 }
-.page-footer {
-    position: absolute;
-    left: 41px;
-    right: 34px;
-    bottom: 83px;
-    color: #64847e;
-    font-size: 13px;
-    z-index: 3;
-}
-.country {
-    padding: 0 38px 12px;
-    border-bottom: 1px solid #bbdad2;
-    color: #49736b;
-    font-size: 15px;
-}
-.footer-links {
-    display: flex;
-    justify-content: space-between;
-    padding: 25px 45px 0;
-}
-.footer-links > div {
-    display: flex;
-    gap: 23px;
-}
-#help-button {
-    border: 0;
-    padding: 0;
-    background: transparent;
-    color: inherit;
-    font-size: inherit;
-}
 #map-status {
     position: absolute;
     top: 320px;
@@ -755,7 +642,7 @@ button:disabled {
     box-shadow: 0 5px 16px #203a332b;
 }
 .bookmark-tooltip[hidden],
-.toast[hidden] {
+.app-toast[hidden] {
     display: none;
 }
 .tooltip-heading {
@@ -851,7 +738,7 @@ button:disabled {
     color: #0090ff;
     font-size: 11px;
 }
-.toast {
+.app-toast {
     position: fixed;
     z-index: 30;
     bottom: 28px;
@@ -868,7 +755,6 @@ button:disabled {
     text-align: center;
 }
 @media (prefers-reduced-motion: reduce) {
-    .search-box,
     .zone img,
     .zone-label,
     .building-link,
