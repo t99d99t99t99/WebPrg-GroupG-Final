@@ -314,6 +314,11 @@ a:hover {
     transition: transform 0.18s;
     transform-origin: bottom center;
 }
+.building-hit-area {
+    position: absolute;
+    inset: 0;
+    display: block;
+}
 .building-wall-tint,
 .building-wall-light {
     position: absolute;
