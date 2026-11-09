@@ -547,6 +547,24 @@
     gap: 1rem;
 }
 
+.mask-downloads {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.mask-downloads p,
+.mask-download-status {
+    color: color-mix(in oklab, var(--color-base-content) 70%, transparent);
+    font-size: 0.875rem;
+}
+
+.mask-download-status:not(:empty) {
+    margin-bottom: 0.75rem;
+}
+
 .asset-card {
     min-width: 0;
     overflow: hidden;
@@ -805,5 +823,215 @@
     .grass-adjustments,
     .picker-note {
         width: 260px;
+    }
+}
+
+.asset-edit {
+    width: 100%;
+    margin-top: 0.35rem;
+}
+
+.mask-editor {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    width: min(1100px, calc(100% - 2rem));
+    max-width: none;
+    height: min(900px, calc(100dvh - 2rem));
+    max-height: calc(100dvh - 2rem);
+    overflow: hidden;
+    padding: 1.5rem;
+    border: var(--border) solid var(--color-base-300);
+    border-radius: var(--radius-box);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
+    box-shadow: 0 16px 50px rgb(0 0 0 / 25%);
+}
+
+.mask-editor[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+.mask-editor::backdrop {
+    background: rgb(0 0 0 / 50%);
+}
+
+.mask-editor-header,
+.mask-editor-footer {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.mask-editor-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.mask-editor-file {
+    margin-top: 0.35rem;
+    overflow-wrap: anywhere;
+    color: var(--color-primary);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+}
+
+.mask-editor-help {
+    margin: 0.5rem 0;
+    color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
+    font-size: 0.875rem;
+    line-height: 1.6;
+}
+
+.mask-editor-toolbar,
+.mask-editor-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.mask-editor-toolbar {
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.mask-editor-tools {
+    display: inline-flex;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-field);
+    overflow: hidden;
+}
+
+.mask-editor-tools .btn {
+    border-radius: 0;
+}
+
+.mask-editor kbd,
+.mask-editor-shortcut {
+    color: inherit;
+    opacity: 0.7;
+    font-size: 0.75em;
+}
+
+.mask-editor-toolbar label:not(.mask-editor-grid-toggle) {
+    margin-left: 0.5rem;
+}
+
+.mask-editor-opacity {
+    width: 5rem;
+}
+
+.mask-editor-zoom {
+    width: 6rem;
+}
+
+.mask-editor-grid-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-left: 0.5rem;
+}
+
+.mask-editor-grid-toggle input {
+    accent-color: var(--color-primary);
+}
+
+.mask-editor-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-field);
+    background: var(--color-base-200);
+}
+
+.mask-editor-stage {
+    position: relative;
+    background-color: #fff;
+    background-image: conic-gradient(#dfe5dd 25%, #fff 0 50%, #dfe5dd 0 75%, #fff 0);
+    background-size: 16px 16px;
+}
+
+.mask-editor-image,
+.mask-editor-canvas,
+.mask-editor-grid {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    image-rendering: pixelated;
+}
+
+.mask-editor-image {
+    pointer-events: none;
+}
+
+.mask-editor-canvas {
+    cursor: crosshair;
+    touch-action: none;
+}
+
+.mask-editor-canvas:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+}
+
+.mask-editor-stage.show-original .mask-editor-canvas {
+    opacity: 0;
+}
+
+.mask-editor-grid {
+    pointer-events: none;
+    background-image:
+        linear-gradient(to right, rgb(0 0 0 / 22%) 1px, transparent 1px),
+        linear-gradient(to bottom, rgb(0 0 0 / 22%) 1px, transparent 1px);
+}
+
+.mask-editor-cursor {
+    position: absolute;
+    z-index: 1;
+    border: 1px solid #fff;
+    outline: 1px solid #000;
+    pointer-events: none;
+}
+
+.mask-editor-grid[hidden],
+.mask-editor-cursor[hidden] {
+    display: none;
+}
+
+.mask-editor-footer {
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+}
+
+.mask-editor-footer p {
+    font-size: 0.875rem;
+}
+
+.mask-editor-pixel-info {
+    color: var(--color-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 560px) {
+    .mask-editor {
+        width: calc(100% - 1rem);
+        padding: 1rem;
+    }
+
+    .mask-editor-toolbar label:not(.mask-editor-grid-toggle),
+    .mask-editor-grid-toggle {
+        margin-left: 0;
     }
 }

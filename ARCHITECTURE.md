@@ -24,7 +24,7 @@
 | `debug/` | 개발자용 정적 디버그 도구 모음. 앱 저장소나 Chrome API를 사용하지 않음 |
 | `debug/index.html` | 디버그 도구 진입 페이지 |
 | `debug/debug.css` | 디버그 도구 목록과 건물 색상 테스트의 공통 레이아웃·테마 스타일 |
-| `debug/building-color-test/` | 사용 중인 건물과 공사 에셋의 벽면 색상·명도, 잔디 색을 시험하는 페이지와 전용 CSS·JS |
+| `debug/building-color-test/` | 건물 색상·잔디 미리보기와 정적 마스크 PNG를 픽셀 단위로 편집·저장하는 도구 |
 | `debug/ui-preview/` | daisyUI 부품 모음과 Tailwind CSS 4·CLI 4·daisyUI 5 스타일 빌드 공간. 미리보기용 생성 CSS와 빌드 설정·잠금 파일·설명 포함 |
 | `debug/ui-preview/src/` | `input.css`는 미리보기 빌드 진입점, `app.css`는 서비스 빌드 진입점, `daisyui.css`는 기본 플러그인 설정, `theme.css`는 Export 테마, `additional.css`는 미리보기 개별 스타일 |
 | `debug/ui-preview/preview.html` | 고정 샘플 컴포넌트와 상태 확인. 저장소에 포함된 `preview.generated.css`를 로드하므로 열 때 별도 빌드가 필요 없음 |
@@ -60,9 +60,13 @@ homepage/category-manager.js ──> db/db.js
 homepage/homepage.js ──> shared/
 debug/building-color-test/building-color-test.js ──> assets/Isometric City/Buildings/ 및 벽면 마스크 이미지
 debug/building-color-test/building-color-test.js ──> homepage/category-colors.js (벽면 명도 보정)
+debug/building-color-test/building-color-test.js ──> debug/building-color-test/mask-editor.js (마스크 편집)
+debug/building-color-test/building-color-test.js ──> debug/building-color-test/mask-archive.js (마스크 ZIP 다운로드)
 ```
 
 `debug/building-color-test/building-color-test.js`는 사용 중인 건물 64개와 공사 에셋 2개의 파일명을 정적으로 나열하고 카드를 만들어 색상을 미리 봅니다. 통합·폐지된 주택 32개는 표시하지 않습니다. 입력 색상은 페이지 안에서만 적용하며 데이터베이스에 저장하지 않습니다.
+
+`mask-editor.js`는 선택한 정적 PNG를 읽어 픽셀과 불투명도를 편집하고 변경된 마스크를 카드에 미리 보여 줍니다. 원본 보기와 선택 픽셀의 불투명도 복사, 확대·축소를 버튼과 단축키로 제공합니다. 변경된 PNG는 디버그 페이지의 `sessionStorage`에 임시 보관해 같은 탭의 새로고침 후에도 복원하며, 탭 세션이 끝나면 사라집니다. 개별 PNG나 변경된 마스크·전체 마스크 ZIP을 다운로드하고 파일을 직접 교체해야 실제 에셋에 반영됩니다. 앱 데이터 저장 키와 Chrome 저장소는 사용하지 않습니다.
 
 - `db/db.js`가 저장 키와 `bookmarks`, `categories` 싱글턴, 초기화 Promise인 `ready`, 변경 알림 `subscribe`를 제공합니다.
 - 팝업은 `Bookmark`, `Category` 클래스와 `add` API로 현재 페이지를 저장합니다. 새 카테고리 이름은 `shared/validation.js`로 검사하고, 카테고리 목록은 `shared/category-select.js`를 사용합니다. 북마크 이름은 20자, 메모는 50자까지 저장하며 메모는 기존 `memo` 필드에 기록합니다. 홈페이지 폼도 같은 공유 모듈을 사용합니다.
