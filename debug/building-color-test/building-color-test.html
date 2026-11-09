@@ -39,6 +39,11 @@
                     </div>
                     <p id="maskDownloadStatus" class="mask-download-status" role="status" aria-live="polite"></p>
                     <p id="maskStorageWarning" class="mask-download-status" role="alert"></p>
+                    <div class="asset-scale-control">
+                        <label for="assetScale">건물 크기</label>
+                        <input id="assetScale" type="range" min="75" max="200" step="25" value="100">
+                        <output id="assetScaleValue" for="assetScale">100%</output>
+                    </div>
                     <div id="assetGrid" class="building-grid"></div>
                 </section>
 

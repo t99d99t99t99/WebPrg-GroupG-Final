@@ -74,6 +74,8 @@ const BUILDING_FILES = [
 const assetGrid = document.getElementById("assetGrid");
 const assetCount = document.getElementById("assetCount");
 const assetSearch = document.getElementById("assetSearch");
+const assetScale = document.getElementById("assetScale");
+const assetScaleValue = document.getElementById("assetScaleValue");
 const familyFilter = document.getElementById("familyFilter");
 const maskChanges = document.getElementById("maskChanges");
 const maskDownloadChanged = document.getElementById("maskDownloadChanged");
@@ -96,6 +98,8 @@ const grassDarknessValue = document.getElementById("grassDarknessValue");
 const grassMinBrightnessRange = document.getElementById("grassMinBrightnessRange");
 const grassMinBrightnessValue = document.getElementById("grassMinBrightnessValue");
 const state = { hue: 218, saturation: 0.65, value: 0.87, alpha: 1 };
+const changedBadges = new Map();
+let maskEditor;
 
 function familyFor(file) {
     if (file.includes("construction") || file.includes("contruction")) return "other";
@@ -157,13 +161,18 @@ function createAssetCard(file) {
     title.textContent = readableName(file);
     const meta = document.createElement("span");
     meta.textContent = family === "other" ? "공사 에셋 · 벽면 없음" : `${familyLabel(family)} · ${sizeLabel(size)}`;
+    const badge = document.createElement("span");
+    badge.className = "asset-changed";
+    badge.textContent = "마스크 변경됨";
+    badge.hidden = !maskEditor.isChanged(file);
+    changedBadges.set(file, badge);
     const edit = document.createElement("button");
     edit.type = "button";
     edit.className = "btn btn-sm asset-edit";
     edit.textContent = "마스크 편집";
     edit.setAttribute("aria-label", `${readableName(file)} 마스크 편집`);
     edit.addEventListener("click", () => maskEditor.open({ file, sprite, imageUrl: image.src, maskPath }));
-    caption.append(title, meta, edit);
+    caption.append(title, meta, badge, edit);
     card.append(preview, caption);
     return card;
 }
@@ -185,9 +194,12 @@ function updateMaskDownloads(count) {
     maskChanges.textContent = `변경된 마스크 ${count}개`;
     maskDownloadChanged.disabled = downloadingMasks || count === 0;
     maskDownloadAll.disabled = downloadingMasks;
+    if (maskEditor) {
+        for (const [file, badge] of changedBadges) badge.hidden = !maskEditor.isChanged(file);
+    }
 }
 
-const maskEditor = createMaskEditor({
+maskEditor = createMaskEditor({
     files: BUILDING_FILES,
     onChange: updateMaskDownloads,
     onStorageError: (message) => {
@@ -196,6 +208,10 @@ const maskEditor = createMaskEditor({
 });
 for (const file of BUILDING_FILES) assetGrid.append(createAssetCard(file));
 const cards = [...assetGrid.children];
+assetScale.addEventListener("input", () => {
+    assetGrid.style.setProperty("--asset-scale", String(Number(assetScale.value) / 100));
+    assetScaleValue.textContent = `${assetScale.value}%`;
+});
 
 async function downloadMasks(changedOnly) {
     if (downloadingMasks) return;
