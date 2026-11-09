@@ -50,4 +50,4 @@
 
 모든 벽면 마스크는 `assets/wall-mask-buildings/`에 있습니다. 홈페이지와 디버그 페이지가 같은 정적 PNG를 읽습니다. 착색 영역 기준은 [마스크 설명](assets/wall-mask-buildings/README.md)을 참고합니다.
 
-`bld_contruction_a.png`와 `bld_construction_b.png`는 폴더에 있지만 지도에서는 선택하지 않는 공사 에셋입니다. [전체 건물 색상 테스트](debug/building-color-test.html)는 사용 중인 건물 64개와 공사 에셋 2개, 총 PNG 66개를 표시하며, 공사 에셋의 마스크는 투명합니다. 통합·폐지된 건물 32개는 표시하지 않습니다.
+`bld_contruction_a.png`와 `bld_construction_b.png`는 폴더에 있지만 지도에서는 선택하지 않는 공사 에셋입니다. [전체 건물 색상 테스트](debug/building-color-test/building-color-test.html)는 사용 중인 건물 64개와 공사 에셋 2개, 총 PNG 66개를 표시하며, 공사 에셋의 마스크는 투명합니다. 통합·폐지된 건물 32개는 표시하지 않습니다.

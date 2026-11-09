@@ -13,4 +13,4 @@
 - `fruitstand`는 외부 측면 패널만 포함합니다. 진열 공간·상품·상자·기둥·바닥은 제외합니다.
 - 공사 에셋 두 개는 벽면이 없으므로 마스크 전체가 투명합니다.
 
-`debug/building-color-test.html`의 **마스크 강조**에서 실제 선택 영역을 원본 위에 표시해 확인할 수 있습니다.
+`debug/building-color-test/building-color-test.html`의 **마스크 강조**에서 실제 선택 영역을 원본 위에 표시해 확인할 수 있습니다.

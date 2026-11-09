@@ -23,13 +23,14 @@
 | `homepage/category-manager.js` | 카테고리 생성·이름 수정·순서 이동·삭제 확인 |
 | `debug/` | 개발자용 정적 디버그 도구 모음. 앱 저장소나 Chrome API를 사용하지 않음 |
 | `debug/index.html` | 디버그 도구 진입 페이지 |
-| `debug/building-color-test.html` | 사용 중인 건물과 공사 에셋의 벽면 색상·명도, 잔디 색을 시험하는 페이지 |
+| `debug/debug.css` | 디버그 도구 목록과 건물 색상 테스트의 공통 레이아웃·테마 스타일 |
+| `debug/building-color-test/` | 사용 중인 건물과 공사 에셋의 벽면 색상·명도, 잔디 색을 시험하는 페이지와 전용 CSS·JS |
+| `debug/ui-preview/` | daisyUI 부품 모음과 Tailwind CSS 4·CLI 4·daisyUI 5 스타일 빌드 공간. 미리보기용 생성 CSS와 빌드 설정·잠금 파일·설명 포함 |
+| `debug/ui-preview/src/` | `input.css`는 미리보기 빌드 진입점, `app.css`는 서비스 빌드 진입점, `daisyui.css`는 기본 플러그인 설정, `theme.css`는 Export 테마, `additional.css`는 미리보기 개별 스타일 |
+| `debug/ui-preview/preview.html` | 고정 샘플 컴포넌트와 상태 확인. 저장소에 포함된 `preview.generated.css`를 로드하므로 열 때 별도 빌드가 필요 없음 |
 | `demo/seed-data.js` | 화면 로직과 분리된 시연용 카테고리 4개·북마크 8개 |
 | `style.css` | 두 페이지가 공유하는 디자인 토큰(CSS 변수)과 기본 스타일 |
-| `ui-preview/` | Tailwind CSS 4·CLI 4·daisyUI 5 스타일 작업 및 빌드 공간. 미리보기와 서비스용 정적 CSS를 같은 테마에서 생성하며 전용 npm 설정·잠금 파일·Biome 설정·사용 설명 포함 |
-| `ui-preview/src/` | `input.css`는 미리보기 빌드 진입점, `app.css`는 서비스 빌드 진입점, `daisyui.css`는 기본 플러그인 설정, `theme.css`는 Export 테마, `additional.css`는 미리보기 개별 스타일 |
-| `ui-preview/preview.html` | 고정 샘플 컴포넌트와 상태 확인. 생성된 `dist/styles.css`만 로드하며 프로젝트 기능·데이터를 사용하지 않음 |
-| `daisyui.generated.css` | `homepage/`와 `popup/`이 사용하는 daisyUI 정적 번들. `ui-preview/src/app.css`에서 자동 생성하며 직접 수정하지 않음 |
+| `daisyui.generated.css` | `homepage/`와 `popup/`이 사용하는 daisyUI 정적 번들. `debug/ui-preview/src/app.css`에서 자동 생성하며 직접 수정하지 않음 |
 | `assets/` | 아이콘과 건물 이미지. `assets/Isometric City/`는 지도에 쓰는 도로·바닥 타일과 건물. `wall-mask-buildings/`는 건물 에셋별 벽면 마스크. 출처는 README.md |
 | `biome.json` | 포맷·린트 설정 |
 | `.github/workflows/biome.yml` | PR과 `main` push 때 Biome 검사 |
@@ -43,7 +44,7 @@
 
 ## 호출 관계
 
-`ui-preview/src/input.css`는 기본 플러그인 설정·테마·추가 스타일 CSS를 불러오고 `preview.html`의 클래스를 탐색해 `ui-preview/dist/styles.css`를 생성합니다. `ui-preview/src/app.css`는 같은 플러그인과 테마를 불러오고 `homepage/`와 `popup/`의 클래스를 탐색해 루트의 `daisyui.generated.css`를 생성합니다. 서비스는 이 정적 CSS를 런타임 빌드 없이 로드합니다.
+`debug/ui-preview/src/input.css`는 기본 플러그인 설정·테마·추가 스타일 CSS를 불러오고 UI 부품 모음, 디버그 목록과 건물 색상 테스트 HTML의 클래스를 탐색해 `debug/ui-preview/preview.generated.css`를 생성합니다. 세 디버그 화면은 이 CSS의 `livingtaco` 테마를 공유합니다. 생성된 CSS는 저장소에 포함되므로 디버그 도구를 열 때 npm 설치가 필요하지 않습니다. `debug/ui-preview/src/app.css`는 같은 플러그인과 테마를 불러오고 `homepage/`와 `popup/`의 클래스를 탐색해 루트의 `daisyui.generated.css`를 생성합니다. 서비스도 이 정적 CSS를 런타임 빌드 없이 로드합니다.
 
 ```
 homepage/homepage.js ──> homepage/layout.js (planCity, planRoads)
@@ -57,11 +58,11 @@ popup/popup.js ──> chrome.tabs.query (현재 탭 제목·URL)
 popup/popup.js ──> shared/category-select.js / shared/validation.js
 homepage/category-manager.js ──> db/db.js
 homepage/homepage.js ──> shared/
-debug/building-color-test.js ──> assets/Isometric City/Buildings/ 및 벽면 마스크 이미지
-debug/building-color-test.js ──> homepage/category-colors.js (벽면 명도 보정)
+debug/building-color-test/building-color-test.js ──> assets/Isometric City/Buildings/ 및 벽면 마스크 이미지
+debug/building-color-test/building-color-test.js ──> homepage/category-colors.js (벽면 명도 보정)
 ```
 
-`debug/building-color-test.js`는 사용 중인 건물 64개와 공사 에셋 2개의 파일명을 정적으로 나열하고 카드를 만들어 색상을 미리 봅니다. 통합·폐지된 주택 32개는 표시하지 않습니다. 입력 색상은 페이지 안에서만 적용하며 데이터베이스에 저장하지 않습니다.
+`debug/building-color-test/building-color-test.js`는 사용 중인 건물 64개와 공사 에셋 2개의 파일명을 정적으로 나열하고 카드를 만들어 색상을 미리 봅니다. 통합·폐지된 주택 32개는 표시하지 않습니다. 입력 색상은 페이지 안에서만 적용하며 데이터베이스에 저장하지 않습니다.
 
 - `db/db.js`가 저장 키와 `bookmarks`, `categories` 싱글턴, 초기화 Promise인 `ready`, 변경 알림 `subscribe`를 제공합니다.
 - 팝업은 `Bookmark`, `Category` 클래스와 `add` API로 현재 페이지를 저장합니다. 새 카테고리 이름은 `shared/validation.js`로 검사하고, 카테고리 목록은 `shared/category-select.js`를 사용합니다. 북마크 이름은 20자, 메모는 50자까지 저장하며 메모는 기존 `memo` 필드에 기록합니다. 홈페이지 폼도 같은 공유 모듈을 사용합니다.

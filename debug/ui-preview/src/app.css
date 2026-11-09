@@ -3,5 +3,5 @@
 @import "./daisyui.css";
 @import "./theme.css";
 
-@source "../../homepage";
-@source "../../popup";
+@source "../../../homepage";
+@source "../../../popup";

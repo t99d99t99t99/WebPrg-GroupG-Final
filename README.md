@@ -48,15 +48,15 @@ gh auth login               # 처음 한 번, GitHub 계정으로 로그인
 
 ## daisyUI 스타일 빌드와 미리보기
 
-스타일 작업과 서비스용 daisyUI CSS 빌드는 별도 [daisyUI 미리보기 사용 설명](ui-preview/README.md)을 따릅니다. 의존성은 `ui-preview/`에만 설치하고, 서비스 화면은 미리 생성한 루트의 `daisyui.generated.css`를 정적으로 불러옵니다.
+디버그 도구의 **daisyUI 부품 모음**은 저장소에 포함된 CSS를 사용하므로 설치나 빌드 없이 열 수 있습니다. 스타일을 수정할 때만 [daisyUI 미리보기 사용 설명](debug/ui-preview/README.md)에 따라 해당 폴더에 의존성을 설치해 CSS를 다시 생성합니다. 서비스 화면은 루트의 `daisyui.generated.css`를 정적으로 불러옵니다.
 
 ```powershell
-cd ui-preview
+cd debug/ui-preview
 npm.cmd ci
 npm.cmd run build:all
 ```
 
-테마 또는 서비스 HTML의 daisyUI 클래스를 바꾸면 `npm.cmd run build:app`으로 서비스 CSS를 다시 생성합니다. 미리보기는 기존 `npm.cmd run build`와 `npm.cmd run watch` 명령을 그대로 사용합니다.
+테마 또는 서비스 HTML의 daisyUI 클래스를 바꾸면 `npm.cmd run build:app`으로 서비스 CSS를 다시 생성합니다. 미리보기 소스를 바꾸면 `npm.cmd run build` 또는 `npm.cmd run watch`로 `preview.generated.css`를 갱신해 함께 반영합니다.
 
 ## 코드 검사 (Biome)
 커밋 전에 바꾼 파일의 포맷과 린트를 맞춥니다. PR을 올리면 GitHub에서 같은 검사가 자동으로 돕니다.
