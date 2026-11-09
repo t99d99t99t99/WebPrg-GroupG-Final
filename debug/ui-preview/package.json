@@ -1,0 +1,17 @@
+{
+  "name": "bookmark-map-ui-preview",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tailwindcss -i ./src/input.css -o ./preview.generated.css",
+    "build:app": "tailwindcss -i ./src/app.css -o ../../daisyui.generated.css --minify",
+    "build:all": "npm run build && npm run build:app",
+    "watch": "tailwindcss -i ./src/input.css -o ./preview.generated.css --watch",
+    "watch:app": "tailwindcss -i ./src/app.css -o ../../daisyui.generated.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.0",
+    "daisyui": "^5.0.0",
+    "tailwindcss": "^4.1.0"
+  }
+}

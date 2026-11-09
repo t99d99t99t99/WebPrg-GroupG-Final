@@ -1,15 +1,17 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" data-theme="livingtaco">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>전체 건물 색상 테스트 — 새로고침</title>
+        <link rel="stylesheet" href="../ui-preview/preview.generated.css">
+        <link rel="stylesheet" href="../debug.css">
         <link rel="stylesheet" href="./building-color-test.css">
     </head>
-    <body>
+    <body class="bg-base-200 text-base-content">
         <main class="page debug-page">
-            <a class="debug-back" href="./index.html">← 디버그 도구</a>
-            <header class="page-heading">
+            <header class="page-heading debug-header">
+                <a class="btn btn-ghost btn-sm mb-4" href="../index.html">← 디버그 도구</a>
                 <p class="eyebrow">BUILDING COLOR TEST</p>
                 <h1>전체 건물 색상 테스트</h1>
                 <p>사용 중인 건물과 공사 에셋의 원본 색상, 벽 마스크, 파손 상태, a/b 방향을 비교합니다. 통합·폐지된 건물은 제외하며, 조절은 이 미리보기에만 적용됩니다.</p>
@@ -19,9 +21,9 @@
                 <section class="building-browser" aria-label="건물 에셋">
                     <div class="asset-toolbar">
                         <label class="asset-search-label" for="assetSearch">건물 이름 검색</label>
-                        <input id="assetSearch" class="asset-search" type="search" placeholder="예: clinic, damaged">
+                        <input id="assetSearch" class="input input-sm asset-search" type="search" placeholder="예: clinic, damaged">
                         <label class="asset-family-label" for="familyFilter">계열</label>
-                        <select id="familyFilter" class="asset-family-filter">
+                        <select id="familyFilter" class="select select-sm asset-family-filter">
                             <option value="all">전체</option>
                             <option value="homes">주택 계열</option>
                             <option value="food-market">먹거리 상점</option>
@@ -42,7 +44,7 @@
                         </div>
                     </div>
                     <label class="preview-mode-label" for="previewMode">표시 방식</label>
-                    <select id="previewMode" class="preview-mode">
+                    <select id="previewMode" class="select select-sm preview-mode">
                         <option value="color">색상 적용</option>
                         <option value="mask">마스크 강조</option>
                         <option value="original">원본</option>
@@ -84,7 +86,7 @@
                         </label>
                     </section>
                     <div class="grass-demo">
-                        <span class="grass-demo-tile"><img src="../assets/Isometric%20City/Roads%20and%20Grounds/tile_ground_grass.png" alt=""><i class="grass-demo-tint" aria-hidden="true"></i><i class="grass-demo-light" aria-hidden="true"></i></span>
+                        <span class="grass-demo-tile"><img src="../../assets/Isometric%20City/Roads%20and%20Grounds/tile_ground_grass.png" alt=""><i class="grass-demo-tint" aria-hidden="true"></i><i class="grass-demo-light" aria-hidden="true"></i></span>
                         <span>잔디 미리보기</span>
                     </div>
                     <p class="picker-note">외부 벽면과 상점 지붕 테두리·문틀·창틀·벽 접합부에 색을 적용합니다. 벽돌 줄눈·유리·문짝·차양·상품·지붕 중앙 바닥은 제외합니다. 어두운 색은 파손 얼룩의 명암을 남기도록 밝기 보정을 제한합니다. 이 페이지에서 바꾼 값은 저장되지 않습니다.</p>

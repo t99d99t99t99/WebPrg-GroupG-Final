@@ -4,3 +4,5 @@
 @import "./additional.css";
 
 @source "../preview.html";
+@source "../../index.html";
+@source "../../building-color-test/building-color-test.html";

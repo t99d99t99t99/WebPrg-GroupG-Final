@@ -1,4 +1,4 @@
-import { wallColorAdjustments } from "../homepage/category-colors.js";
+import { wallColorAdjustments } from "../../homepage/category-colors.js";
 
 const BUILDING_FILES = [
     "bld_autoshop_a.png",
@@ -127,11 +127,11 @@ function createAssetCard(file) {
     const sprite = document.createElement("div");
     sprite.className = "asset-sprite";
     sprite.dataset.houseSize = size;
-    const maskPath = `../assets/wall-mask-buildings/wall-mask-${file}`;
+    const maskPath = `../../assets/wall-mask-buildings/wall-mask-${file}`;
     sprite.style.setProperty("--wall-mask", `url("${maskPath}")`);
 
     const image = document.createElement("img");
-    image.src = `../assets/Isometric%20City/Buildings/${file}`;
+    image.src = `../../assets/Isometric%20City/Buildings/${file}`;
     image.alt = `${readableName(file)} 원본 건물`;
     image.loading = "lazy";
     image.draggable = false;

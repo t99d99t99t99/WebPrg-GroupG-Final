@@ -1,25 +1,37 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" data-theme="livingtaco">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>디버그 옵션 — 새로고침</title>
-        <link rel="stylesheet" href="../style.css">
-        <link rel="stylesheet" href="./building-color-test.css">
+        <link rel="stylesheet" href="./ui-preview/preview.generated.css">
+        <link rel="stylesheet" href="./debug.css">
     </head>
-    <body>
+    <body class="bg-base-200 text-base-content">
         <main class="debug-home">
-            <p class="eyebrow">DEVELOPER DEBUG OPTIONS</p>
-            <h1>디버그 도구</h1>
-            <p>확장프로그램 화면에 반영되지 않는 개발용 미리보기입니다.</p>
-            <a class="debug-tool-card" href="./building-color-test.html">
-                <span class="debug-tool-icon" aria-hidden="true">◈</span>
-                <span>
-                    <strong>전체 건물 색상 테스트</strong>
-                    <small>건물 에셋과 벽면 마스크에 색을 적용해 확인합니다.</small>
-                </span>
-                <span class="debug-tool-arrow" aria-hidden="true">→</span>
-            </a>
+            <header class="debug-header">
+                <p class="eyebrow">DEVELOPER DEBUG OPTIONS</p>
+                <h1>디버그 도구</h1>
+                <p>확장프로그램 화면에 반영되지 않는 개발용 미리보기입니다.</p>
+            </header>
+            <div class="debug-tools">
+                <a class="debug-tool-card" href="./building-color-test/building-color-test.html">
+                    <span class="debug-tool-icon" aria-hidden="true">◈</span>
+                    <span>
+                        <strong>전체 건물 색상 테스트</strong>
+                        <small>건물 에셋과 벽면 마스크에 색을 적용해 확인합니다.</small>
+                    </span>
+                    <span class="debug-tool-arrow" aria-hidden="true">→</span>
+                </a>
+                <a class="debug-tool-card" href="./ui-preview/preview.html">
+                    <span class="debug-tool-icon" aria-hidden="true">◈</span>
+                    <span>
+                        <strong>daisyUI 부품 모음</strong>
+                        <small>같은 테마의 버튼과 입력 등 UI 부품을 비교합니다.</small>
+                    </span>
+                    <span class="debug-tool-arrow" aria-hidden="true">→</span>
+                </a>
+            </div>
         </main>
     </body>
 </html>

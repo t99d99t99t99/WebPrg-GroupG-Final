@@ -2,7 +2,7 @@
     "root": false,
     "extends": "//",
     "files": {
-        "includes": ["**", "!**/*.md", "!**/package-lock.json"]
+        "includes": ["**", "!**/*.md", "!**/package-lock.json", "!preview.generated.css"]
     },
     "css": {
         "parser": {
