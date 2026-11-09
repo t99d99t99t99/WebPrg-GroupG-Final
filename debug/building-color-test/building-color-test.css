@@ -220,6 +220,10 @@
 }
 
 .picker-section {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -765,6 +769,9 @@
 
     .picker-section {
         grid-row: 1;
+        position: static;
+        max-height: none;
+        overflow: visible;
     }
 
     .picker,
@@ -938,15 +945,25 @@
     border-radius: 0;
 }
 
-.mask-editor kbd,
-.mask-editor-shortcut {
+.mask-editor kbd {
+    display: inline-block;
+    min-width: 1.35em;
+    padding: 0.05em 0.3em;
+    border: 1px solid currentColor;
+    border-radius: 0.3em;
+    box-shadow: 0 1px 0 currentColor;
     color: inherit;
-    opacity: 0.7;
-    font-size: 0.75em;
+    font-size: 0.75rem;
+    text-align: center;
 }
 
-.mask-editor-toolbar label:not(.mask-editor-grid-toggle) {
-    margin-left: 0.5rem;
+.mask-editor-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.4rem;
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-field);
 }
 
 .mask-editor-opacity {
@@ -961,20 +978,70 @@
     display: flex;
     align-items: center;
     gap: 0.35rem;
-    margin-left: 0.5rem;
 }
 
 .mask-editor-grid-toggle input {
     accent-color: var(--color-primary);
 }
 
-.mask-editor-scroll {
+.mask-editor-views {
+    display: flex;
+    gap: 0.75rem;
     flex: 1 1 auto;
     min-height: 0;
+}
+
+.mask-editor-scroll {
+    flex: 1 1 auto;
+    min-width: 0;
     overflow: auto;
     border: 1px solid var(--color-base-300);
     border-radius: var(--radius-field);
     background: var(--color-base-200);
+}
+
+.mask-overview {
+    flex: 0 0 200px;
+    min-width: 0;
+    overflow: auto;
+    padding: 0.5rem;
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-field);
+    font-size: 0.875rem;
+}
+
+.mask-overview input {
+    width: 100%;
+    accent-color: var(--color-primary);
+}
+
+.mask-overview-preview {
+    overflow: auto;
+}
+
+.mask-overview-image {
+    position: relative;
+    width: max-content;
+    zoom: var(--overview-scale, 1);
+}
+
+.mask-editor .mask-overview .mask-overview-image img {
+    display: block;
+    max-width: none;
+    image-rendering: pixelated;
+}
+
+.mask-overview-image canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+    pointer-events: none;
+}
+
+.mask-overview-image.show-original canvas {
+    opacity: 0;
 }
 
 .mask-editor-stage {
@@ -1055,8 +1122,7 @@
         padding: 1rem;
     }
 
-    .mask-editor-toolbar label:not(.mask-editor-grid-toggle),
-    .mask-editor-grid-toggle {
-        margin-left: 0;
+    .mask-overview {
+        flex-basis: 120px;
     }
 }
