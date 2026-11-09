@@ -32,6 +32,13 @@
                         </select>
                         <output id="assetCount" class="asset-count" aria-live="polite"></output>
                     </div>
+                    <div class="mask-downloads">
+                        <p id="maskChanges" aria-live="polite">변경된 마스크 0개</p>
+                        <button id="maskDownloadChanged" class="btn btn-sm" type="button" disabled>변경된 파일 모두 다운로드</button>
+                        <button id="maskDownloadAll" class="btn btn-sm" type="button">전체 파일 다운로드</button>
+                    </div>
+                    <p id="maskDownloadStatus" class="mask-download-status" role="status" aria-live="polite"></p>
+                    <p id="maskStorageWarning" class="mask-download-status" role="alert"></p>
                     <div id="assetGrid" class="building-grid"></div>
                 </section>
 
@@ -93,6 +100,58 @@
                 </aside>
             </div>
         </main>
+        <dialog id="maskEditor" class="mask-editor" aria-labelledby="maskEditorTitle" aria-describedby="maskEditorHelp">
+            <header class="mask-editor-header">
+                <div>
+                    <h2 id="maskEditorTitle">마스크 편집</h2>
+                    <p id="maskEditorFile" class="mask-editor-file"></p>
+                </div>
+                <button id="maskEditorClose" class="btn btn-ghost btn-sm" type="button">닫기</button>
+            </header>
+            <p id="maskEditorHelp" class="mask-editor-help">분홍색은 착색 영역입니다. 방향키로 픽셀을 선택하고 스페이스로 칠할 수 있습니다.</p>
+            <section class="mask-editor-toolbar" aria-label="마스크 편집 도구">
+                <fieldset class="mask-editor-tools" aria-label="편집 도구">
+                    <button id="maskPaint" class="btn btn-sm btn-primary" type="button" aria-pressed="true">칠하기</button>
+                    <button id="maskErase" class="btn btn-sm" type="button" aria-pressed="false">지우기</button>
+                    <button id="maskSelect" class="btn btn-sm" type="button" aria-pressed="false" aria-keyshortcuts="S">픽셀 선택 <kbd>S</kbd></button>
+                </fieldset>
+                <button id="maskCopyOpacity" class="btn btn-sm" type="button" aria-keyshortcuts="I">선택 픽셀 불투명도 복사 <kbd>I</kbd></button>
+                <label for="maskOpacity">칠하기 불투명도</label>
+                <input id="maskOpacity" class="input input-sm mask-editor-opacity" type="number" min="0" max="100" step="0.01" value="100"> <span>%</span>
+                <label for="maskZoom">확대 <span class="mask-editor-shortcut">+/−</span></label>
+                <button id="maskZoomOut" class="btn btn-sm" type="button" aria-label="축소" aria-keyshortcuts="-">−</button>
+                <select id="maskZoom" class="select select-sm mask-editor-zoom">
+                    <option value="4">4배</option>
+                    <option value="6" selected>6배</option>
+                    <option value="8">8배</option>
+                    <option value="12">12배</option>
+                </select>
+                <button id="maskZoomIn" class="btn btn-sm" type="button" aria-label="확대" aria-keyshortcuts="Shift+Equal">+</button>
+                <label class="mask-editor-grid-toggle"><input id="maskGrid" type="checkbox" checked> 격자</label>
+                <label class="mask-editor-grid-toggle"><input id="maskOriginal" type="checkbox" aria-keyshortcuts="O"> 원본 보기 <kbd>O</kbd></label>
+            </section>
+            <div class="mask-editor-scroll">
+                <div id="maskEditorStage" class="mask-editor-stage">
+                    <img id="maskEditorImage" class="mask-editor-image" alt="" draggable="false">
+                    <canvas id="maskEditorCanvas" class="mask-editor-canvas" tabindex="0" aria-label="마스크 픽셀 편집 영역"></canvas>
+                    <span id="maskEditorGrid" class="mask-editor-grid" aria-hidden="true"></span>
+                    <span id="maskEditorCursor" class="mask-editor-cursor" aria-hidden="true" hidden></span>
+                </div>
+            </div>
+            <div class="mask-editor-footer">
+                <div>
+                    <p id="maskPixelInfo" class="mask-editor-pixel-info"></p>
+                    <p id="maskEditorStatus" role="status" aria-live="polite"></p>
+                </div>
+                <div class="mask-editor-actions">
+                    <button id="maskUndo" class="btn btn-sm" type="button" disabled>실행 취소</button>
+                    <button id="maskRedo" class="btn btn-sm" type="button" disabled>다시 실행</button>
+                    <button id="maskSave" class="btn btn-sm" type="button" disabled>이 파일만 저장</button>
+                    <button id="maskDone" class="btn btn-sm btn-primary" type="button" disabled>완료</button>
+                </div>
+            </div>
+            <p class="mask-editor-help">완료하면 변경 내용이 현재 탭 세션에 유지됩니다. 저장하거나 다운로드한 PNG를 <code>assets/wall-mask-buildings/</code>의 같은 이름으로 교체하면 앱에도 적용됩니다.</p>
+        </dialog>
         <script type="module" src="./building-color-test.js"></script>
     </body>
 </html>

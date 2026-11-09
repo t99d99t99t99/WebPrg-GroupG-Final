@@ -1,4 +1,6 @@
 import { wallColorAdjustments } from "../../homepage/category-colors.js";
+import { createMaskArchive } from "./mask-archive.js";
+import { createMaskEditor } from "./mask-editor.js";
 
 const BUILDING_FILES = [
     "bld_autoshop_a.png",
@@ -73,6 +75,11 @@ const assetGrid = document.getElementById("assetGrid");
 const assetCount = document.getElementById("assetCount");
 const assetSearch = document.getElementById("assetSearch");
 const familyFilter = document.getElementById("familyFilter");
+const maskChanges = document.getElementById("maskChanges");
+const maskDownloadChanged = document.getElementById("maskDownloadChanged");
+const maskDownloadAll = document.getElementById("maskDownloadAll");
+const maskDownloadStatus = document.getElementById("maskDownloadStatus");
+const maskStorageWarning = document.getElementById("maskStorageWarning");
 const square = document.getElementById("colorSquare");
 const handle = document.getElementById("colorHandle");
 const hueRange = document.getElementById("hueRange");
@@ -128,7 +135,7 @@ function createAssetCard(file) {
     sprite.className = "asset-sprite";
     sprite.dataset.houseSize = size;
     const maskPath = `../../assets/wall-mask-buildings/wall-mask-${file}`;
-    sprite.style.setProperty("--wall-mask", `url("${maskPath}")`);
+    sprite.style.setProperty("--wall-mask", `url("${maskEditor.getDraft(file) ?? maskPath}")`);
 
     const image = document.createElement("img");
     image.src = `../../assets/Isometric%20City/Buildings/${file}`;
@@ -150,7 +157,13 @@ function createAssetCard(file) {
     title.textContent = readableName(file);
     const meta = document.createElement("span");
     meta.textContent = family === "other" ? "공사 에셋 · 벽면 없음" : `${familyLabel(family)} · ${sizeLabel(size)}`;
-    caption.append(title, meta);
+    const edit = document.createElement("button");
+    edit.type = "button";
+    edit.className = "btn btn-sm asset-edit";
+    edit.textContent = "마스크 편집";
+    edit.setAttribute("aria-label", `${readableName(file)} 마스크 편집`);
+    edit.addEventListener("click", () => maskEditor.open({ file, sprite, imageUrl: image.src, maskPath }));
+    caption.append(title, meta, edit);
     card.append(preview, caption);
     return card;
 }
@@ -165,8 +178,59 @@ function sizeLabel(size) {
     return { small: "1단계", medium: "2단계", tall: "3단계" }[size];
 }
 
+let changedMasks = 0;
+let downloadingMasks = false;
+function updateMaskDownloads(count) {
+    changedMasks = count;
+    maskChanges.textContent = `변경된 마스크 ${count}개`;
+    maskDownloadChanged.disabled = downloadingMasks || count === 0;
+    maskDownloadAll.disabled = downloadingMasks;
+}
+
+const maskEditor = createMaskEditor({
+    files: BUILDING_FILES,
+    onChange: updateMaskDownloads,
+    onStorageError: (message) => {
+        maskStorageWarning.textContent = message;
+    },
+});
 for (const file of BUILDING_FILES) assetGrid.append(createAssetCard(file));
 const cards = [...assetGrid.children];
+
+async function downloadMasks(changedOnly) {
+    if (downloadingMasks) return;
+    const files = changedOnly ? BUILDING_FILES.filter((file) => maskEditor.isChanged(file)) : BUILDING_FILES;
+    if (!files.length) return;
+    downloadingMasks = true;
+    updateMaskDownloads(changedMasks);
+    maskDownloadStatus.textContent = `마스크 ${files.length}개를 준비하고 있습니다.`;
+    try {
+        const entries = await Promise.all(
+            files.map(async (file) => {
+                const url = maskEditor.getDraft(file) ?? `../../assets/wall-mask-buildings/wall-mask-${file}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`마스크를 불러오지 못했습니다: ${file}`);
+                return { name: `wall-mask-${file}`, bytes: new Uint8Array(await response.arrayBuffer()) };
+            }),
+        );
+        const url = URL.createObjectURL(createMaskArchive(entries));
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = changedOnly ? "changed-wall-masks.zip" : "all-wall-masks.zip";
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        maskDownloadStatus.textContent = `마스크 ${files.length}개 다운로드를 요청했습니다.`;
+    } catch (error) {
+        console.error(error);
+        maskDownloadStatus.textContent = "마스크를 다운로드하지 못했습니다. 다시 시도해 주세요.";
+    } finally {
+        downloadingMasks = false;
+        updateMaskDownloads(changedMasks);
+    }
+}
+
+maskDownloadChanged.addEventListener("click", () => downloadMasks(true));
+maskDownloadAll.addEventListener("click", () => downloadMasks(false));
 
 function filterAssets() {
     const query = assetSearch.value.trim().toLowerCase();
