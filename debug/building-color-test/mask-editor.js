@@ -1,4 +1,5 @@
 const MAX_HISTORY = 30;
+const ZOOM_LEVELS = [4, 6, 8, 12, 16, 24, 32, 48, 64];
 const DRAFT_STORAGE_KEY = "debug-mask-editor-drafts-v1";
 
 function element(id) {
@@ -77,6 +78,12 @@ export function createMaskEditor({ files = null, onChange = () => {}, onStorageE
     const redo = element("maskRedo");
     const save = element("maskSave");
     const done = element("maskDone");
+    const overview = element("maskOverview");
+    const overviewImage = element("maskOverviewImage");
+    const overviewCanvas = element("maskOverviewCanvas");
+    const overviewContext = overviewCanvas.getContext("2d");
+    const overviewScale = element("maskOverviewScale");
+    const overviewValue = element("maskOverviewValue");
     const maskCanvas = document.createElement("canvas");
     const maskContext = maskCanvas.getContext("2d");
     const sessions = new Map();
@@ -109,6 +116,7 @@ export function createMaskEditor({ files = null, onChange = () => {}, onStorageE
     let originalVisible = false;
     let copiedAlpha = null;
     let pointer = null;
+    let keyboardStroke = null;
     let cursorPosition = { x: 0, y: 0 };
     let opening = 0;
 
@@ -123,8 +131,8 @@ export function createMaskEditor({ files = null, onChange = () => {}, onStorageE
         done.disabled = !current;
         original.disabled = !current;
         copyOpacity.disabled = !current;
-        zoomOut.disabled = !current || Number(zoom.value) <= 4;
-        zoomIn.disabled = !current || Number(zoom.value) >= 12;
+        zoomOut.disabled = !current || Number(zoom.value) <= ZOOM_LEVELS[0];
+        zoomIn.disabled = !current || Number(zoom.value) >= ZOOM_LEVELS.at(-1);
         paint.setAttribute("aria-pressed", String(tool === "paint"));
         erase.setAttribute("aria-pressed", String(tool === "erase"));
         select.setAttribute("aria-pressed", String(tool === "select"));
@@ -181,6 +189,8 @@ export function createMaskEditor({ files = null, onChange = () => {}, onStorageE
             data.data[i + 3] = Math.round(current.pixels[i + 3] * 0.65);
         }
         context.putImageData(data, 0, 0);
+        overviewContext.putImageData(data, 0, 0);
+        overview.classList.toggle("show-original", originalVisible);
         const scale = Number(zoom.value);
         stage.style.width = `${current.width * scale}px`;
         stage.style.height = `${current.height * scale}px`;
@@ -216,8 +226,7 @@ export function createMaskEditor({ files = null, onChange = () => {}, onStorageE
         };
     }
 
-    function alphaForTool() {
-        if (tool === "erase") return 0;
+    function paintAlpha() {
         if (copiedAlpha !== null) return copiedAlpha;
         const value = Number(opacity.value);
         return Math.round((Math.max(0, Math.min(100, Number.isFinite(value) ? value : 100)) / 100) * 255);
@@ -241,23 +250,37 @@ export function createMaskEditor({ files = null, onChange = () => {}, onStorageE
 
     function changeZoom(step) {
         if (!current) return;
-        const levels = [4, 6, 8, 12];
-        const index = levels.indexOf(Number(zoom.value));
-        zoom.value = String(levels[Math.max(0, Math.min(levels.length - 1, index + step))]);
+        const index = ZOOM_LEVELS.indexOf(Number(zoom.value));
+        zoom.value = String(ZOOM_LEVELS[Math.max(0, Math.min(ZOOM_LEVELS.length - 1, index + step))]);
         render();
         setStatus(`확대 ${zoom.value}배`);
     }
 
-    function draw(from, to) {
+    function draw(from, to, alpha = tool === "erase" ? 0 : paintAlpha()) {
         cursorPosition = to;
         showCursor();
-        const changed = paintMaskLine(current.pixels, current.width, current.height, from, to, alphaForTool());
+        const changed = paintMaskLine(current.pixels, current.width, current.height, from, to, alpha);
         if (changed) {
             current.dirty = true;
             render();
         }
-        setStatus(`픽셀 ${to.x}, ${to.y} · ${tool === "paint" ? "칠하기" : "지우기"}`);
+        setStatus(`픽셀 ${to.x}, ${to.y} · ${alpha === 0 ? "지우기" : "칠하기"}`);
         return changed;
+    }
+
+    function finishKeyboardStroke() {
+        if (!keyboardStroke || !current) return;
+        if (!keyboardStroke.changed) current.undo.pop();
+        keyboardStroke = null;
+        updateButtons();
+    }
+
+    function keyboardDraw(position, alpha) {
+        if (draw(position, position, alpha)) {
+            keyboardStroke.changed = true;
+            current.redo.length = 0;
+            updatePreview();
+        }
     }
 
     function finishStroke() {
@@ -267,6 +290,7 @@ export function createMaskEditor({ files = null, onChange = () => {}, onStorageE
             updatePreview();
         } else current.undo.pop();
         pointer = null;
+        keyboardStroke = null;
         updateButtons();
     }
 
@@ -326,7 +350,10 @@ export function createMaskEditor({ files = null, onChange = () => {}, onStorageE
             current.sprite = sprite;
             canvas.width = maskCanvas.width = current.width;
             canvas.height = maskCanvas.height = current.height;
+            overviewCanvas.width = current.width;
+            overviewCanvas.height = current.height;
             image.src = imageUrl;
+            overviewImage.src = imageUrl;
             image.width = current.width;
             image.height = current.height;
             cursorPosition = { x: 0, y: 0 };
@@ -362,11 +389,16 @@ export function createMaskEditor({ files = null, onChange = () => {}, onStorageE
     zoomOut.addEventListener("click", () => changeZoom(-1));
     zoomIn.addEventListener("click", () => changeZoom(1));
     zoom.addEventListener("change", render);
+    overviewScale.addEventListener("input", () => {
+        overview.style.setProperty("--overview-scale", String(Number(overviewScale.value) / 100));
+        overviewValue.textContent = `${overviewScale.value}%`;
+    });
     gridToggle.addEventListener("change", render);
     element("maskEditorClose").addEventListener("click", () => dialog.close());
     done.addEventListener("click", () => dialog.close());
     dialog.addEventListener("close", () => {
         finishStroke();
+        finishKeyboardStroke();
         opening++;
     });
     undo.addEventListener("click", () => current && restore(current.undo, current.redo));
@@ -402,7 +434,7 @@ export function createMaskEditor({ files = null, onChange = () => {}, onStorageE
     });
     canvas.addEventListener("focus", () => current && showCursor());
     dialog.addEventListener("keydown", (event) => {
-        if (!current || event.ctrlKey || event.metaKey || event.altKey) return;
+        if (!current || event.altKey) return;
         const target = event.target;
         if (
             (target?.tagName === "INPUT" && target.type !== "checkbox") ||
@@ -410,11 +442,24 @@ export function createMaskEditor({ files = null, onChange = () => {}, onStorageE
             target?.isContentEditable
         )
             return;
+        if (event.ctrlKey || event.metaKey) {
+            if (event.code === "KeyZ" || (event.code === "KeyY" && !event.shiftKey)) {
+                finishKeyboardStroke();
+                if (event.code === "KeyY" || event.shiftKey) restore(current.redo, current.undo);
+                else restore(current.undo, current.redo);
+                event.preventDefault();
+            }
+            return;
+        }
         const key = event.key.toLowerCase();
-        if (event.code === "KeyS") {
-            tool = "select";
+        if (["KeyQ", "KeyW", "KeyE"].includes(event.code)) {
+            tool = { KeyQ: "paint", KeyW: "erase", KeyE: "select" }[event.code];
             updateButtons();
-            setStatus("픽셀 선택 도구");
+            setStatus({ paint: "칠하기 도구", erase: "지우기 도구", select: "픽셀 선택 도구" }[tool]);
+        } else if (/^Digit[0-9]$/.test(event.code) && !event.shiftKey) {
+            opacity.value = String(Number(event.code.slice(-1)) * 10 || 100);
+            copiedAlpha = null;
+            setStatus(`칠하기 불투명도 ${opacity.value}%`);
         } else if (event.code === "KeyO") toggleOriginal();
         else if (event.code === "KeyI") copySelectedOpacity();
         else if (!event.isComposing && (key === "+" || key === "=")) changeZoom(1);
@@ -423,32 +468,41 @@ export function createMaskEditor({ files = null, onChange = () => {}, onStorageE
         event.preventDefault();
     });
     canvas.addEventListener("keydown", (event) => {
-        if (!current) return;
+        if (!current || event.ctrlKey || event.metaKey || event.altKey) return;
         const position = { ...cursorPosition };
         if (event.key === "ArrowLeft") position.x = Math.max(0, position.x - 1);
         else if (event.key === "ArrowRight") position.x = Math.min(current.width - 1, position.x + 1);
         else if (event.key === "ArrowUp") position.y = Math.max(0, position.y - 1);
         else if (event.key === "ArrowDown") position.y = Math.min(current.height - 1, position.y + 1);
-        else if (event.key === " " || event.key === "Enter") {
+        else if (event.code === "Space" || event.key === " ") {
             event.preventDefault();
-            if (tool === "select") {
-                showCursor();
-                setStatus(`픽셀 ${position.x}, ${position.y} 선택됨`);
-                return;
+            if (!keyboardStroke) {
+                historyPush();
+                keyboardStroke = { changed: false };
+                keyboardDraw(position, paintAlpha());
             }
+            return;
+        } else if (event.key === "Delete" || event.key === "Backspace") {
+            event.preventDefault();
+            finishKeyboardStroke();
             historyPush();
-            if (draw(position, position)) {
-                current.redo.length = 0;
-                updatePreview();
-            } else current.undo.pop();
-            updateButtons();
+            keyboardStroke = { changed: false };
+            keyboardDraw(position, 0);
+            finishKeyboardStroke();
             return;
         } else return;
         event.preventDefault();
         cursorPosition = position;
-        showCursor();
-        setStatus(`픽셀 ${position.x}, ${position.y}`);
+        if (keyboardStroke) keyboardDraw(position, paintAlpha());
+        else {
+            showCursor();
+            setStatus(`픽셀 ${position.x}, ${position.y}`);
+        }
     });
+    canvas.addEventListener("keyup", (event) => {
+        if (event.code === "Space" || event.key === " ") finishKeyboardStroke();
+    });
+    canvas.addEventListener("blur", finishKeyboardStroke);
     save.addEventListener("click", async () => {
         if (!current) return;
         const session = current;
