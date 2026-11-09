@@ -541,10 +541,29 @@
 }
 
 .building-grid {
+    --asset-scale: 1;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, max(150px, calc(150px * var(--asset-scale)))), 1fr));
     align-items: stretch;
     gap: 1rem;
+}
+
+.asset-scale-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.asset-scale-control input {
+    width: min(12rem, 50%);
+    accent-color: var(--color-primary);
+}
+
+.asset-scale-control output {
+    min-width: 3rem;
+    font-variant-numeric: tabular-nums;
 }
 
 .mask-downloads {
@@ -580,7 +599,7 @@
 
 .asset-preview {
     display: grid;
-    min-height: 176px;
+    min-height: calc(176px * var(--asset-scale));
     place-items: center;
     overflow: hidden;
     padding: 12px;
@@ -597,6 +616,7 @@
     width: max-content;
     max-width: 100%;
     isolation: isolate;
+    zoom: var(--asset-scale);
 }
 
 .asset-sprite > img {
@@ -653,6 +673,11 @@
 .asset-caption span {
     color: color-mix(in oklab, var(--color-base-content) 70%, transparent);
     font-size: 0.75rem;
+}
+
+.asset-caption .asset-changed {
+    color: var(--color-primary);
+    font-weight: 700;
 }
 
 .preview-mode-label {
