@@ -68,6 +68,21 @@ VS Code를 쓰면 Biome 확장을 설치해 저장할 때 자동으로 맞출 �
 
 ## 에셋 출처
 
+### 확장 프로그램 아이콘
+
+팀이 편집한 [아이콘 전용 Figma 원본](https://www.figma.com/design/c5m3zTylAHEJby2WeHxOiX?node-id=1-2)을 기준으로 제작했습니다. 수정 가능한 SVG는 `assets/icons/source/`에 보관합니다. `symbol.svg`는 단독 집, `city.svg`는 3×3 건물 모음이며, SVG 원본에는 실루엣과 흰색 문 도형이 분리되어 있습니다.
+
+| 파일 | 크기 | 사용 위치 |
+|---|---|---|
+| `assets/icons/icon16.png` | 16×16 | 툴바와 새 탭 파비콘 |
+| `assets/icons/icon32.png` | 32×32 | 고해상도 툴바 |
+| `assets/icons/icon48.png` | 48×48 | 확장 프로그램 관리 화면 |
+| `assets/icons/icon128.png` | 128×128 | 설치 및 대표 아이콘 |
+
+PNG는 바깥 배경과 문이 투명합니다. 16·32px은 파란 집 한 채, 48·128px은 건물 모음을 사용합니다. 설치 후 아이콘이 바로 바뀌지 않으면 `chrome://extensions`에서 이 확장 프로그램을 새로고침하고 새 탭을 다시 엽니다.
+
+### 도시 지도 에셋
+
 아이소메트릭 도시 에셋 출처: [Isometric City - Starter Pack](https://buggystudio.itch.io/isometric-city-starter-pack) by Buggy Studio (`assets/Isometric City/`)
 
 - 라이선스: CC0. 제작자가 itch.io 페이지 댓글에서 "They are CC0. You are free to use on any personal or commercial project."라고 밝혔습니다(페이지 본문에는 별도 라이선스 표기 없음).

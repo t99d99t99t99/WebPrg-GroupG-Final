@@ -9,6 +9,7 @@
 |---|---|
 | `BUILDING_FAMILIES.md` | 사용 중인 5개 건물 계열, 성장 단계별 에셋, 통합·미사용 목록, 이미지·마스크 파일명 규칙 |
 | `manifest.json` | 확장 설정(Manifest V3). 새 탭과 팝업을 연결하고 권한(`storage`, `activeTab`)을 선언 |
+| `assets/icons/` | 확장 프로그램 아이콘 PNG 4종(16·32px 단독 집, 48·128px 건물 모음)과 `source/`의 수정 가능한 SVG 원본. `manifest.json`에서 크기별로 연결하며 새 탭 파비콘은 16px 아이콘을 사용 |
 | `db/` | 저장소 계층. `chrome.storage.local`을 직접 다루는 유일한 곳 |
 | `popup/` | 툴바 아이콘을 누르면 뜨는 팝업. 현재 탭을 카테고리에 저장 |
 | `homepage/` | 새 탭 지도. 카테고리별 자동 도시 배치, 설명 카드, 사이트 방문, 링크 복사 |
