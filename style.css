@@ -88,6 +88,10 @@
     --modal-viewport-inset: var(--space-6);
     --popup-width: 376px;
     --popup-height: 600px;
+    --popup-control-height: 40px;
+    --popup-font-size: 12px;
+    --popup-label-size: 11px;
+    --popup-section-gap: 16px;
     --popup-padding-inline: var(--space-5);
     --popup-padding-block: var(--space-6);
     --icon-button-size-compact: 32px;

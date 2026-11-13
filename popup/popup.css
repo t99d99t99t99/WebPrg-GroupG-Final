@@ -27,7 +27,7 @@
 .popup-heading {
     display: flex;
     min-width: 0;
-    min-height: var(--control-height-md);
+    min-height: var(--popup-control-height);
     flex-shrink: 0;
     align-items: center;
     gap: var(--space-3);
@@ -47,7 +47,7 @@
 .popup-heading h1 {
     margin: 0;
     color: var(--color-text);
-    font-size: var(--font-size-base);
+    font-size: var(--popup-font-size);
     font-weight: var(--font-weight-semibold);
     line-height: var(--line-height-sm);
 }
@@ -63,7 +63,7 @@
 .form-section {
     display: grid;
     width: 100%;
-    margin-top: var(--form-group-gap);
+    margin-top: var(--popup-section-gap);
     gap: var(--control-content-gap);
 }
 
@@ -72,7 +72,7 @@
 .new-category-fields label {
     display: block;
     color: var(--color-text);
-    font-size: var(--font-size-xs);
+    font-size: var(--popup-label-size);
     font-weight: var(--font-weight-semibold);
     line-height: var(--line-height-xs);
 }
@@ -86,7 +86,7 @@
     border-radius: var(--radius-control);
     background: var(--color-canvas);
     color: var(--color-text);
-    font-size: var(--font-size-base);
+    font-size: var(--popup-font-size);
     line-height: var(--line-height-sm);
     box-shadow: var(--shadow-control);
 }
@@ -94,7 +94,7 @@
 .page-name-section input,
 .category-select-trigger,
 .new-category-fields input {
-    min-height: var(--control-height-md);
+    min-height: var(--popup-control-height);
     padding-inline: var(--control-padding-inline);
 }
 
@@ -116,7 +116,7 @@
     min-height: var(--field-message-height);
     margin: 0;
     color: var(--color-error);
-    font-size: var(--font-size-xs);
+    font-size: var(--popup-label-size);
     line-height: var(--line-height-xs);
 }
 
@@ -172,13 +172,13 @@
 .category-options button {
     display: block;
     width: 100%;
-    min-height: var(--space-10);
+    min-height: var(--popup-control-height);
     padding-inline: var(--space-3);
     border: 0;
     border-radius: var(--radius-md);
     background: transparent;
     color: var(--color-text);
-    font-size: var(--font-size-base);
+    font-size: var(--popup-font-size);
     line-height: var(--line-height-sm);
     text-align: left;
     cursor: pointer;
@@ -197,7 +197,7 @@
     border: 0;
     background: transparent;
     color: var(--color-primary);
-    font-size: var(--font-size-xs);
+    font-size: var(--popup-label-size);
     font-weight: var(--font-weight-medium);
     line-height: var(--line-height-xs);
     text-align: left;
@@ -227,18 +227,18 @@
 
 .form-actions {
     display: flex;
-    min-height: var(--control-height-md);
-    margin-top: var(--form-actions-offset);
+    min-height: var(--popup-control-height);
+    margin-top: var(--popup-section-gap);
     gap: var(--space-2);
 }
 
 .cancel-button,
 .save-button {
-    min-height: var(--control-height-md);
+    min-height: var(--popup-control-height);
     flex: 1;
     padding-inline: var(--button-padding-inline-md);
     border-radius: var(--radius-control);
-    font-size: var(--font-size-base);
+    font-size: var(--popup-font-size);
     font-weight: var(--font-weight-semibold);
     line-height: var(--line-height-sm);
     cursor: pointer;
@@ -274,7 +274,7 @@
     min-height: var(--field-message-height);
     margin: var(--space-1) 0 0;
     color: var(--color-text-muted);
-    font-size: var(--font-size-xs);
+    font-size: var(--popup-label-size);
     line-height: var(--line-height-xs);
     text-align: center;
 }
