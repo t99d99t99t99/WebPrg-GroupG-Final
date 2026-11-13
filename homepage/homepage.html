@@ -75,9 +75,9 @@
     <dialog id="bookmark-editor" class="app-dialog bookmark-editor" aria-labelledby="editor-title">
         <form id="edit-form" novalidate>
             <div class="dialog-heading"><h2 id="editor-title">북마크 수정</h2><button id="close-editor" class="icon-button" type="button" aria-label="북마크 수정 닫기">×</button></div>
-            <label class="field-label" for="edit-name">이름</label><input id="edit-name" class="field" aria-describedby="edit-name-error" autocomplete="off"><p id="edit-name-error" class="field-error"></p>
-            <span class="field-label">카테고리</span><div id="edit-category"></div>
-            <label class="field-label url-label" for="edit-url">URL</label><input id="edit-url" class="field" type="url" aria-describedby="edit-url-error"><p id="edit-url-error" class="field-error"></p>
+            <div class="form-group"><label class="field-label" for="edit-name">이름</label><input id="edit-name" class="field" aria-describedby="edit-name-error" autocomplete="off"><p id="edit-name-error" class="field-error"></p></div>
+            <div class="form-group"><span class="field-label">카테고리</span><div id="edit-category"></div></div>
+            <div class="form-group"><label class="field-label" for="edit-url">URL</label><input id="edit-url" class="field" type="url" aria-describedby="edit-url-error"><p id="edit-url-error" class="field-error"></p></div>
             <p id="edit-status" class="field-error" role="status"></p>
             <div class="form-actions"><button id="cancel-editor" class="action" type="button">취소</button><button id="save-editor" class="action action-primary" type="submit">저장</button></div>
         </form>

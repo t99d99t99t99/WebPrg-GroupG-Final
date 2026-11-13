@@ -46,6 +46,13 @@
     --font-size-lg: 17px;
     --font-size-xl: 20px;
     --font-size-display: 23px;
+    --line-height-xs: 16px;
+    --line-height-sm: 20px;
+    --line-height-md: 24px;
+    --line-height-lg: 28px;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
 
     /* Shared geometry */
     --radius-control: var(--radius-field);
@@ -58,8 +65,31 @@
     --border-width-strong: var(--border);
     --border-width-emphasis: 2px;
     --shadow-panel: 0 12px 32px rgb(49 70 60 / 14%);
+    --shadow-card: 0 8px 20px rgb(32 40 35 / 14%);
+    --shadow-control: 0 1px 2px rgb(32 40 35 / 10%);
 
-    /* Shared control and icon sizes */
+    /* Shared component sizing */
+    --control-height-md: 44px;
+    --control-height-lg: 56px;
+    --control-padding-inline: var(--space-4);
+    --button-padding-inline-md: var(--space-5);
+    --button-padding-inline-lg: var(--space-7);
+    --button-min-width: 120px;
+    --control-content-gap: var(--space-2);
+    --form-group-gap: var(--space-6);
+    --form-actions-offset: var(--space-8);
+    --field-message-height: var(--space-5);
+    --textarea-min-height: 112px;
+    --card-padding: var(--space-6);
+    --modal-padding: var(--space-8);
+    --modal-width-sm: 360px;
+    --modal-width-md: 440px;
+    --modal-width-lg: 640px;
+    --modal-viewport-inset: var(--space-6);
+    --popup-width: 376px;
+    --popup-height: 600px;
+    --popup-padding-inline: var(--space-5);
+    --popup-padding-block: var(--space-6);
     --icon-button-size-compact: 32px;
     --icon-button-size-default: 44px;
     --icon-size-compact: 18px;

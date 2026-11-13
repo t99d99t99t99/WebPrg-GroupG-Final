@@ -39,7 +39,6 @@ function validateBookmarkName() {
 function validateNewCategory() {
     const error = getCategoryError(newCategoryName.value, savedCategories);
     showFieldError(newCategoryName, $("newCategoryNameError"), error);
-    existingCategoryButton.style.top = error ? "68px" : "";
     return !error;
 }
 
@@ -50,7 +49,6 @@ function showCategorySelectionError(message) {
     trigger.setAttribute("aria-describedby", error.id);
     error.textContent = message;
     error.hidden = !message;
-    newCategoryButton.style.top = message ? "92px" : "";
 }
 
 function validateMemo() {
@@ -81,7 +79,6 @@ function setCategoryMode(createNew) {
     showCategorySelectionError("");
     if (!createNew) {
         showFieldError(newCategoryName, $("newCategoryNameError"), "");
-        existingCategoryButton.style.top = "";
     }
     showStatus("");
     if (createNew) newCategoryName.focus();
