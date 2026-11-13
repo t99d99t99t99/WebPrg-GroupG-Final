@@ -39,8 +39,12 @@ function element(tag, className, text) {
 
 function fitCanvas() {
     // Fill the window width; adapt the map and panel to the available height.
-    const scale = innerWidth / 1920;
+    const designCanvasWidth = Number.parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue("--design-canvas-width"),
+    );
+    const scale = innerWidth / designCanvasWidth;
     const canvasHeight = Math.max(600, innerHeight / scale);
+    document.documentElement.style.setProperty("--homepage-scale", String(scale));
     $("canvas").style.transform = `scale(${scale})`;
     $("canvas").style.height = `${canvasHeight}px`;
     $("viewport").style.width = `${innerWidth}px`;
@@ -526,7 +530,7 @@ function positionColorPicker(trigger) {
     const scaleX = bounds.width / canvas.offsetWidth,
         scaleY = bounds.height / canvas.offsetHeight;
     picker.style.left = `${Math.max(8, (anchor.left - bounds.left) / scaleX - picker.offsetWidth - 10)}px`;
-    picker.style.top = `${Math.max(8, (anchor.top - bounds.top + anchor.height / 2) / scaleY - picker.offsetHeight / 2)}px`;
+    picker.style.top = `${Math.max(8, (anchor.top - bounds.top) / scaleY)}px`;
 }
 
 function updatePickerColor(color) {

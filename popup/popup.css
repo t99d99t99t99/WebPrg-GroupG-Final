@@ -16,18 +16,19 @@
     display: flex;
     flex-direction: column;
     margin: 0;
-    padding: var(--popup-padding-block) var(--popup-padding-inline);
+    padding: var(--popup-padding-block-start) var(--popup-padding-inline) var(--popup-padding-block-end);
     overflow-y: auto;
-    scrollbar-gutter: stable;
-    border: var(--border-width) solid var(--color-primary-border);
+    border: var(--border-width-strong) solid var(--color-primary-border);
     border-radius: var(--radius-panel);
     background: var(--color-canvas);
+    box-shadow: var(--shadow-card);
 }
 
 .popup-heading {
     display: flex;
     min-width: 0;
-    min-height: var(--popup-control-height);
+    height: var(--popup-header-height);
+    min-height: var(--popup-header-height);
     flex-shrink: 0;
     align-items: center;
     gap: var(--space-3);
@@ -35,9 +36,9 @@
 
 .popup-logo {
     display: grid;
-    width: var(--icon-button-size-compact);
-    height: var(--icon-button-size-compact);
-    flex: 0 0 var(--icon-button-size-compact);
+    width: var(--popup-header-icon-size);
+    height: var(--popup-header-icon-size);
+    flex: 0 0 var(--popup-header-icon-size);
     place-items: center;
     border-radius: var(--radius-selection);
     background: var(--color-primary-border);
@@ -47,7 +48,7 @@
 .popup-heading h1 {
     margin: 0;
     color: var(--color-text);
-    font-size: var(--popup-font-size);
+    font-size: var(--popup-title-size);
     font-weight: var(--font-weight-semibold);
     line-height: var(--line-height-sm);
 }
@@ -55,7 +56,7 @@
 .popup-divider {
     width: 100%;
     height: var(--border-width);
-    margin-top: var(--space-4);
+    margin-top: var(--popup-divider-gap);
     flex: 0 0 var(--border-width);
     background: var(--color-divider);
 }
@@ -82,13 +83,12 @@
 .new-category-fields input,
 .memo-section textarea {
     width: 100%;
-    border: var(--border-width) solid var(--color-primary-border);
+    border: var(--border-width-strong) solid var(--color-primary-border);
     border-radius: var(--radius-control);
     background: var(--color-canvas);
     color: var(--color-text);
     font-size: var(--popup-font-size);
     line-height: var(--line-height-sm);
-    box-shadow: var(--shadow-control);
 }
 
 .page-name-section input,
@@ -156,7 +156,7 @@
     top: calc(100% + var(--space-1));
     right: 0;
     left: 0;
-    max-height: 160px;
+    max-height: var(--select-options-max-height);
     overflow-y: auto;
     padding: var(--space-1);
     border: var(--border-width) solid var(--color-primary-border);
@@ -220,7 +220,7 @@
 
 .memo-section textarea {
     display: block;
-    min-height: var(--textarea-min-height);
+    min-height: var(--popup-textarea-height);
     padding: var(--space-3) var(--control-padding-inline);
     resize: none;
 }
@@ -228,14 +228,17 @@
 .form-actions {
     display: flex;
     min-height: var(--popup-control-height);
-    margin-top: var(--popup-section-gap);
-    gap: var(--space-2);
+    justify-content: center;
+    margin-top: auto;
+    padding-top: var(--popup-section-gap);
+    gap: var(--popup-action-gap);
 }
 
 .cancel-button,
 .save-button {
+    width: var(--popup-action-width);
     min-height: var(--popup-control-height);
-    flex: 1;
+    flex: 0 0 var(--popup-action-width);
     padding-inline: var(--button-padding-inline-md);
     border-radius: var(--radius-control);
     font-size: var(--popup-font-size);
@@ -277,4 +280,8 @@
     font-size: var(--popup-label-size);
     line-height: var(--line-height-xs);
     text-align: center;
+}
+
+.status-message:empty {
+    display: none;
 }
