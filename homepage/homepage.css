@@ -501,7 +501,11 @@ a:hover {
     margin-bottom: var(--space-2);
 }
 .category-row:has(.category-edit-form) {
+    align-items: flex-start;
     gap: var(--space-2);
+}
+.category-row:has(.category-edit-form) > .category-color {
+    margin-top: calc((var(--control-height-md) - var(--space-8)) / 2);
 }
 .category-row.dragging {
     opacity: 0.4;
@@ -590,6 +594,9 @@ a:hover {
     margin: 0;
     max-width: none;
     background: var(--color-surface);
+}
+.category-edit-form .field-error:empty {
+    display: none;
 }
 
 /* Google services */

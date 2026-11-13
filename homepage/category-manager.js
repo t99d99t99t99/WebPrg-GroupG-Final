@@ -60,6 +60,7 @@ export function categoryManager({ openColorPicker, highlightCategory, toggleCate
                 input.value = draft;
                 input.setAttribute("aria-label", "카테고리 이름");
                 input.autocomplete = "off";
+                input.spellcheck = false;
                 const message = node("p", "field-error");
                 message.id = `category-error-${category.id}`;
                 message.setAttribute("role", "status");
