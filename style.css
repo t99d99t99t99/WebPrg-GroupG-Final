@@ -1,20 +1,41 @@
 :root {
-    /* Shared palette from the homepage and save-popup wireframes */
-    --color-canvas: #f7f7f2;
-    --color-surface: #f7f7f2;
-    --color-surface-muted: #ebeee7;
+    /* Shared semantic colors. daisyUI theme.css owns the source palette. */
+    --color-canvas: var(--color-base-100);
+    --color-surface: var(--color-base-100);
+    --color-surface-muted: var(--color-base-200);
     --color-surface-raised: #ffffff;
-    --color-text: #202823;
+    --color-text: var(--color-base-content);
     --color-text-muted: #6d776f;
-    --color-primary: #355c32;
-    --color-primary-soft: #ebeee7;
-    --color-primary-border: #cdd4c8;
-    --color-border: #cdd4c8;
-    --color-divider: #ebeee7;
+    --color-primary-soft: var(--color-base-200);
+    --color-primary-border: var(--color-base-300);
+    --color-border: var(--color-base-300);
+    --color-divider: var(--color-base-200);
     --color-road: #f4e6bd;
     --color-accent-gold: #e5b75d;
     --color-accent-coral: #e78674;
     --color-accent-blue: #8da9e8;
+
+    /* Shared 4px spacing scale with an 8px primary rhythm */
+    --space-0: 0;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 28px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+    --space-16: 64px;
+    --space-20: 80px;
+
+    /* Shared responsive layout defaults */
+    --container-max-width: 1200px;
+    --page-gutter: var(--space-6);
+    --grid-gutter: var(--space-6);
+    --grid-columns: 12;
+    --section-gap: var(--space-20);
 
     /* Shared type scale */
     --font-family-base: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -27,11 +48,43 @@
     --font-size-display: 23px;
 
     /* Shared geometry */
+    --radius-control: var(--radius-field);
+    --radius-panel: var(--radius-box);
+    --radius-selection: var(--radius-selector);
     --radius-sm: 6px;
     --radius-md: 10px;
     --radius-pill: 999px;
     --border-width: 1px;
+    --border-width-strong: var(--border);
+    --border-width-emphasis: 2px;
     --shadow-panel: 0 12px 32px rgb(49 70 60 / 14%);
+
+    /* Shared control and icon sizes */
+    --icon-button-size-compact: 32px;
+    --icon-button-size-default: 44px;
+    --icon-size-compact: 18px;
+    --icon-size-default: 20px;
+    --icon-size-large: 24px;
+
+    /* Shared focus treatment */
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 3px;
+}
+
+@media (max-width: 1279px) {
+    :root {
+        --grid-columns: 8;
+        --section-gap: var(--space-16);
+    }
+}
+
+@media (max-width: 767px) {
+    :root {
+        --page-gutter: var(--space-4);
+        --grid-gutter: var(--space-4);
+        --grid-columns: 4;
+        --section-gap: var(--space-12);
+    }
 }
 
 *,
