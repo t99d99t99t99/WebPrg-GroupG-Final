@@ -6,6 +6,7 @@
     --color-surface-muted: var(--color-base-200);
     --color-surface-raised: #ffffff;
     --color-text: var(--color-base-content);
+    --color-neutral-500: #828282;
     --color-text-muted: #6d776f;
     --color-secondary-selected: #e4eaf2;
     --zone-color: #a1baee;
