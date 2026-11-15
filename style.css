@@ -1,11 +1,14 @@
 :root {
-    /* Shared semantic colors. daisyUI theme.css owns the source palette. */
+    /* Shared semantic colors. daisyUI owns the base palette; Figma-specific
+       semantic extensions live here so every surface consumes the same names. */
     --color-canvas: var(--color-base-100);
     --color-surface: var(--color-base-100);
     --color-surface-muted: var(--color-base-200);
     --color-surface-raised: #ffffff;
     --color-text: var(--color-base-content);
     --color-text-muted: #6d776f;
+    --color-secondary-selected: #e4eaf2;
+    --zone-color: #a1baee;
     --color-primary-soft: var(--color-base-200);
     --color-primary-border: var(--color-base-300);
     --color-border: var(--color-base-300);
@@ -52,6 +55,7 @@
     --font-size-xl: 20px;
     --font-size-display: 23px;
     --line-height-xs: 16px;
+    --line-height-compact: 15px;
     --line-height-sm: 20px;
     --line-height-md: 24px;
     --line-height-lg: 28px;
@@ -78,9 +82,11 @@
     /* Shared component sizing */
     --control-height-md: 44px;
     --control-height-lg: 56px;
+    --compact-input-height: 32px;
+    --compact-input-padding-inline: 10px;
     --control-padding-inline: var(--space-4);
-    --button-padding-inline-md: var(--space-5);
-    --button-padding-inline-lg: var(--space-7);
+    --button-padding-inline: 6px;
+    --button-padding-block: 1px;
     --button-min-width: 120px;
     --control-content-gap: var(--space-2);
     --form-group-gap: var(--space-6);
@@ -99,21 +105,22 @@
     --confirmation-dialog-padding-inline: 30px;
     --confirmation-dialog-padding-block-start: 36px;
     --confirmation-dialog-padding-block-end: 24px;
-    --confirmation-dialog-gap: 29px;
-    --confirmation-dialog-action-width: 170px;
-    --confirmation-dialog-action-gap: 40px;
-    --confirmation-dialog-title-size: 24px;
-    --confirmation-dialog-body-size: 16px;
+    --confirmation-dialog-gap: calc(
+        (
+            var(--confirmation-dialog-height) -
+            var(--confirmation-dialog-padding-block-start) -
+            var(--confirmation-dialog-padding-block-end) -
+            36px -
+            42px -
+            var(--popup-control-height)
+        ) /
+        2
+    );
     --tooltip-width: 364px;
     --tooltip-height: 277px;
-    --tooltip-padding-inline: 29px;
-    --tooltip-padding-block-start: 31px;
-    --tooltip-padding-block-end: 24px;
     --shadow-tooltip: 0 5px 10px 1px rgb(0 0 0 / 25%);
     --popup-width: 374px;
-    --popup-design-height: 750px;
-    --popup-max-height: 600px;
-    --popup-height: min(var(--popup-design-height), var(--popup-max-height));
+    --popup-height: 600px;
     --popup-control-height: 40px;
     --popup-font-size: 12px;
     --popup-label-size: 12px;
@@ -133,6 +140,17 @@
     --icon-size-compact: 18px;
     --icon-size-default: 20px;
     --icon-size-large: 24px;
+    --category-panel-width: 332px;
+    --category-panel-height: 956px;
+    --category-list-item-width: 316px;
+    --category-list-item-height: 48px;
+    --edit-modal-height: 662px;
+    --action-footer-height: 74px;
+    --action-footer-padding-inline: 18px;
+    --action-footer-padding-block: 17px;
+    --navigation-control-gap: 10px;
+    --selector-icon-line-height: 18px;
+    --scrollbar-radius: 3px;
 
     /* Shared focus treatment */
     --focus-ring-width: 2px;
