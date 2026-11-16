@@ -19,5 +19,5 @@
     "chrome_url_overrides": {
         "newtab": "homepage/homepage.html"
     },
-    "permissions": ["storage", "activeTab"]
+    "permissions": ["storage", "activeTab", "bookmarks"]
 }
