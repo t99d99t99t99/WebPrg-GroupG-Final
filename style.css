@@ -1,6 +1,5 @@
 :root {
-    /* Shared semantic colors. daisyUI owns the base palette; Figma-specific
-       semantic extensions live here so every surface consumes the same names. */
+    /* Semantic colors shared by the homepage and popup, based on the daisyUI palette. */
     --color-canvas: var(--color-base-100);
     --color-surface: var(--color-base-100);
     --color-surface-muted: var(--color-base-200);
