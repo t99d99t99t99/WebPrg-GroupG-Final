@@ -18,7 +18,7 @@ import { layoutFingerprint, planMove, snapshotFromGroups } from "./building-move
 import { buildingTexture, isDamaged } from "./building-rules.js";
 import { assignCategoryColors, colors, grassAppearanceForCategory, wallColorAdjustments } from "./category-colors.js";
 import { categoryManager } from "./category-manager.js";
-import { decorationsFor } from "./decorations.js";
+import { decorationsFor, yardFor } from "./decorations.js";
 import { setGoogleAccount } from "./google-account.js";
 import { planCity, planRoads, project, TILE_HEIGHT, TILE_WIDTH } from "./layout.js";
 import { createTraffic } from "./traffic.js";
@@ -526,7 +526,7 @@ const renderCategories = categoryManager({
 });
 
 // A tree, flower or rock standing on an empty land cell. Sorted in depth with the buildings.
-function createDecoration({ x, y, src }, categoryId) {
+function createDecoration({ x, y, src, flip = false, anchor = 0.92 }, categoryId) {
     const position = project(x, y);
     const image = element("img", "decoration");
     image.src = src;
@@ -536,6 +536,8 @@ function createDecoration({ x, y, src }, categoryId) {
     image.style.left = `${position.left}px`;
     image.style.top = `${position.top}px`;
     image.style.zIndex = String(1000 + Math.floor(x) + Math.floor(y));
+    if (flip) image.style.setProperty("--decoration-flip", "-1");
+    image.style.setProperty("--decoration-anchor", `${anchor * 100}%`);
     return image;
 }
 
@@ -564,6 +566,10 @@ function drawCity(groups, preview = null) {
             const building = createBuilding(bookmark, category, cells.get(bookmark.id), labels, !preview);
             if (moving) building.classList.add("drag-source");
             map.append(building);
+            const { src } = buildingTexture(bookmark.clickCount, bookmark.id, false, bookmark.buildingDesign);
+            if (src.includes("/bld_house_"))
+                for (const prop of yardFor(bookmark.id, cells.get(bookmark.id)))
+                    map.append(createDecoration(prop, category.id));
         }
         for (const prop of decorationsFor(group)) map.append(createDecoration(prop, category.id));
     });

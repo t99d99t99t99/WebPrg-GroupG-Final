@@ -419,7 +419,8 @@ a:hover {
     max-width: none;
     pointer-events: none;
     image-rendering: pixelated;
-    transform: translate(-50%, -92%);
+    /* Feet on the grid point; a mirrored fence runs along the other grid axis. */
+    transform: translate(-50%, calc(-1 * var(--decoration-anchor, 92%))) scaleX(var(--decoration-flip, 1));
 }
 .building.dimmed,
 .building-badge.dimmed,
