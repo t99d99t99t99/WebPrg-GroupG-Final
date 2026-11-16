@@ -33,6 +33,7 @@
 | `debug/ui-preview/preview.html` | 고정 샘플 컴포넌트와 상태 확인. 저장소에 포함된 `preview.generated.css`를 로드하므로 열 때 별도 빌드가 필요 없음 |
 | `demo/seed-data.js` | 화면 로직과 분리된 시연용 카테고리 4개·북마크 8개 |
 | `style.css` | 두 페이지가 공유하는 디자인 토큰(CSS 변수)과 기본 스타일 |
+| `assets/ui/popup-arrow-left.svg`, `assets/ui/popup-arrow-right.svg` | Figma 팝업 원본에서 받은 건물 선택 화살표. 원본 크기(왼쪽 14×15, 오른쪽 14×14)를 유지 |
 | `daisyui.generated.css` | `homepage/`와 `popup/`이 사용하는 daisyUI 정적 번들. `debug/ui-preview/src/app.css`에서 자동 생성하며 직접 수정하지 않음 |
 | `assets/` | 아이콘과 건물 이미지. `assets/Isometric City/`는 에셋 팩 원본으로, 지도에는 도로·바닥 타일과 건물만 쓰고 `Characters/`·`Props/`·`Vehicles/`는 아직 쓰지 않음. `wall-mask-buildings/`는 건물 에셋별 벽면 마스크. `ui/`는 화면 버튼 SVG(추가·수정·펼치기·NEW 말풍선 등)와 `google/`의 Google 서비스 아이콘. 출처는 README.md |
 | `biome.json` | 포맷·린트 설정 |
