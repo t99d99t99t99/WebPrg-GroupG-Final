@@ -1,4 +1,4 @@
-/* Controls used only by the homepage; popup keeps its existing stylesheet. */
+/* Homepage layout and controls. */
 :root {
     --control-height: var(--control-height-md);
 }
