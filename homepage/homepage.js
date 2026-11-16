@@ -541,6 +541,21 @@ function createDecoration({ x, y, src, flip = false, anchor = 0.92 }, categoryId
     return image;
 }
 
+// The category's name on a wooden sign in its picket cell (layout.js keeps that cell empty).
+// Decorative: the category list already names every category for screen readers.
+function createPicket(cell, category) {
+    const position = project(cell.x + 0.5, cell.y + 0.5);
+    const picket = element("div", "category-picket");
+    picket.setAttribute("aria-hidden", "true");
+    picket.dataset.category = String(category.id);
+    picket.style.left = `${position.left}px`;
+    picket.style.top = `${position.top}px`;
+    picket.style.zIndex = String(1000 + cell.x + cell.y);
+    picket.style.setProperty("--zone-color", category.color);
+    picket.append(element("span", "category-picket-board", category.name), element("span", "category-picket-post"));
+    return picket;
+}
+
 // Draws the city from planned groups. `preview` ({movingId, showMoving}) draws a still
 // copy for a building drag: the zoom, the category zones and the saved background stay.
 function drawCity(groups, preview = null) {
@@ -572,6 +587,7 @@ function drawCity(groups, preview = null) {
                     map.append(createDecoration(prop, category.id));
         }
         for (const prop of decorationsFor(group)) map.append(createDecoration(prop, category.id));
+        if (group.picket) map.append(createPicket(group.picket, category));
     });
     const roads = planRoads(groups.map((group) => group.area));
     for (const road of roads) {
