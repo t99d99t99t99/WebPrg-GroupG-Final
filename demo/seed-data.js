@@ -1,5 +1,4 @@
-// Development/demo fixture, deliberately separate from rendering code.
-// Uses exactly the team's existing Bookmark and Category storage fields.
+// Demo categories and bookmarks in the DB storage format.
 export function createDemoData() {
     const now = Date.now();
     const definitions = [

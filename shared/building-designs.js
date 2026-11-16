@@ -34,7 +34,7 @@ const previousDesigns = [
 export function buildingDesignById(id) {
     const selected = [...BUILDING_DESIGNS, ...previousDesigns].find((design) => design.id === id);
     if (selected) return selected;
-    // Preserve designs saved by the earlier popup before its SVG correction.
+    // Accept persisted design IDs that identify a building family and direction.
     if (typeof id !== "string") return undefined;
     const [familyId, variant, extra] = id.split(":");
     const family = BUILDING_FAMILIES.find((item) => item.id === familyId);

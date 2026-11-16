@@ -7,7 +7,7 @@
     @apply text-base-content/70 mb-2 block text-sm font-semibold;
 }
 
-/* 부품 모음 전용 배치입니다. 위 커스텀 스타일과 테마 값은 유지합니다. */
+/* 부품 모음 전용 배치입니다. */
 html.catalog-preview {
     /* 열린 모달 샘플이 페이지 전체의 스크롤을 잠그지 않도록 합니다. */
     --page-scroll-lock: initial;

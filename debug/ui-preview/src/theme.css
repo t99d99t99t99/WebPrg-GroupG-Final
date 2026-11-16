@@ -1,6 +1,6 @@
 /*
- * Export한 livingtaco 테마입니다. 테마를 바꾸려면 아래 블록을 교체합니다.
- * preview.html의 data-theme 값을 Export 블록의 name과 동일하게 맞춥니다.
+ * 미리보기와 서비스가 공유하는 livingtaco 테마 토큰입니다.
+ * HTML의 data-theme 값은 아래 name과 같아야 합니다.
  */
 
 @plugin "daisyui/theme" {

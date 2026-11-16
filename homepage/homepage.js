@@ -1,9 +1,20 @@
-import { bookmarks, categories, dismissNewBefore, importChromeBookmarks, subscribe, updateCity } from "../db/db.js";
+import {
+    bookmarks,
+    categories,
+    dismissNewBefore,
+    importChromeBookmarks,
+    moveBookmark,
+    subscribe,
+    updateCity,
+} from "../db/db.js";
 import { categorySelect } from "../shared/category-select.js";
 import { createColorPicker } from "../shared/color-picker.js";
 import { bookmarkNameError, webUrl } from "../shared/validation.js";
+import { cellBounds, planBackground } from "./background.js";
 import { clearBookmarkPreview, renderBookmarkPreview } from "./bookmark-preview.js";
 import { applyPreparedWallMask, prepareBuildingAppearance } from "./building-appearance.js";
+import { createBuildingDrag } from "./building-drag.js";
+import { layoutFingerprint, planMove, snapshotFromGroups } from "./building-move.js";
 import { buildingTexture, isDamaged } from "./building-rules.js";
 import { assignCategoryColors, colors, grassAppearanceForCategory, wallColorAdjustments } from "./category-colors.js";
 import { categoryManager } from "./category-manager.js";
@@ -146,6 +157,8 @@ function positionHoverBridge() {
 }
 
 function showTooltip(bookmark, category, link) {
+    // No detail card while a building is being dragged (focus can return mid-drag).
+    if (buildingDrag.isDragging()) return;
     if (activeLink && activeLink !== link) activeLink.removeAttribute("aria-describedby");
     activeLink = link;
     activeBookmark = bookmark;
@@ -192,8 +205,10 @@ function showTooltip(bookmark, category, link) {
     positionHoverBridge();
 }
 
+// Only .zone outlines: #zones also holds the drag marker and expansion slots.
 function highlightCategory(id) {
-    for (const zone of $("zones").children) zone.classList.toggle("active", zone.dataset.category === id);
+    for (const zone of $("zones").querySelectorAll(":scope > .zone"))
+        zone.classList.toggle("active", zone.dataset.category === id);
 }
 
 function applyFilter() {
@@ -248,7 +263,8 @@ function styleGrassTile(tile, categoryColor) {
     tile.style.setProperty("--grass-light-mode", appearance.lightMode);
 }
 
-function createBuilding(bookmark, category, cell, labels) {
+// `interactive` false draws a still copy for the drag preview: no links, no handlers.
+function createBuilding(bookmark, category, cell, labels, interactive = true) {
     // Anchor the building's base at the bottom corner of its cell.
     const position = project(cell.x + 1, cell.y + 1);
     const damaged = isDamaged(bookmark);
@@ -294,6 +310,13 @@ function createBuilding(bookmark, category, cell, labels) {
         link.append(element("span", "new-badge", "NEW"));
     }
     wrapper.append(link);
+    if (!interactive) {
+        wrapper.classList.add("building-preview");
+        link.removeAttribute("href");
+        link.tabIndex = -1;
+        return wrapper;
+    }
+    buildingDrag.attach(link, wrapper, bookmark);
     link.addEventListener("mouseenter", () => {
         highlightCategory(category.id);
         showTooltip(bookmark, category, link);
@@ -415,6 +438,21 @@ function fitCity(tiles) {
         void world.offsetWidth;
         world.classList.add("animated");
     }
+    return { x, y, zoom };
+}
+
+// Lot ground under the whole canvas outside categories and roads. Kept apart from
+// fitCity so the background never changes the zoom. Redrawn when the canvas resizes.
+let backgroundLand = null;
+let backgroundView = null;
+function drawBackground(layer, land = backgroundLand) {
+    if (!land || !backgroundView) return;
+    const { x, y, zoom } = backgroundView;
+    const canvas = $("canvas");
+    const bounds = cellBounds(-x / zoom, -y / zoom, (canvas.offsetWidth - x) / zoom, (canvas.offsetHeight - y) / zoom);
+    const tiles = document.createDocumentFragment();
+    for (const tile of planBackground(land, bounds)) tiles.append(groundTile(tile.x, tile.y, tile.src));
+    layer.replaceChildren(tiles);
 }
 
 // Plan positions and save what changed. The lock keeps several new tabs from planning at once.
@@ -427,6 +465,55 @@ async function arrangeCity() {
         };
     });
 }
+// Layout the map last drew, used to preview and check a building move.
+let mapState = null;
+let lastGroups = [];
+let renderWaiting = false;
+
+// Saves a dragged building. Cancels if storage no longer matches the map the drag started
+// from, or if the saved result would differ from what the preview showed.
+function commitMove(result, fingerprint) {
+    return moveBookmark((savedCategories, savedBookmarks) => {
+        if (layoutFingerprint(savedCategories, savedBookmarks) !== fingerprint) return null;
+        const check = planMove(savedCategories, savedBookmarks, result.move);
+        if (check.cell?.x !== result.cell.x || check.cell?.y !== result.cell.y) return null;
+        // Save the edited layout plus whatever planCity adjusted on top of it.
+        const { areas, cells } = check.plan.changed;
+        return {
+            categories: check.edited.categories.map((item) =>
+                areas.has(item.id) ? { ...item, area: areas.get(item.id) } : item,
+            ),
+            bookmarks: check.edited.bookmarks.map((item) =>
+                cells.has(item.id) ? { ...item, cell: cells.get(item.id) } : item,
+            ),
+        };
+    });
+}
+
+const buildingDrag = createBuildingDrag({
+    world: $("world"),
+    canvas: $("canvas"),
+    overlay: $("zones"),
+    getState: () => mapState,
+    onStart: hideTooltip,
+    // While dragging, the whole map (lands, roads, background, buildings) is drawn as it
+    // will be after the drop. The dragged building itself is the ghost, so it is left out;
+    // with no valid drop the current map is shown with that building faded.
+    preview(result, movingId) {
+        drawCity(result ? result.plan.groups : lastGroups, { movingId, showMoving: !result });
+        applyFilter();
+    },
+    onEnd({ previewed }) {
+        // Changes that arrived while dragging, or a preview, are replaced by the saved map.
+        if (renderWaiting || previewed) {
+            renderWaiting = false;
+            render();
+        }
+    },
+    commit: commitMove,
+    toast,
+});
+
 const renderCategories = categoryManager({
     openColorPicker,
     highlightCategory: (id) => highlightCategory(id ?? selectedCategory),
@@ -437,41 +524,76 @@ const renderCategories = categoryManager({
     },
 });
 
+// Draws the city from planned groups. `preview` ({movingId, showMoving}) draws a still
+// copy for a building drag: the zoom, the category zones and the saved background stay.
+function drawCity(groups, preview = null) {
+    const ground = document.createDocumentFragment();
+    const zones = document.createDocumentFragment();
+    const map = document.createDocumentFragment();
+    const labels = document.createDocumentFragment();
+
+    const tiles = [];
+    groups.forEach(({ category: savedCategory, items, area, cells }, index) => {
+        const category = { ...savedCategory, color: savedCategory.color ?? colors[index % colors.length] };
+        const color = category.color;
+        for (let y = area.y; y < area.y + area.h; y++) {
+            for (let x = area.x; x < area.x + area.w; x++) {
+                ground.append(categoryGrassTile(x, y, category));
+            }
+        }
+        if (!preview) zones.append(createZone(category, area, color));
+        for (const bookmark of items) {
+            const moving = preview && bookmark.id === preview.movingId;
+            if (moving && !preview.showMoving) continue;
+            const building = createBuilding(bookmark, category, cells.get(bookmark.id), labels, !preview);
+            if (moving) building.classList.add("drag-source");
+            map.append(building);
+        }
+    });
+    const roads = planRoads(groups.map((group) => group.area));
+    for (const road of roads) {
+        ground.append(groundTile(road.x, road.y, road.tile));
+        tiles.push(road);
+    }
+    const land = new Set(tiles.map((road) => `${road.x},${road.y}`));
+    for (const { area } of groups) {
+        for (let y = area.y; y < area.y + area.h; y++) {
+            for (let x = area.x; x < area.x + area.w; x++) land.add(`${x},${y}`);
+        }
+    }
+    if (!preview) {
+        backgroundView = fitCity(tiles) ?? null;
+        backgroundLand = land;
+        traffic.update(tiles);
+    }
+    const background = element("div", "background-tiles");
+    drawBackground(background, land);
+    ground.prepend(background);
+    $("ground").replaceChildren(ground);
+    if (!preview) $("zones").replaceChildren(zones);
+    $("buildings").replaceChildren(map);
+    $("building-labels").replaceChildren(labels);
+}
+
 async function render() {
+    // Keep the map still under a dragged building; redraw when the drag ends.
+    if (buildingDrag.isDragging()) {
+        renderWaiting = true;
+        return;
+    }
     const version = ++renderVersion;
     try {
         const { groups, total } = await arrangeCity();
         if (version !== renderVersion) return;
-        hideTooltip();
-        const ground = document.createDocumentFragment();
-        const zones = document.createDocumentFragment();
-        const map = document.createDocumentFragment();
-        const labels = document.createDocumentFragment();
-
-        const tiles = [];
-        groups.forEach(({ category: savedCategory, items, area, cells }, index) => {
-            const category = { ...savedCategory, color: savedCategory.color ?? colors[index % colors.length] };
-            const color = category.color;
-            for (let y = area.y; y < area.y + area.h; y++) {
-                for (let x = area.x; x < area.x + area.w; x++) {
-                    ground.append(categoryGrassTile(x, y, category));
-                }
-            }
-            zones.append(createZone(category, area, color));
-            for (const bookmark of items) {
-                map.append(createBuilding(bookmark, category, cells.get(bookmark.id), labels));
-            }
-        });
-        for (const road of planRoads(groups.map((group) => group.area))) {
-            ground.append(groundTile(road.x, road.y, road.tile));
-            tiles.push(road);
+        if (buildingDrag.isDragging()) {
+            renderWaiting = true;
+            return;
         }
-        fitCity(tiles);
-        traffic.update(tiles);
-        $("ground").replaceChildren(ground);
-        $("zones").replaceChildren(zones);
-        $("buildings").replaceChildren(map);
-        $("building-labels").replaceChildren(labels);
+        const snapshot = snapshotFromGroups(groups);
+        mapState = { snapshot, fingerprint: layoutFingerprint(snapshot.categories, snapshot.bookmarks) };
+        hideTooltip();
+        lastGroups = groups;
+        drawCity(groups);
         if (selectedCategory && !groups.some((group) => group.category.id === selectedCategory))
             selectedCategory = null;
         renderCategories(groups);
@@ -596,7 +718,17 @@ document.addEventListener("keydown", (event) => {
         colorPicker.close();
     }
 });
-window.addEventListener("resize", fitCanvas);
+let backgroundFrame = 0;
+window.addEventListener("resize", () => {
+    fitCanvas();
+    // A window drag fires many resize events; redraw the background once per frame.
+    cancelAnimationFrame(backgroundFrame);
+    backgroundFrame = requestAnimationFrame(() => {
+        // During a drag the ground may show a planned map; the redraw after the drag fits it.
+        const background = document.querySelector("#ground > .background-tiles");
+        if (background && !buildingDrag.isDragging()) drawBackground(background);
+    });
+});
 // NEW stays until the user has seen it: bookmarks saved before this visit began are
 // acknowledged when the user leaves, so a fresh tab still shows them.
 let visibleSince = document.hidden ? null : Date.now();
@@ -687,7 +819,7 @@ $("edit-bookmark").addEventListener("click", async () => {
         console.error(error);
     }
 });
-// Popup-saved names and URLs may not follow the homepage rules, so only edited values are checked.
+// Validate changed fields; preserve untouched names and URLs from stored data.
 const nameChanged = () => $("edit-name").value.trim() !== editingBookmark?.name;
 const urlChanged = () => $("edit-url").value.trim() !== editingBookmark?.url;
 function validateEditor() {

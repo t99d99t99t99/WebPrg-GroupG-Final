@@ -132,8 +132,62 @@ function grow(group, groups) {
     best.apply();
 }
 
+// Where a building of the group stands now: its saved cell, moved along with the area and
+// with any line removed by dropEmptyLines.
+function currentCell(group, bookmark) {
+    const saved = group.keepCells ? bookmark.cell : null;
+    if (!saved || !Number.isInteger(saved.x) || !Number.isInteger(saved.y)) return null;
+    const extra = group.extra.get(bookmark.id) ?? { x: 0, y: 0 };
+    return { x: saved.x + group.dx + extra.x, y: saved.y + group.dy + extra.y };
+}
+
+// Removes rows/columns that hold no building until the area fits `target` cells, so a land
+// loses the line a building left instead of being cut elsewhere and repacked. A line inside
+// the area closes from the side with fewer buildings; those buildings move one cell.
+function dropEmptyLines(group, target) {
+    const area = group.area;
+    while (area.w * area.h > target) {
+        const cells = [];
+        for (const bookmark of group.items) {
+            const cell = currentCell(group, bookmark);
+            if (cell && cell.x >= area.x && cell.x < area.x + area.w && cell.y >= area.y && cell.y < area.y + area.h)
+                cells.push({ bookmark, cell });
+        }
+        let best = null;
+        for (const [axis, size] of [
+            ["x", "w"],
+            ["y", "h"],
+        ]) {
+            if (area[size] <= 2) continue;
+            for (let at = area[axis]; at < area[axis] + area[size]; at++) {
+                if (cells.some(({ cell }) => cell[axis] === at)) continue;
+                const before = cells.filter(({ cell }) => cell[axis] < at);
+                const after = cells.filter(({ cell }) => cell[axis] > at);
+                const fromAfter = after.length <= before.length;
+                const moving = fromAfter ? after : before;
+                const w = area.w - (axis === "x" ? 1 : 0);
+                const h = area.h - (axis === "y" ? 1 : 0);
+                // Fewest buildings moved, then the squarer result, then the first line found.
+                const cost = [moving.length, Math.abs(w - h)];
+                if (!best || cost[0] < best.cost[0] || (cost[0] === best.cost[0] && cost[1] < best.cost[1]))
+                    best = { axis, size, fromAfter, moving, cost };
+            }
+        }
+        if (!best) return;
+        const { axis, size, fromAfter, moving } = best;
+        area[size] -= 1;
+        if (!fromAfter) area[axis] += 1;
+        for (const { bookmark } of moving) {
+            const extra = group.extra.get(bookmark.id) ?? { x: 0, y: 0 };
+            group.extra.set(bookmark.id, { ...extra, [axis]: extra[axis] + (fromAfter ? -1 : 1) });
+        }
+    }
+}
+
 function shrink(group) {
     const [short, long] = shapeFor(group.count);
+    dropEmptyLines(group, short * long);
+    if (group.area.w * group.area.h <= short * long) return;
     const old = group.area;
     const [w, h] = old.w >= old.h ? [long, short] : [short, long];
     // Keep the side nearest the middle; buildings outside are repacked later.
@@ -146,14 +200,16 @@ function shrink(group) {
     };
 }
 
-// After something shrank, pull areas toward the middle while there is room.
-function compact(groups) {
+// Pull areas toward the middle while there is room, so neighbours share one road instead of
+// leaving a double road or a thin lot strip between them. Areas in `pinned` stay put.
+function compact(groups, pinned) {
     for (let moved = true, rounds = 0; moved && rounds < 100; rounds++) {
         moved = false;
         const order = [...groups].sort(
             (a, b) => screenDistance(...centerOf(a.area), 0, 0) - screenDistance(...centerOf(b.area), 0, 0),
         );
         for (const group of order) {
+            if (pinned.has(String(group.category.id))) continue;
             const others = groups.filter((item) => item !== group).map((item) => item.area);
             const [cx, cy] = centerOf(group.area);
             const sx = -Math.sign(Math.round(cx));
@@ -183,8 +239,7 @@ function placeBuildings(group) {
     const cells = new Map();
     const waiting = [];
     for (const bookmark of group.items) {
-        const saved = group.keepCells ? bookmark.cell : null;
-        const cell = saved && { x: saved.x + group.dx, y: saved.y + group.dy };
+        const cell = currentCell(group, bookmark);
         const key = cell && `${cell.x},${cell.y}`;
         const inside =
             cell &&
@@ -216,11 +271,17 @@ function placeBuildings(group) {
 /**
  * Plans the whole city from saved data.
  * Returns the groups to draw and `changed`, the areas and cells that differ from storage.
+ * Areas are pulled toward the middle only when one shrank, so a saved plan stays as it is.
+ * A building move (building-move.js) passes `compactAll` to also close gaps the move opened,
+ * and `pinned` (category ids) for the lands the building left and went into, so they stay put.
+ * @param {object[]} savedCategories
+ * @param {object[]} savedBookmarks
+ * @param {{pinned?: Iterable<string>, compactAll?: boolean}} [options]
  */
-export function planCity(savedCategories, savedBookmarks) {
+export function planCity(savedCategories, savedBookmarks, { pinned = [], compactAll = false } = {}) {
     const groups = savedCategories.map((category) => {
         const items = savedBookmarks.filter((bookmark) => String(bookmark.category) === String(category.id));
-        return { category, items, count: items.length, area: null, dx: 0, dy: 0, keepCells: true };
+        return { category, items, count: items.length, area: null, dx: 0, dy: 0, extra: new Map(), keepCells: true };
     });
 
     // 1. Keep saved areas that are still valid and do not collide.
@@ -257,7 +318,7 @@ export function planCity(savedCategories, savedBookmarks) {
         placed.push(group);
     }
 
-    if (shrank) compact(placed);
+    if (shrank || compactAll) compact(placed, new Set([...pinned].map(String)));
 
     const changed = { areas: new Map(), cells: new Map() };
     for (const group of groups) {

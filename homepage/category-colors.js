@@ -1,4 +1,4 @@
-// Category palette, legacy color assignment, and wall tint helpers.
+// Category palette, automatic color assignment, and wall tint helpers.
 export const colors = ["#a1baee", "#65b093", "#f0806b", "#f3bc58", "#b596e5", "#78cadd"];
 
 const HOUSE_LUMINANCE = { small: 0.435, medium: 0.325, tall: 0.407 };

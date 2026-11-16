@@ -190,6 +190,19 @@ export async function updateCity(planner) {
         return { groups: result.plan.groups, total: data[BOOKMARK_DB_KEY].length };
     });
 }
+// Moves a building on the map. `update(categories, bookmarks)` reads the latest arrays inside
+// the write lock and returns the arrays to save, or null to cancel (for example when another
+// tab changed the layout since the drag started). Both arrays are saved in one write.
+export async function moveBookmark(update) {
+    await ready;
+    return withWriteLock(async () => {
+        const data = await storage.get({ [BOOKMARK_DB_KEY]: [], [CATEGORY_DB_KEY]: [] });
+        const next = update(data[CATEGORY_DB_KEY], data[BOOKMARK_DB_KEY]);
+        if (!next) return false;
+        await storage.set({ [CATEGORY_DB_KEY]: next.categories, [BOOKMARK_DB_KEY]: next.bookmarks });
+        return true;
+    });
+}
 export async function deleteCategory(id) {
     await ready;
     return withWriteLock(async () => {
