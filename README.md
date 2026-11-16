@@ -78,6 +78,12 @@ VS Code를 쓰면 Biome 확장을 설치해 저장할 때 자동으로 맞출 �
 
 ## 에셋 출처
 
+### 팝업 건물 선택 화살표
+
+`assets/ui/popup-arrow-left.svg`와 `popup-arrow-right.svg`는 [팝업 Figma 원본](https://www.figma.com/design/AJUY7H7Zq3FM2nLZ9s7bKk/?node-id=6142-5889)에서 내려받은 에셋입니다. 원본 크기 14×15px와 14×14px로 사용합니다.
+
+팝업 스타일은 해당 파일의 `6142:5889`(기본), `6142:5902`(목록 열림), `6142:5915`(새 카테고리) 노드의 변수 바인딩과 대조했습니다. 색상·반경·타이포그래피·footer 여백은 대응하는 기존 CSS 변수를 사용하고, 바인딩이 없는 고정 치수는 `--popup-*` 컴포넌트 변수로 구분합니다. 건물 10종·카테고리 색상 미리보기·공용 컬러피커는 별도 요청 사항으로 유지합니다.
+
 ### 확장 프로그램 아이콘
 
 팀이 편집한 [아이콘 전용 Figma 원본](https://www.figma.com/design/c5m3zTylAHEJby2WeHxOiX?node-id=1-2)을 기준으로 제작했습니다. 수정 가능한 SVG는 `assets/icons/source/`에 보관합니다. `symbol.svg`는 단독 집, `city.svg`는 3×3 건물 모음이며, SVG 원본에는 실루엣과 흰색 문 도형이 분리되어 있습니다.
