@@ -30,9 +30,26 @@ function centerOf(area) {
     return [area.x + area.w / 2, area.y + area.h / 2];
 }
 
+// Empty cells between two areas along each axis (0 or less when their ranges touch or overlap).
+function gaps(a, b) {
+    return [Math.max(b.x - (a.x + a.w), a.x - (b.x + b.w)), Math.max(b.y - (a.y + a.h), a.y - (b.y + b.h))];
+}
+
 // Areas must keep at least one cell between them for the shared road.
+function overlaps(a, b) {
+    const [gx, gy] = gaps(a, b);
+    return gx < 1 && gy < 1;
+}
+
+// Two cells between facing sides put two road rings side by side, drawn as two parallel
+// streets. Neighbours either share one road (one cell) or leave a lot strip (three or more).
+function doubleRoad(a, b) {
+    const [gx, gy] = gaps(a, b);
+    return (gx === 2 && gy <= 1) || (gy === 2 && gx <= 1);
+}
+
 function blocks(a, b) {
-    return a.x < b.x + b.w + 1 && b.x < a.x + a.w + 1 && a.y < b.y + b.h + 1 && b.y < a.y + a.h + 1;
+    return overlaps(a, b) || doubleRoad(a, b);
 }
 
 function isFree(area, others) {
@@ -214,10 +231,13 @@ function compact(groups, pinned) {
             const [cx, cy] = centerOf(group.area);
             const sx = -Math.sign(Math.round(cx));
             const sy = -Math.sign(Math.round(cy));
+            // Two steps when one would stop at a double road, so a lot strip can close to a shared road.
             for (const [dx, dy] of [
                 [sx, sy],
                 [sx, 0],
                 [0, sy],
+                [sx * 2, 0],
+                [0, sy * 2],
             ]) {
                 if (dx === 0 && dy === 0) continue;
                 const area = { ...group.area, x: group.area.x + dx, y: group.area.y + dy };
@@ -230,6 +250,42 @@ function compact(groups, pinned) {
                 }
             }
         }
+    }
+}
+
+// Saved layouts (and a building move's shifted areas) may hold double roads. Move one area of
+// each such pair: one cell closer to share the road, one cell away to leave a lot strip, or
+// else the nearest free spot. The area farther from the middle moves; `pinned` ones stay put.
+// When both are pinned, the one later in `pinned` may still shift one cell (a building move
+// pins the land it went into first and the land it left second).
+function fixDoubleRoads(groups, pinned) {
+    const rank = (group) => pinned.indexOf(String(group.category.id));
+    const away = (group) => screenDistance(...centerOf(group.area), 0, 0);
+    const skip = new Set();
+    for (let rounds = 0; rounds < 100; rounds++) {
+        let pair = null;
+        for (const a of groups)
+            for (const b of groups)
+                if (!pair && a !== b && doubleRoad(a.area, b.area) && !skip.has(`${a.category.id}|${b.category.id}`))
+                    pair = [a, b];
+        if (!pair) return;
+        const [a, b] = pair;
+        const [ra, rb] = [rank(a), rank(b)];
+        let group = a;
+        if (ra < 0 && rb < 0) group = away(a) >= away(b) ? a : b;
+        else if (ra < 0 || rb < 0) group = ra < 0 ? a : b;
+        else group = ra > rb ? a : b;
+        const other = group === a ? b : a;
+        const others = groups.filter((item) => item !== group).map((item) => item.area);
+        const [gx] = gaps(group.area, other.area);
+        const axis = gx === 2 ? "x" : "y";
+        const size = axis === "x" ? "w" : "h";
+        const toward = other.area[axis] > group.area[axis] + group.area[size] ? 1 : -1;
+        const shifted = (by) => ({ ...group.area, [axis]: group.area[axis] + by });
+        let spot = [shifted(toward), shifted(-toward)].find((area) => isFree(area, others));
+        if (!spot && rank(group) < 0) spot = findSpot(group.area.w, group.area.h, others, ...centerOf(group.area));
+        if (spot) moveTo(group, spot);
+        else skip.add(`${a.category.id}|${b.category.id}`).add(`${b.category.id}|${a.category.id}`); // pinned and boxed in
     }
 }
 
@@ -284,16 +340,18 @@ export function planCity(savedCategories, savedBookmarks, { pinned = [], compact
         return { category, items, count: items.length, area: null, dx: 0, dy: 0, extra: new Map(), keepCells: true };
     });
 
-    // 1. Keep saved areas that are still valid and do not collide.
+    // 1. Keep saved areas that are still valid and do not collide. A double road is not a
+    // collision here: fixDoubleRoads nudges such an area instead of sending it far away.
+    const pinnedIds = [...pinned].map(String);
     const placed = [];
     for (const group of groups) {
         const area = group.category.area;
-        const others = placed.map((item) => item.area);
-        if (validArea(area) && isFree(area, others)) {
+        if (validArea(area) && placed.every((item) => !overlaps(area, item.area))) {
             group.area = { x: area.x, y: area.y, w: area.w, h: area.h };
             placed.push(group);
         }
     }
+    fixDoubleRoads(placed, pinnedIds);
 
     // 2. Resize existing areas to fit their buildings.
     let shrank = false;
@@ -318,7 +376,9 @@ export function planCity(savedCategories, savedBookmarks, { pinned = [], compact
         placed.push(group);
     }
 
-    if (shrank || compactAll) compact(placed, new Set([...pinned].map(String)));
+    if (shrank || compactAll) compact(placed, new Set(pinnedIds));
+    // A shrunk area can leave two cells to a neighbour it used to share a road with.
+    fixDoubleRoads(placed, pinnedIds);
 
     const changed = { areas: new Map(), cells: new Map() };
     for (const group of groups) {
