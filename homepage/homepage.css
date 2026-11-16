@@ -212,6 +212,8 @@ a:hover {
     left: 0;
     top: 0;
     transform-origin: 0 0;
+    /* Pressing and moving on a building must pick it up, not select label text. */
+    user-select: none;
 }
 #world.animated {
     transition: transform 0.35s ease;
@@ -1161,6 +1163,116 @@ a:hover {
         transition: none;
     }
     .app-toast.toast-subtle {
+        animation: none;
+    }
+}
+
+/* Building drag and drop (homepage/building-drag.js) */
+body.building-dragging,
+body.building-dragging * {
+    cursor: grabbing;
+    user-select: none;
+}
+/* Zone outlines follow hovered buildings; while dragging they would flicker under the pointer. */
+body.building-dragging .zone svg {
+    opacity: 0;
+}
+.building.drag-source {
+    opacity: 0.3;
+}
+.building.drag-ghost {
+    pointer-events: none;
+    opacity: 0.9;
+    filter: drop-shadow(0 10px 6px rgb(0 0 0 / 30%));
+}
+.building.drag-ghost .building-image,
+.building.drag-ghost .building-wall-tint,
+.building.drag-ghost .building-wall-light {
+    transform: translateY(-10px);
+}
+.building.drag-ghost.drag-invalid {
+    opacity: 0.55;
+    filter: grayscale(1);
+}
+.drop-marker {
+    position: absolute;
+    width: 128px;
+    height: 64px;
+    pointer-events: none;
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    background: var(--marker-color);
+    opacity: 0.7;
+    z-index: 2;
+}
+/* Pressed and about to be picked up. */
+.building.drag-arming .building-image,
+.building.drag-arming .building-wall-tint,
+.building.drag-arming .building-wall-light {
+    transform: translateY(-14px) scale(1.15);
+}
+/* The enlarged hovered building can be pressed anywhere it is drawn. */
+.building.focused-building .building-hit-area {
+    transform: translateY(-7px) scale(1.15);
+    transform-origin: bottom center;
+}
+/* Buildings of the drag preview map: pictures only. */
+.building.building-preview {
+    pointer-events: none;
+}
+/* Expansion slots of a full land: where the building can go to grow that land. */
+.expand-slot {
+    position: absolute;
+    width: 128px;
+    height: 64px;
+    pointer-events: none;
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    background: var(--marker-color);
+    opacity: 0.4;
+    z-index: 2;
+    animation: expand-slot-in 0.2s ease-out;
+}
+.expand-slot.active {
+    opacity: 0.85;
+}
+@keyframes expand-slot-in {
+    from {
+        opacity: 0;
+    }
+}
+/* Full land under a held building: its border fills like a gauge, then stays drawn while
+   its expansion slots are shown. Points are world pixels, so the svg sits at the origin. */
+.land-gauge {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1px;
+    height: 1px;
+    overflow: visible;
+    pointer-events: none;
+    z-index: 2;
+}
+.land-gauge polygon {
+    fill: none;
+    stroke: var(--gauge-color);
+    stroke-width: 16;
+    stroke-linejoin: round;
+}
+.land-gauge .track {
+    stroke-opacity: 0.3;
+}
+.land-gauge .fill {
+    stroke-dasharray: var(--gauge-length);
+    stroke-dashoffset: 0;
+    animation: land-gauge-fill var(--gauge-time) linear;
+}
+@keyframes land-gauge-fill {
+    from {
+        stroke-dashoffset: var(--gauge-length);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .expand-slot,
+    .land-gauge .fill {
         animation: none;
     }
 }
