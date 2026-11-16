@@ -373,11 +373,21 @@ a:hover {
     mix-blend-mode: var(--light-mode);
     opacity: var(--light-opacity);
 }
+/* Trees, flowers and rocks on empty land cells, standing on their grid point. */
+.decoration {
+    position: absolute;
+    max-width: none;
+    pointer-events: none;
+    image-rendering: pixelated;
+    transform: translate(-50%, -92%);
+}
 .building.dimmed,
-.building-badge.dimmed {
+.building-badge.dimmed,
+.decoration.dimmed {
     opacity: 0.24;
 }
-.detail-focus .building:not(.focused-building) {
+.detail-focus .building:not(.focused-building),
+.detail-focus .decoration {
     opacity: 0.45;
     filter: blur(1px);
 }

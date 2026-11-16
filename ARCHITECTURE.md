@@ -13,7 +13,8 @@
 | `db/` | 저장소 계층. `chrome.storage.local`을 직접 다루는 유일한 곳 |
 | `popup/` | 툴바 아이콘을 누르면 뜨는 팝업. 현재 탭을 카테고리에 저장 |
 | `homepage/` | 새 탭 지도. 카테고리별 자동 도시 배치, 설명 카드, 사이트 방문, 링크 복사, 카테고리 관리 패널, Google 서비스 바로가기 패널, 크롬 북마크 동기화 버튼 |
-| `homepage/layout.js` | 도시 배치 계산(순수 함수). 그리드 위 구역·건물 칸 결정, 구역 둘레 도로 타일, 아이소메트릭 좌표 변환 |
+| `homepage/layout.js` | 도시 배치 계산(순수 함수). 그리드 위 구역·건물 칸·피켓 칸 결정, 구역 둘레 도로 타일, 아이소메트릭 좌표 변환 |
+| `homepage/decorations.js` | 구역 빈칸의 나무·꽃·풀·바위 장식 계산(순수 함수). 카테고리와 구역 안 칸 위치로 고정해 고름 |
 | `homepage/background.js` | 구역·도로 밖을 채우는 미개발 공터 바닥 타일 계산(순수 함수). 칸 좌표로 정한 흙 변형 타일, 화면 범위를 칸 범위로 바꾸는 역변환 |
 | `homepage/building-move.js` | 건물 이동 계산(순수 함수). 놓은 자리의 의미(이동·자리 교환·밀어내기·한 줄 끼워 넣기) 결정, 끼워 넣은 줄 너머 땅 밀기, 이동을 적용한 `planCity` 결과 미리 계산, 배치 지문 |
 | `homepage/building-drag.js` | 건물 길게 누르기·끌기·놓기 화면 동작. 반투명 건물과 놓일 칸 표시, 꽉 찬 땅 테두리 게이지와 넓힐 칸, 넓힌 뒤 지도 미리보기, Esc·지도 밖 취소, 끈 뒤 사이트 방문 막기. 안내 문구는 쓰지 않고 표시로만 알립니다 |
@@ -38,7 +39,7 @@
 | `style.css` | 두 페이지가 공유하는 디자인 토큰(CSS 변수)과 기본 스타일 |
 | `assets/ui/popup-arrow-left.svg`, `assets/ui/popup-arrow-right.svg` | 건물 선택 화살표 SVG. 표시 크기는 왼쪽 14×15, 오른쪽 14×14이며 출처는 README.md |
 | `daisyui.generated.css` | `homepage/`와 `popup/`이 사용하는 daisyUI 정적 번들. `debug/ui-preview/src/app.css`에서 자동 생성하며 직접 수정하지 않음 |
-| `assets/` | 아이콘과 건물 이미지. `assets/Isometric City/`는 에셋 팩 원본으로, 지도에는 도로·바닥 타일과 건물만 쓰고 `Characters/`·`Props/`·`Vehicles/`는 아직 쓰지 않음. `wall-mask-buildings/`는 건물 에셋별 벽면 마스크. `ui/`는 화면 버튼 SVG(추가·수정·펼치기·NEW 말풍선 등)와 `google/`의 Google 서비스 아이콘. 출처는 README.md |
+| `assets/` | 아이콘과 건물 이미지. `assets/Isometric City/`는 에셋 팩 원본으로, 지도에는 도로·바닥 타일과 건물만 쓰고 `Props/`의 나무·꽃·풀·바위는 구역 빈칸 장식에 쓰고, `Characters/`·`Vehicles/`는 아직 쓰지 않음. `wall-mask-buildings/`는 건물 에셋별 벽면 마스크. `ui/`는 화면 버튼 SVG(추가·수정·펼치기·NEW 말풍선 등)와 `google/`의 Google 서비스 아이콘. 출처는 README.md |
 | `biome.json` | 포맷·린트 설정 |
 | `package.json`, `package-lock.json` | 개발 도구 의존성(Biome, Chrome 타입 정의). 서비스 실행에는 필요 없음 |
 | `.claude/skills/sync-project/` | 노션 기획 문서로 `PROJECT.md`를 다시 쓰는 Claude Code 스킬 |
@@ -57,6 +58,7 @@
 
 ```
 homepage/homepage.js ──> homepage/layout.js (planCity, planRoads)
+homepage/homepage.js ──> homepage/decorations.js (decorationsFor) ──> homepage/layout.js (hashText)
 homepage/homepage.js ──> homepage/background.js (planBackground, cellBounds) ──> homepage/layout.js (타일 크기)
 homepage/homepage.js ──> homepage/building-drag.js ──> homepage/building-move.js ──> homepage/layout.js (planCity)
 homepage/homepage.js ──> db/db.js (moveBookmark: 건물 이동 저장)
@@ -101,7 +103,11 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 - 새 탭은 색이 없는 카테고리 색을 `category-colors.js` 규칙으로 정하고 `db.js`에서 저장합니다. 카테고리 색상 편집은 입력 즉시 목록의 색상 표시·구역 강조 영역·건물 벽·잔디 색에 반영되고 `CategoryDB.edit`로 저장합니다.
 - 두 화면은 같은 `createColorPicker`와 CSS를 사용합니다. 홈페이지는 캔버스 배율에 맞춰 피커 위치를 정하고 색상 미리보기·지연 저장을 처리합니다. 팝업은 새 카테고리 이름 입력창 내부 왼쪽의 색상 칩을 누르면 피커를 엽니다. HEX·불투명도는 피커 안에 표시합니다. 바뀐 색은 칩과 건물 미리보기에 즉시 반영하되 저장하기 전에는 DB에 쓰지 않습니다.
 - 도시 배치 규칙 (`homepage/layout.js`):
-  - 그리드 한 칸에 건물 하나. 카테고리 구역은 2×2 → 2×3 → 3×3 → 3×4 … 순서로 북마크 수에 맞춰 커지고 줄어듭니다.
+  - 그리드 한 칸에 건물 하나. 카테고리 구역은 2×2 → 2×3 → 3×3 → 3×4 … 순서의 모양 중, (북마크 수 + 피켓 1칸) × 1.5칸이 들어가는 크기입니다(`MARGIN`). 남는 칸은 건물 사이 여백입니다.
+  - 빈칸이 `ceil(북마크 수 / 4)`보다 적게 남을 때만 커지고, 북마크가 3개 더 있어도 될 만큼 클 때만 줄어듭니다. 북마크 한두 개로는 구역 크기가 바뀌지 않습니다.
+  - 새 건물은 빈칸 중 북마크 ID 해시로 고른 칸에 놓입니다(`hashText`). 정한 칸은 저장되므로 새로고침해도 그대로입니다.
+  - 구역마다 앞쪽(화면 아래) 모서리에 가장 가까운 빈칸 하나를 카테고리 이름 피켓 칸으로 비워 둡니다(`group.picket`, 저장하지 않음). 피켓 그림은 아직 그리지 않습니다.
+  - 나머지 빈칸에는 장식(나무·꽃·풀·바위)을 그립니다(`homepage/decorations.js`). 칸마다 카테고리 ID와 구역 안 위치로 고르므로 구역이 통째로 옮겨져도 장식이 따라갑니다. 저장하지 않고, 클릭을 막지 않습니다.
   - 모든 구역 둘레에 1칸 도로가 있고, 이웃 구역과 도로를 공유합니다(구역 사이 최소 1칸).
   - 구역 사이는 정확히 1칸(도로 공유)이거나 3칸 이상입니다. 2칸이면 도로 두 줄이 나란히 생기므로 허용하지 않고, 저장된 배치에 2칸 간격이 있으면 한쪽을 1칸 당기거나 밀어 고칩니다(`fixDoubleRoads`). 3칸 이상 떨어진 구역끼리는 도로가 이어지지 않을 수 있습니다. 건물을 옮길 때 고정된 두 땅이 2칸 간격이 되면 건물이 빠진 땅(`pinned`의 두 번째)만 1칸 움직일 수 있습니다.
   - 새 카테고리는 중앙에서 가장 가까운 빈 자리에 놓입니다. 구역은 바깥쪽으로 커집니다.

@@ -6,7 +6,10 @@
 export const TILE_WIDTH = 128;
 export const TILE_HEIGHT = 64;
 
-// 2x2 -> 2x3 -> 3x3 -> 3x4 -> 4x4 ... returned as [short, long].
+// Land cells per building (the name picket included), so a land keeps empty cells between buildings.
+const MARGIN = 1.5;
+
+// 2x2 -> 2x3 -> 3x3 -> 3x4 -> 4x4 ... holding `count` cells, returned as [short, long].
 function shapeFor(count) {
     let short = 2;
     let long = 2;
@@ -15,6 +18,31 @@ function shapeFor(count) {
         else short++;
     }
     return [short, long];
+}
+
+// Land shape for `count` buildings, one picket cell and the margin.
+function targetShape(count) {
+    return shapeFor(Math.ceil((count + 1) * MARGIN));
+}
+
+// Grow only when almost no empty cell is left, and shrink only when far too many are, so adding
+// or removing a bookmark or two does not resize a land and push its neighbours around.
+function needsGrow(group) {
+    return group.area.w * group.area.h - group.count - 1 < Math.ceil(group.count / 4);
+}
+function needsShrink(group) {
+    const [short, long] = targetShape(group.count + 3);
+    return group.area.w * group.area.h > short * long;
+}
+
+// FNV-1a: a fixed pseudo-random number for a text, so random choices stay the same every render.
+export function hashText(text) {
+    let hash = 2166136261;
+    for (const char of text) {
+        hash ^= char.codePointAt(0);
+        hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
 }
 
 // Distance measured on screen, so the city spreads out from the middle.
@@ -100,7 +128,7 @@ function moveTo(group, area) {
 }
 
 function grow(group, groups) {
-    const [short, long] = shapeFor(group.count);
+    const [short, long] = targetShape(group.count);
     const old = group.area;
     const others = groups.filter((item) => item !== group).map((item) => item.area);
     const candidates = [];
@@ -202,7 +230,7 @@ function dropEmptyLines(group, target) {
 }
 
 function shrink(group) {
-    const [short, long] = shapeFor(group.count);
+    const [short, long] = targetShape(group.count);
     dropEmptyLines(group, short * long);
     if (group.area.w * group.area.h <= short * long) return;
     const old = group.area;
@@ -312,15 +340,25 @@ function placeBuildings(group) {
             waiting.push(bookmark);
         }
     }
-    // New buildings take the first free cell.
-    for (let y = area.y; y < area.y + area.h && waiting.length; y++) {
-        for (let x = area.x; x < area.x + area.w && waiting.length; x++) {
-            if (!taken.has(`${x},${y}`)) {
-                taken.add(`${x},${y}`);
-                cells.set(waiting.shift().id, { x, y });
-            }
+    const free = [];
+    for (let y = area.y; y < area.y + area.h; y++)
+        for (let x = area.x; x < area.x + area.w; x++) if (!taken.has(`${x},${y}`)) free.push({ x, y });
+    // The name picket takes the free cell nearest the land's front (bottom) corner.
+    const front = { x: area.x + area.w - 1, y: area.y + area.h - 1 };
+    const nearFront = (cell) => Math.abs(cell.x - front.x) + Math.abs(cell.y - front.y);
+    let picket = null;
+    for (const cell of free) if (!picket || nearFront(cell) < nearFront(picket)) picket = cell;
+    const open = free.filter((cell) => cell !== picket);
+    // New buildings take a free cell picked by their id, so empty cells stay scattered.
+    for (const bookmark of waiting) {
+        if (!open.length) {
+            open.push(picket); // no room left: the picket gives way until the land grows
+            picket = null;
         }
+        const [cell] = open.splice(hashText(String(bookmark.id)) % open.length, 1);
+        cells.set(bookmark.id, cell);
     }
+    group.picket = picket;
     return cells;
 }
 
@@ -356,10 +394,8 @@ export function planCity(savedCategories, savedBookmarks, { pinned = [], compact
     // 2. Resize existing areas to fit their buildings.
     let shrank = false;
     for (const group of placed) {
-        const [short, long] = shapeFor(group.count);
-        const capacity = group.area.w * group.area.h;
-        if (capacity < group.count) grow(group, placed);
-        else if (short * long < capacity) {
+        if (needsGrow(group)) grow(group, placed);
+        else if (needsShrink(group)) {
             shrink(group);
             shrank = true;
         }
@@ -368,7 +404,7 @@ export function planCity(savedCategories, savedBookmarks, { pinned = [], compact
     // 3. New categories go to the free spot closest to the middle.
     for (const group of groups) {
         if (group.area) continue;
-        const [short, long] = shapeFor(group.count);
+        const [short, long] = targetShape(group.count);
         const others = placed.map((item) => item.area);
         const options = [findSpot(long, short, others, 0, 0), findSpot(short, long, others, 0, 0)];
         options.sort((a, b) => screenDistance(...centerOf(a), 0, 0) - screenDistance(...centerOf(b), 0, 0));
