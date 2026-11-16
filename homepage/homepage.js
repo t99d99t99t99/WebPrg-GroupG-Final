@@ -1,4 +1,5 @@
 import {
+    backfillMissingBookmarkIcons,
     bookmarks,
     categories,
     dismissNewBefore,
@@ -9,6 +10,7 @@ import {
 } from "../db/db.js";
 import { categorySelect } from "../shared/category-select.js";
 import { createColorPicker } from "../shared/color-picker.js";
+import { isSiteIconUrl, siteIconUrlForPage } from "../shared/site-icons.js";
 import { bookmarkNameError, webUrl } from "../shared/validation.js";
 import { cellBounds, planBackground } from "./background.js";
 import { clearBookmarkPreview, renderBookmarkPreview } from "./bookmark-preview.js";
@@ -216,8 +218,8 @@ function applyFilter() {
     for (const item of $("buildings").children) {
         item.classList.toggle("dimmed", selectedCategory !== null && item.dataset.category !== selectedCategory);
     }
-    for (const label of $("building-labels").children) {
-        label.classList.toggle("dimmed", selectedCategory !== null && label.dataset.category !== selectedCategory);
+    for (const icon of $("building-labels").children) {
+        icon.classList.toggle("dimmed", selectedCategory !== null && icon.dataset.category !== selectedCategory);
     }
     for (const row of $("category-list").children) {
         row.querySelector(".category-filter")?.setAttribute(
@@ -294,12 +296,33 @@ function createBuilding(bookmark, category, cell, labels, interactive = true) {
     const tint = element("span", "building-wall-tint");
     const light = element("span", "building-wall-light");
     applyWallColor(tint, light, category.color, texture.size);
-    const badge = element("span", "building-badge", bookmark.name);
-    badge.setAttribute("aria-hidden", "true");
-    badge.dataset.category = category.id;
-    badge.style.left = `${position.left}px`;
-    badge.style.top = `${position.top - 6}px`;
-    labels.append(badge);
+    const siteIcon = element("span", "building-icon");
+    siteIcon.setAttribute("aria-hidden", "true");
+    siteIcon.dataset.category = category.id;
+    siteIcon.style.left = `${position.left}px`;
+    siteIcon.style.top = `${position.top - 6}px`;
+    const fallbackIcon = element("span", "building-icon-fallback", "🌐");
+    siteIcon.append(fallbackIcon);
+    const iconUrl = isSiteIconUrl(bookmark.iconUrl)
+        ? bookmark.iconUrl || siteIconUrlForPage(bookmark.url)
+        : siteIconUrlForPage(bookmark.url);
+    if (iconUrl) {
+        const iconImage = element("img", "building-site-icon");
+        iconImage.alt = "";
+        iconImage.hidden = true;
+        iconImage.addEventListener(
+            "load",
+            () => {
+                iconImage.hidden = false;
+                fallbackIcon.hidden = true;
+            },
+            { once: true },
+        );
+        iconImage.addEventListener("error", () => iconImage.remove(), { once: true });
+        iconImage.src = iconUrl;
+        siteIcon.append(iconImage);
+    }
+    labels.append(siteIcon);
     prepareBuildingAppearance(image, hitArea).catch((error) => {
         console.error(error);
         toast("건물 표시를 불러오지 못했습니다. 새로고침해 주세요.");
@@ -801,7 +824,12 @@ subscribe((changes) => {
     render();
 });
 fitCanvas();
-render();
+backfillMissingBookmarkIcons(true)
+    .then(() => render())
+    .catch((error) => {
+        console.error(error);
+        render();
+    });
 
 let memoQueue = Promise.resolve();
 $("tooltip-memo").addEventListener("input", (event) => {
@@ -911,6 +939,7 @@ $("sync-bookmarks").addEventListener("click", async () => {
     button.setAttribute("aria-busy", "true");
     try {
         const result = await importChromeBookmarks(await chrome.bookmarks.getTree());
+        await backfillMissingBookmarkIcons();
         await render();
         toast(
             `북마크 ${result.bookmarks}개, 카테고리 ${result.categories}개를 가져왔습니다. 중복 ${result.duplicates}개, 지원하지 않는 주소 ${result.skipped}개는 건너뛰었습니다.`,

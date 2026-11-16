@@ -8,9 +8,10 @@
 | 경로 | 책임 |
 |---|---|
 | `BUILDING_FAMILIES.md` | 사용 중인 5개 건물 계열, 성장 단계별 에셋, 통합·미사용 목록, 이미지·마스크 파일명 규칙 |
-| `manifest.json` | 확장 설정(Manifest V3). 새 탭과 팝업을 연결하고 권한(`storage`, `activeTab`, `bookmarks`)을 선언 |
+| `manifest.json` | 확장 설정(Manifest V3). 새 탭·팝업·모듈 서비스 워커를 연결하고 권한(`storage`, `activeTab`, `bookmarks`, `favicon`, `tabs`)을 선언 |
+| `background.js` | 저장된 페이지와 일치하는 탭의 파비콘 변경·활성화를 감지해 북마크 아이콘 URL을 갱신 |
 | `assets/icons/` | 확장 프로그램 아이콘 PNG 4종(16·32px 단독 집, 48·128px 건물 모음)과 `source/`의 수정 가능한 SVG 원본. `manifest.json`에서 크기별로 연결하며 새 탭 파비콘은 16px 아이콘을 사용 |
-| `db/` | 저장소 계층. `chrome.storage.local`을 직접 다루는 유일한 곳 |
+| `db/` | 저장소 계층. `chrome.storage.local`을 직접 다루는 유일한 곳. 기존 북마크의 아이콘 주소 1회 보정도 담당 |
 | `popup/` | 툴바 아이콘을 누르면 뜨는 팝업. 현재 탭을 카테고리에 저장 |
 | `homepage/` | 새 탭 지도. 카테고리별 자동 도시 배치, 설명 카드, 사이트 방문, 링크 복사, 카테고리 관리 패널, Google 서비스 바로가기 패널, 크롬 북마크 동기화 버튼 |
 | `homepage/layout.js` | 도시 배치 계산(순수 함수). 그리드 위 구역·건물 칸·피켓 칸 결정, 구역 둘레 도로 타일(교차로에 붙은 직선 도로는 횡단보도 타일), 아이소메트릭 좌표 변환 |
@@ -23,8 +24,9 @@
 | `homepage/building-appearance.js` | 그림자를 제외한 호버 윤곽, 건물별 사전 제작 벽면 마스크 연결 |
 | `homepage/category-colors.js` | 카테고리 기본 색 배정, 벽면 명도와 잔디 채도·명도 보정 |
 | `db/storage.js` | Chrome 저장소 및 웹 미리보기 어댑터, 저장 변경 알림, 공통 쓰기 잠금 |
-| `shared/` | 홈페이지 이름·URL 검증, 키보드로 조작할 수 있는 카테고리 선택 목록 |
+| `shared/` | 홈페이지 이름·URL 검증, 사이트 아이콘 URL 생성, 키보드로 조작할 수 있는 카테고리 선택 목록 |
 | `shared/building-designs.js` | 건물 5개 계열의 성장 에셋과 좌우 방향별 기본 디자인 10종. 팝업 선택·DB 검증·지도 렌더링이 공유 |
+| `shared/site-icons.js` | Chrome Favicon API 조회 URL 생성과 저장할 아이콘 URL 검증 |
 | `shared/color-picker.js`, `shared/color-picker.css` | 홈페이지와 팝업이 함께 쓰는 컬러피커 UI·스타일. 채도/밝기 드래그·방향키, 색조, HEX, 스포이트, Escape·바깥 클릭 닫기. 저장은 호출 화면에서 처리 |
 | `homepage/bookmark-preview.js` | 호버 시 URL의 sandbox iframe 미리보기(저장 이미지가 있으면 우선 표시). 카드가 닫히면 iframe과 크기 관찰 해제 |
 | `homepage/google-account.js` | 계정 표시 전용 어댑터. 전달받은 이름·HTTPS 사진 URL을 표시하고 사진 부재·실패 시 기본 아바타로 복귀. 인증·권한·저장소 접근 없음 |
@@ -71,8 +73,10 @@ homepage/homepage.js ─┐
                       ├─> db/db.js ──> db/bookmark.js / db/category.js ──> db/storage.js
 popup/popup.js ───────┘          └─> demo/seed-data.js                       ├─> chrome.storage.local
                                                                            └─> localStorage (웹 미리보기)
-popup/popup.js ──> chrome.tabs.query (현재 탭 제목·URL)
+popup/popup.js ──> chrome.tabs.query / shared/site-icons.js (현재 탭 제목·URL·파비콘)
 homepage/homepage.js ──> chrome.bookmarks.getTree → db/db.js (importChromeBookmarks)
+background.js ──> chrome.tabs.onUpdated / onActivated → db/db.js (저장된 사이트 파비콘 갱신)
+shared/site-icons.js ──> chrome.runtime.getURL (Chrome Favicon API 주소 생성)
 popup/popup.js ──> shared/category-select.js / shared/validation.js
 popup/popup.js / homepage/category-manager.js ──> db/category.js (기본 카테고리 판별)
 popup/popup.js ──> homepage/category-colors.js (기존 카테고리 색상·새 카테고리 초기 색상)
@@ -123,12 +127,13 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 
 ## 데이터 구조
 
-`chrome.storage.local`에 키 두 개로 배열을 저장합니다.
+`chrome.storage.local`에 북마크·카테고리 배열과 아이콘 보정 완료 표시를 저장합니다.
 
 | 키 | 값 |
 |---|---|
 | `webprg-bookmarkmap-bookmarks` | 북마크 객체 배열 |
 | `webprg-bookmarkmap-categories` | 카테고리 객체 배열 |
+| `webprg-bookmarkmap-icon-backfill-v1` | 기존 북마크의 아이콘 주소를 홈페이지 첫 실행에서 한 번 보정했는지 여부 |
 
 **북마크:** `{ id, url, name, category, savedAt, clickCount, cell, lastVisitedAt?, memo?, isNew?, preview?, iconUrl?, buildingDesign? }`
 - `id`: `crypto.randomUUID()` 문자열
@@ -140,7 +145,7 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 
 - `memo`: 글자 수 제한 없는 문자열 메모. 기존 데이터에 없으면 빈 메모로 표시합니다. 팝업에서는 최종 저장 버튼을 누를 때만 북마크와 함께 저장합니다.
 - `buildingDesign`: 선택적 디자인 ID (`blue-homes:a` 등). `shared/building-designs.js`의 ID를 `add`/`edit`에서 검증합니다. 선택한 계열과 방향을 성장·파손 단계에서도 유지하며, 필드가 없으면 ID 기반 규칙을 사용합니다. 데이터 호환을 위해 `cafe:a`·`pizza:a`도 허용하며 각각 카페·피자 가게의 외형 단계부터 표시합니다.
-- `iconUrl`: 선택 사항인 웹사이트 아이콘의 HTTP/HTTPS URL 문자열. `Bookmark` 생성자의 여섯 번째 인자 또는 `BookmarkDB.add` 객체의 `iconUrl`로 저장하고, `BookmarkDB.edit(id, { iconUrl })`로 수정합니다. 빈 문자열은 아이콘 없음이며, 필드가 없는 기존 데이터도 그대로 읽습니다. 현재 화면은 아이콘을 자동 수집하거나 표시하지 않습니다.
+- `iconUrl`: 선택 사항인 웹사이트 아이콘 URL. 저장 팝업은 현재 탭 파비콘 URL을 저장하고, 없으면 Chrome Favicon API 주소를 생성합니다. 기존 북마크는 `webprg-bookmarkmap-icon-backfill-v1` 표시를 두고 홈페이지 최초 실행에서 한 번 보정합니다. Chrome 북마크 API는 파비콘을 제공하지 않으므로 동기화한 URL을 Favicon API로 연결합니다. 탭에서 파비콘이 갱신되거나 페이지가 활성화되면 서비스 워커가 같은 URL의 저장된 북마크를 찾아 실제 파비콘 URL을 저장합니다. 아이콘 정보가 없거나 로딩이 실패하면 홈페이지는 지구본 이모지를 표시합니다.
 - `isNew`: 새로 저장한 건물의 NEW 표시. 건물을 호버·포커스하면 false로 저장합니다. 새 탭을 떠날 때(다른 탭으로 전환), 그 화면을 보기 시작한 시각보다 먼저 저장된 북마크도 false로 저장합니다. 따라서 새로 연 탭에서는 NEW가 보이고, 한 번 본 뒤 다시 들어오면 사라집니다. 기존 데이터에는 표시하지 않습니다.
 - `preview`: 선택 사항인 로컬 JPEG data URL. 값이 제공되면 이미지로 표시하고, 없거나 이미지 로딩이 실패하면 저장된 URL을 iframe으로 연결합니다. 홈페이지에서는 캡처하거나 외부 서버로 전송하지 않습니다. 현재 팝업은 이 필드를 수집하지 않습니다.
 

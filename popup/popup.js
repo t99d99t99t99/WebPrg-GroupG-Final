@@ -6,6 +6,7 @@ import { assignCategoryColors, colors, wallColorAdjustments } from "../homepage/
 import { BUILDING_DESIGNS } from "../shared/building-designs.js";
 import { categorySelect } from "../shared/category-select.js";
 import { createColorPicker } from "../shared/color-picker.js";
+import { siteIconUrlForPage } from "../shared/site-icons.js";
 import { bookmarkNameError, categoryError as getCategoryError, webUrl } from "../shared/validation.js";
 
 const $ = (id) => document.getElementById(id);
@@ -265,6 +266,7 @@ form.addEventListener("submit", async (event) => {
             bookmarkName.value.trim(),
             selectedCategory.id,
             bookmarkMemo.value,
+            webUrl(currentTab.favIconUrl)?.href ?? siteIconUrlForPage(currentTab.url),
         );
         bookmark.buildingDesign = BUILDING_DESIGNS[selectedDesign].id;
         await bookmarks.add(bookmark);
