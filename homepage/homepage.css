@@ -690,6 +690,11 @@ a:hover {
     margin-left: auto;
     flex-shrink: 0;
 }
+/* Trash icon from the Figma category panel keeps its own 13×14 shape. */
+.category-delete-button img {
+    width: 13px;
+    height: 14px;
+}
 .category-edit-form {
     flex: 1;
     min-width: 0;
