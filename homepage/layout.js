@@ -6,7 +6,14 @@
 export const TILE_WIDTH = 128;
 export const TILE_HEIGHT = 64;
 
-// 2x2 -> 2x3 -> 3x3 -> 3x4 -> 4x4 ... returned as [short, long].
+// Land cells per building (the name picket included), so a land keeps some empty cells between buildings.
+const MARGIN = 1.3;
+// A land grows once buildings (and the picket) fill more than MAX_FILL of it, and shrinks once
+// they fill less than MIN_FILL.
+const MAX_FILL = 0.85;
+const MIN_FILL = 0.45;
+
+// 2x2 -> 2x3 -> 3x3 -> 3x4 -> 4x4 ... holding `count` cells, returned as [short, long].
 function shapeFor(count) {
     let short = 2;
     let long = 2;
@@ -15,6 +22,39 @@ function shapeFor(count) {
         else short++;
     }
     return [short, long];
+}
+
+// Land shape for `count` buildings, one picket cell and the margin.
+function targetShape(count) {
+    return shapeFor(Math.ceil((count + 1) * MARGIN));
+}
+
+// Grow only when the land gets crowded, and shrink only when far too many cells are empty, so adding
+// or removing a bookmark or two does not resize a land and push its neighbours around.
+function needsGrow(group) {
+    return group.count + 1 > group.area.w * group.area.h * MAX_FILL;
+}
+function needsShrink(group) {
+    const [short, long] = targetShape(group.count);
+    const cells = group.area.w * group.area.h;
+    return group.count + 1 < cells * MIN_FILL && short * long < cells;
+}
+
+// FNV-1a: a fixed pseudo-random number for a text, so random choices stay the same every render.
+export function hashText(text) {
+    let hash = 2166136261;
+    for (const char of text) {
+        hash ^= char.codePointAt(0);
+        hash = Math.imul(hash, 16777619);
+    }
+    // Mix the bits (MurmurHash3 finaliser): texts that differ only in the last character
+    // would otherwise share their high bits and pick the same item.
+    hash ^= hash >>> 16;
+    hash = Math.imul(hash, 0x85ebca6b);
+    hash ^= hash >>> 13;
+    hash = Math.imul(hash, 0xc2b2ae35);
+    hash ^= hash >>> 16;
+    return hash >>> 0;
 }
 
 // Distance measured on screen, so the city spreads out from the middle.
@@ -30,9 +70,26 @@ function centerOf(area) {
     return [area.x + area.w / 2, area.y + area.h / 2];
 }
 
+// Empty cells between two areas along each axis (0 or less when their ranges touch or overlap).
+function gaps(a, b) {
+    return [Math.max(b.x - (a.x + a.w), a.x - (b.x + b.w)), Math.max(b.y - (a.y + a.h), a.y - (b.y + b.h))];
+}
+
 // Areas must keep at least one cell between them for the shared road.
+function overlaps(a, b) {
+    const [gx, gy] = gaps(a, b);
+    return gx < 1 && gy < 1;
+}
+
+// Two cells between facing sides put two road rings side by side, drawn as two parallel
+// streets. Neighbours either share one road (one cell) or leave a lot strip (three or more).
+function doubleRoad(a, b) {
+    const [gx, gy] = gaps(a, b);
+    return (gx === 2 && gy <= 1) || (gy === 2 && gx <= 1);
+}
+
 function blocks(a, b) {
-    return a.x < b.x + b.w + 1 && b.x < a.x + a.w + 1 && a.y < b.y + b.h + 1 && b.y < a.y + a.h + 1;
+    return overlaps(a, b) || doubleRoad(a, b);
 }
 
 function isFree(area, others) {
@@ -83,7 +140,7 @@ function moveTo(group, area) {
 }
 
 function grow(group, groups) {
-    const [short, long] = shapeFor(group.count);
+    const [short, long] = targetShape(group.count);
     const old = group.area;
     const others = groups.filter((item) => item !== group).map((item) => item.area);
     const candidates = [];
@@ -185,11 +242,18 @@ function dropEmptyLines(group, target) {
 }
 
 function shrink(group) {
-    const [short, long] = shapeFor(group.count);
+    const [short, long] = targetShape(group.count);
     dropEmptyLines(group, short * long);
     if (group.area.w * group.area.h <= short * long) return;
     const old = group.area;
-    const [w, h] = old.w >= old.h ? [long, short] : [short, long];
+    // Only a shape that fits inside the old area, so shrinking never reaches into a neighbour
+    // (a building move can leave a long thin land that a squarer shape would stick out of).
+    const fits = ([w, h]) => w <= old.w && h <= old.h;
+    const shape = [old.w >= old.h ? [long, short] : [short, long], old.w >= old.h ? [short, long] : [long, short]].find(
+        fits,
+    );
+    if (!shape) return;
+    const [w, h] = shape;
     // Keep the side nearest the middle; buildings outside are repacked later.
     const [cx, cy] = centerOf(old);
     group.area = {
@@ -214,10 +278,13 @@ function compact(groups, pinned) {
             const [cx, cy] = centerOf(group.area);
             const sx = -Math.sign(Math.round(cx));
             const sy = -Math.sign(Math.round(cy));
+            // Two steps when one would stop at a double road, so a lot strip can close to a shared road.
             for (const [dx, dy] of [
                 [sx, sy],
                 [sx, 0],
                 [0, sy],
+                [sx * 2, 0],
+                [0, sy * 2],
             ]) {
                 if (dx === 0 && dy === 0) continue;
                 const area = { ...group.area, x: group.area.x + dx, y: group.area.y + dy };
@@ -233,13 +300,51 @@ function compact(groups, pinned) {
     }
 }
 
-function placeBuildings(group) {
+// Saved layouts (and a building move's shifted areas) may hold double roads. Move one area of
+// each such pair: one cell closer to share the road, one cell away to leave a lot strip, or
+// else the nearest free spot. The area farther from the middle moves; `pinned` ones stay put.
+// When both are pinned, the one later in `pinned` may still shift one cell (a building move
+// pins the land it went into first and the land it left second).
+function fixDoubleRoads(groups, pinned) {
+    const rank = (group) => pinned.indexOf(String(group.category.id));
+    const away = (group) => screenDistance(...centerOf(group.area), 0, 0);
+    const skip = new Set();
+    for (let rounds = 0; rounds < 100; rounds++) {
+        let pair = null;
+        for (const a of groups)
+            for (const b of groups)
+                if (!pair && a !== b && doubleRoad(a.area, b.area) && !skip.has(`${a.category.id}|${b.category.id}`))
+                    pair = [a, b];
+        if (!pair) return;
+        const [a, b] = pair;
+        const [ra, rb] = [rank(a), rank(b)];
+        let group = a;
+        if (ra < 0 && rb < 0) group = away(a) >= away(b) ? a : b;
+        else if (ra < 0 || rb < 0) group = ra < 0 ? a : b;
+        else group = ra > rb ? a : b;
+        const other = group === a ? b : a;
+        const others = groups.filter((item) => item !== group).map((item) => item.area);
+        const [gx] = gaps(group.area, other.area);
+        const axis = gx === 2 ? "x" : "y";
+        const size = axis === "x" ? "w" : "h";
+        const toward = other.area[axis] > group.area[axis] + group.area[size] ? 1 : -1;
+        const shifted = (by) => ({ ...group.area, [axis]: group.area[axis] + by });
+        let spot = [shifted(toward), shifted(-toward)].find((area) => isFree(area, others));
+        if (!spot && rank(group) < 0) spot = findSpot(group.area.w, group.area.h, others, ...centerOf(group.area));
+        if (spot) moveTo(group, spot);
+        else skip.add(`${a.category.id}|${b.category.id}`).add(`${b.category.id}|${a.category.id}`); // pinned and boxed in
+    }
+}
+
+// `spread` places every building of the land anew (after the land changed size), so buildings
+// stand apart across the whole land instead of keeping their old corner.
+function placeBuildings(group, spread) {
     const { area } = group;
     const taken = new Set();
     const cells = new Map();
     const waiting = [];
     for (const bookmark of group.items) {
-        const cell = currentCell(group, bookmark);
+        const cell = spread ? null : currentCell(group, bookmark);
         const key = cell && `${cell.x},${cell.y}`;
         const inside =
             cell &&
@@ -256,15 +361,41 @@ function placeBuildings(group) {
             waiting.push(bookmark);
         }
     }
-    // New buildings take the first free cell.
-    for (let y = area.y; y < area.y + area.h && waiting.length; y++) {
-        for (let x = area.x; x < area.x + area.w && waiting.length; x++) {
-            if (!taken.has(`${x},${y}`)) {
-                taken.add(`${x},${y}`);
-                cells.set(waiting.shift().id, { x, y });
-            }
+    const free = [];
+    for (let y = area.y; y < area.y + area.h; y++)
+        for (let x = area.x; x < area.x + area.w; x++) if (!taken.has(`${x},${y}`)) free.push({ x, y });
+    // The name picket takes the free cell nearest the land's front (bottom) corner.
+    const front = { x: area.x + area.w - 1, y: area.y + area.h - 1 };
+    const nearFront = (cell) => Math.abs(cell.x - front.x) + Math.abs(cell.y - front.y);
+    let picket = null;
+    for (const cell of free) if (!picket || nearFront(cell) < nearFront(picket)) picket = cell;
+    const open = free.filter((cell) => cell !== picket);
+    // New buildings prefer a free cell with no building beside it, then the checkerboard cells
+    // (the picket's colour stays for decorations), then a cell picked by the bookmark id.
+    const neighbours = (cell) =>
+        [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+        ].filter(([dx, dy]) => taken.has(`${cell.x + dx},${cell.y + dy}`)).length;
+    const offBoard = (cell) => (cell.x + cell.y + front.x + front.y + 1) % 2;
+    for (const bookmark of waiting) {
+        if (!open.length) {
+            open.push(picket); // no room left: the picket gives way until the land grows
+            picket = null;
         }
+        const score = (cell) => [neighbours(cell), offBoard(cell), hashText(`${bookmark.id}:${cell.x},${cell.y}`)];
+        let best = 0;
+        for (let i = 1; i < open.length; i++) {
+            const [a, b] = [score(open[i]), score(open[best])];
+            if (a[0] < b[0] || (a[0] === b[0] && (a[1] < b[1] || (a[1] === b[1] && a[2] < b[2])))) best = i;
+        }
+        const [cell] = open.splice(best, 1);
+        taken.add(`${cell.x},${cell.y}`);
+        cells.set(bookmark.id, cell);
     }
+    group.picket = picket;
     return cells;
 }
 
@@ -284,24 +415,24 @@ export function planCity(savedCategories, savedBookmarks, { pinned = [], compact
         return { category, items, count: items.length, area: null, dx: 0, dy: 0, extra: new Map(), keepCells: true };
     });
 
-    // 1. Keep saved areas that are still valid and do not collide.
+    // 1. Keep saved areas that are still valid and do not collide. A double road is not a
+    // collision here: fixDoubleRoads nudges such an area instead of sending it far away.
+    const pinnedIds = [...pinned].map(String);
     const placed = [];
     for (const group of groups) {
         const area = group.category.area;
-        const others = placed.map((item) => item.area);
-        if (validArea(area) && isFree(area, others)) {
+        if (validArea(area) && placed.every((item) => !overlaps(area, item.area))) {
             group.area = { x: area.x, y: area.y, w: area.w, h: area.h };
             placed.push(group);
         }
     }
+    fixDoubleRoads(placed, pinnedIds);
 
     // 2. Resize existing areas to fit their buildings.
     let shrank = false;
     for (const group of placed) {
-        const [short, long] = shapeFor(group.count);
-        const capacity = group.area.w * group.area.h;
-        if (capacity < group.count) grow(group, placed);
-        else if (short * long < capacity) {
+        if (needsGrow(group)) grow(group, placed);
+        else if (needsShrink(group)) {
             shrink(group);
             shrank = true;
         }
@@ -310,7 +441,7 @@ export function planCity(savedCategories, savedBookmarks, { pinned = [], compact
     // 3. New categories go to the free spot closest to the middle.
     for (const group of groups) {
         if (group.area) continue;
-        const [short, long] = shapeFor(group.count);
+        const [short, long] = targetShape(group.count);
         const others = placed.map((item) => item.area);
         const options = [findSpot(long, short, others, 0, 0), findSpot(short, long, others, 0, 0)];
         options.sort((a, b) => screenDistance(...centerOf(a), 0, 0) - screenDistance(...centerOf(b), 0, 0));
@@ -318,13 +449,17 @@ export function planCity(savedCategories, savedBookmarks, { pinned = [], compact
         placed.push(group);
     }
 
-    if (shrank || compactAll) compact(placed, new Set([...pinned].map(String)));
+    if (shrank || compactAll) compact(placed, new Set(pinnedIds));
+    // A shrunk area can leave two cells to a neighbour it used to share a road with.
+    fixDoubleRoads(placed, pinnedIds);
 
     const changed = { areas: new Map(), cells: new Map() };
     for (const group of groups) {
-        group.cells = placeBuildings(group);
-        if (!group.keepCells) continue;
         const saved = group.category.area;
+        // A land the plan resized spreads its buildings again; lands a building move pinned keep theirs.
+        const resized = !saved || saved.w !== group.area.w || saved.h !== group.area.h;
+        group.cells = placeBuildings(group, resized && !pinnedIds.includes(String(group.category.id)));
+        if (!group.keepCells) continue;
         const { x, y, w, h } = group.area;
         if (!saved || saved.x !== x || saved.y !== y || saved.w !== w || saved.h !== h)
             changed.areas.set(group.category.id, group.area);
