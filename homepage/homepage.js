@@ -13,7 +13,6 @@ import { createColorPicker } from "../shared/color-picker.js";
 import { isSiteIconUrl, siteIconUrlForPage } from "../shared/site-icons.js";
 import { bookmarkNameError, webUrl } from "../shared/validation.js";
 import { cellBounds, planBackground } from "./background.js";
-import { clearBookmarkPreview, renderBookmarkPreview } from "./bookmark-preview.js";
 import { applyPreparedWallMask, prepareBuildingAppearance } from "./building-appearance.js";
 import { createBuildingDrag } from "./building-drag.js";
 import { layoutFingerprint, planMove, snapshotFromGroups } from "./building-move.js";
@@ -96,7 +95,6 @@ function hideTooltip() {
     tooltip.hidden = true;
     hoverBridge.hidden = true;
     hoverCorridor = [];
-    clearBookmarkPreview(tooltip.querySelector(".page-preview"));
     if (activeLink) activeLink.removeAttribute("aria-describedby");
     activeLink = null;
     $("world").classList.remove("detail-focus");
@@ -187,7 +185,6 @@ function showTooltip(bookmark, category, link) {
     }
     $("copy-link").textContent = "링크 복사";
     tooltip.hidden = false;
-    renderBookmarkPreview(tooltip.querySelector(".page-preview"), bookmark);
     link.setAttribute("aria-describedby", "bookmark-tooltip");
     const anchor = link.getBoundingClientRect();
     const box = tooltip.getBoundingClientRect();
@@ -875,7 +872,6 @@ $("edit-bookmark").addEventListener("click", async () => {
         const left = tooltip.style.left,
             top = tooltip.style.top;
         tooltip.hidden = true;
-        clearBookmarkPreview(tooltip.querySelector(".page-preview"));
         $("bookmark-editor").style.left = left;
         $("bookmark-editor").style.top = top;
         $("bookmark-editor").showModal();
