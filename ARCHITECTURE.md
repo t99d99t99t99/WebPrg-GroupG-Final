@@ -14,6 +14,9 @@
 | `popup/` | 툴바 아이콘을 누르면 뜨는 팝업. 현재 탭을 카테고리에 저장 |
 | `homepage/` | 새 탭 지도. 카테고리별 자동 도시 배치, 설명 카드, 사이트 방문, 링크 복사, 카테고리 관리 패널, Google 서비스 바로가기 패널, 크롬 북마크 동기화 버튼 |
 | `homepage/layout.js` | 도시 배치 계산(순수 함수). 그리드 위 구역·건물 칸 결정, 구역 둘레 도로 타일, 아이소메트릭 좌표 변환 |
+| `homepage/background.js` | 구역·도로 밖을 채우는 미개발 공터 바닥 타일 계산(순수 함수). 칸 좌표로 정한 흙 변형 타일, 화면 범위를 칸 범위로 바꾸는 역변환 |
+| `homepage/building-move.js` | 건물 이동 계산(순수 함수). 놓은 자리의 의미(이동·자리 교환·밀어내기·한 줄 끼워 넣기) 결정, 끼워 넣은 줄 너머 땅 밀기, 이동을 적용한 `planCity` 결과 미리 계산, 배치 지문 |
+| `homepage/building-drag.js` | 건물 길게 누르기·끌기·놓기 화면 동작. 반투명 건물과 놓일 칸 표시, 꽉 찬 땅 테두리 게이지와 넓힐 칸, 넓힌 뒤 지도 미리보기, Esc·지도 밖 취소, 끈 뒤 사이트 방문 막기. 안내 문구는 쓰지 않고 표시로만 알립니다 |
 | `homepage/building-rules.js` | 5개 계열의 3단계 에셋 목록, 북마크 ID 기반 계열·a/b·형태 선택, 7일 미방문 파손 판정 |
 | `homepage/building-appearance.js` | 그림자를 제외한 호버 윤곽, 건물별 사전 제작 벽면 마스크 연결 |
 | `homepage/category-colors.js` | 카테고리 기본 색 배정, 벽면 명도와 잔디 채도·명도 보정 |
@@ -54,6 +57,9 @@
 
 ```
 homepage/homepage.js ──> homepage/layout.js (planCity, planRoads)
+homepage/homepage.js ──> homepage/background.js (planBackground, cellBounds) ──> homepage/layout.js (타일 크기)
+homepage/homepage.js ──> homepage/building-drag.js ──> homepage/building-move.js ──> homepage/layout.js (planCity)
+homepage/homepage.js ──> db/db.js (moveBookmark: 건물 이동 저장)
 homepage/homepage.js ──> homepage/category-colors.js
 homepage/homepage.js ──> homepage/building-rules.js / homepage/building-appearance.js
 homepage/homepage.js ──> homepage/bookmark-preview.js / homepage/category-manager.js / homepage/google-account.js
@@ -99,9 +105,11 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
   - 모든 구역 둘레에 1칸 도로가 있고, 이웃 구역과 도로를 공유합니다(구역 사이 최소 1칸).
   - 새 카테고리는 중앙에서 가장 가까운 빈 자리에 놓입니다. 구역은 바깥쪽으로 커집니다.
   - 커질 자리가 없으면 구역 하나만 옮깁니다(자기 자신 또는 막고 있는 이웃 하나 중 덜 움직이는 쪽). 구역이 옮겨지면 건물도 같이 옮겨집니다.
-  - 추가할 때 기존 건물 칸은 바뀌지 않습니다. 구역이 줄어들 때만 건물을 다시 채우고, 구역들을 중앙 쪽으로 당깁니다.
+  - 추가할 때 기존 건물 칸은 바뀌지 않습니다. 구역이 줄어들 때는 건물이 없는 줄(행·열)부터 없애고(가운데 줄이면 건물이 적은 쪽이 한 칸 붙음), 빈 줄이 없을 때만 가운데에서 먼 쪽을 잘라 건물을 다시 채웁니다. 구역이 줄어들면 구역들을 중앙 쪽으로 당깁니다. 건물을 옮길 때는 옮긴 뒤 생긴 빈자리도 중앙 쪽으로 당기되, 건물을 놓은 땅과 건물이 빠진 땅은 움직이지 않습니다(`planCity`의 `pinned`·`compactAll` 옵션).
   - 카테고리를 삭제하면 포함된 북마크도 함께 삭제합니다. 저장 데이터에서 카테고리 ID가 일치하지 않는 북마크가 발견되면 DB 초기화 및 도시 갱신 시 "카테고리 일반"의 ID로 바꾸어 저장하고 기존 칸을 지워 다시 배치합니다. 별도의 임시 구역은 만들지 않습니다.
   - 도시 전체가 지도 영역에 들어가도록 확대·축소합니다.
+  - 구역과 도로 밖의 화면 전체는 흙 바닥(미개발 공터)으로 채웁니다(`homepage/background.js`). 약 14% 칸에 풀 조각·마른 자국·웅덩이 변형을 칸 좌표 기준으로 고정해 섞습니다. 배경은 저장하지 않고 그릴 때마다 현재 구역·도로로 다시 계산하며, 확대·축소 계산에는 포함하지 않습니다. 창 크기가 바뀌면 배경만 다시 그립니다.
+  - 건물을 0.4초 길게 누르거나 누른 채 움직이면 집어 들고, 땅의 칸에 놓습니다(`homepage/building-drag.js`, `homepage/building-move.js`). 건물은 항상 놓은 칸에 들어갑니다. 같은 땅: 빈칸은 이동, 다른 건물 칸은 자리 교환. 다른 땅: 빈칸은 그 칸, 건물 칸은 그 건물을 가장 가까운 빈칸으로 밀고 그 칸. 도로에는 놓을 수 없습니다. 꽉 찬 다른 땅 위에 머물면 그 땅 테두리를 따라 게이지가 1초 동안 차오르고, 다 차면 네 면의 넓힐 칸(가장자리 바로 밖 도로 칸, 모서리 제외)이 나타납니다. 넓힐 칸에 놓으면 그 땅이 그 방향으로 한 줄 넓어지며 건물이 그 칸에 들어가고, 넓힌 줄 너머의 다른 땅은 건물과 함께 한 칸 밀린 뒤 빈 자리가 있으면 중앙 쪽으로 다시 당겨집니다. 넓힐 칸은 포인터가 그 땅이나 둘레 도로를 벗어나면 사라집니다. 끄는 동안 지도는 그대로 두고, 넓힐 칸 위에 있을 때만 땅·도로·배경·건물을 놓은 뒤 모습으로 다시 그려 보여 줍니다(확대 비율 유지, 다른 넓힐 칸과 게이지는 숨김). 놓을 수 없는 곳에서 놓으면 안내 없이 원래 자리로 돌아갑니다. 저장된 데이터의 변경은 끄는 동안 반영하지 않고 끝난 뒤 다시 그리며, 놓은 경우에는 저장이 끝날 때까지 화면을 유지합니다. 놓을 때 저장소가 시작 때와 다르거나 결과가 미리보기와 다르면 저장하지 않습니다.
 - Chrome 확장프로그램에서는 `chrome.storage.local`, 웹 미리보기에서는 별도의 `localStorage`를 사용합니다.
 
 ## 데이터 구조
@@ -119,7 +127,7 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 - `savedAt`: 저장 시각(`Date.now()`). Chrome 북마크 가져오기는 원래 등록일(`dateAdded`)을 사용합니다.
 - `clickCount`: 지도에서 사이트를 방문한 횟수(일반 클릭, Ctrl/⌘ 클릭, 휠 클릭). 기존 북마크는 클릭 전까지 필드가 없으며, 클릭하면 1부터 저장됩니다
 - `lastVisitedAt`: 지도에서 마지막으로 방문한 시각(`Date.now()`). `clickCount`를 올릴 때 함께 저장합니다. Chrome 북마크를 새로 가져올 때는 가져온 현재 시각으로 초기화해 정상 건물로 시작합니다. 그 외 방문 기록이 없는 북마크는 파손 판정에 `savedAt`을 사용합니다.
-- `cell`: 지도 그리드에서 건물이 놓인 칸 `{ x, y }`(절대 좌표). 새 탭이 처음 그릴 때 채웁니다. 카테고리를 바꾸면(`edit`) 지워지고 새로 배정됩니다
+- `cell`: 지도 그리드에서 건물이 놓인 칸 `{ x, y }`(절대 좌표). 새 탭이 처음 그릴 때 채웁니다. 카테고리를 바꾸면(`edit`) 지워지고 새로 배정됩니다. 지도에서 건물을 끌어 옮기면(`moveBookmark`) 놓은 칸이 저장됩니다
 
 - `memo`: 글자 수 제한 없는 문자열 메모. 기존 데이터에 없으면 빈 메모로 표시합니다. 팝업에서는 최종 저장 버튼을 누를 때만 북마크와 함께 저장합니다.
 - `buildingDesign`: 선택적 디자인 ID (`blue-homes:a` 등). `shared/building-designs.js`의 ID를 `add`/`edit`에서 검증합니다. 선택한 계열과 방향을 성장·파손 단계에서도 유지하며, 필드가 없으면 ID 기반 규칙을 사용합니다. 데이터 호환을 위해 `cafe:a`·`pizza:a`도 허용하며 각각 카페·피자 가게의 외형 단계부터 표시합니다.
