@@ -2,7 +2,7 @@ import { nameError, webUrl } from "../shared/validation.js";
 import { storage, withWriteLock } from "./storage.js";
 
 export class Bookmark {
-    constructor(_id, _url, _name, _category, _memo = "") {
+    constructor(_id, _url, _name, _category, _memo = "", _iconUrl = "") {
         this.id = _id;
         this.url = _url;
         this.name = _name;
@@ -10,6 +10,7 @@ export class Bookmark {
         this.savedAt = Date.now();
         this.clickCount = 0;
         this.memo = _memo;
+        this.iconUrl = _iconUrl;
     }
 }
 
@@ -63,6 +64,14 @@ export class BookmarkDB {
             )
                 throw new Error("메모는 50자 이내로 입력해 주세요.");
             if (newBookmark.memo) bookmark.memo = newBookmark.memo;
+            if (newBookmark.iconUrl !== undefined) {
+                if (
+                    typeof newBookmark.iconUrl !== "string" ||
+                    (newBookmark.iconUrl !== "" && !webUrl(newBookmark.iconUrl))
+                )
+                    throw new Error("아이콘은 http 또는 https 주소를 입력해 주세요.");
+                bookmark.iconUrl = newBookmark.iconUrl;
+            }
             bookmark.isNew = newBookmark.isNew ?? true;
             bookmarks.push(bookmark);
             await storage.set({ [this.key]: bookmarks });
@@ -98,6 +107,11 @@ export class BookmarkDB {
             if (changes.url !== undefined && !webUrl(changes.url))
                 throw new Error("http 또는 https 주소를 입력해 주세요.");
             if (
+                changes.iconUrl !== undefined &&
+                (typeof changes.iconUrl !== "string" || (changes.iconUrl !== "" && !webUrl(changes.iconUrl)))
+            )
+                throw new Error("아이콘은 http 또는 https 주소를 입력해 주세요.");
+            if (
                 changes.memo !== undefined &&
                 (typeof changes.memo !== "string" || Array.from(changes.memo).length > 50)
             )
@@ -109,7 +123,7 @@ export class BookmarkDB {
             }
             // A building's cell belongs to its old category's area; the map assigns a new one.
             if (changes.category !== undefined && changes.category !== bookmark.category) delete bookmark.cell;
-            for (const field of ["url", "name", "category", "memo", "isNew"]) {
+            for (const field of ["url", "name", "category", "memo", "isNew", "iconUrl"]) {
                 if (changes[field] !== undefined) bookmark[field] = changes[field];
             }
             await storage.set({ [this.key]: this.bookmarks });

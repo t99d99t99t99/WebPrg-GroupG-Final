@@ -96,7 +96,7 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 | `webprg-bookmarkmap-bookmarks` | 북마크 객체 배열 |
 | `webprg-bookmarkmap-categories` | 카테고리 객체 배열 |
 
-**북마크:** `{ id, url, name, category, savedAt, clickCount, cell, lastVisitedAt?, memo?, isNew?, preview? }`
+**북마크:** `{ id, url, name, category, savedAt, clickCount, cell, lastVisitedAt?, memo?, isNew?, preview?, iconUrl? }`
 - `id`: `crypto.randomUUID()` 문자열
 - `category`: 카테고리의 `id`. 일치하는 카테고리가 없으면 새 탭에서 "분류 없음"에 표시됩니다
 - `savedAt`: 저장 시각(`Date.now()`)
@@ -105,6 +105,7 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 - `cell`: 지도 그리드에서 건물이 놓인 칸 `{ x, y }`(절대 좌표). 새 탭이 처음 그릴 때 채웁니다. 카테고리를 바꾸면(`edit`) 지워지고 새로 배정됩니다
 
 - `memo`: 최대 50자 메모. 기존 데이터에 없으면 빈 메모로 표시합니다.
+- `iconUrl`: 선택 사항인 웹사이트 아이콘의 HTTP/HTTPS URL 문자열. `Bookmark` 생성자의 여섯 번째 인자 또는 `BookmarkDB.add` 객체의 `iconUrl`로 저장하고, `BookmarkDB.edit(id, { iconUrl })`로 수정합니다. 빈 문자열은 아이콘 없음이며, 필드가 없는 기존 데이터도 그대로 읽습니다. 현재 화면은 아이콘을 자동 수집하거나 표시하지 않습니다.
 - `isNew`: 새로 저장한 건물의 NEW 표시. 건물을 호버·포커스하면 false로 저장합니다. 새 탭을 떠날 때(다른 탭으로 전환), 그 화면을 보기 시작한 시각보다 먼저 저장된 북마크도 false로 저장합니다. 따라서 새로 연 탭에서는 NEW가 보이고, 한 번 본 뒤 다시 들어오면 사라집니다. 기존 데이터에는 표시하지 않습니다.
 - `preview`: 선택 사항인 로컬 JPEG data URL. 값이 제공되면 이미지로 표시하고, 없거나 이미지 로딩이 실패하면 저장된 URL을 iframe으로 연결합니다. 홈페이지에서는 캡처하거나 외부 서버로 전송하지 않습니다. 현재 팝업은 이 필드를 수집하지 않습니다.
 
