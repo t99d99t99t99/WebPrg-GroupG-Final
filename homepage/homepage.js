@@ -1,6 +1,7 @@
 import { bookmarks, categories, dismissNewBefore, importChromeBookmarks, subscribe, updateCity } from "../db/db.js";
 import { categorySelect } from "../shared/category-select.js";
-import { nameError, webUrl } from "../shared/validation.js";
+import { createColorPicker } from "../shared/color-picker.js";
+import { bookmarkNameError, webUrl } from "../shared/validation.js";
 import { clearBookmarkPreview, renderBookmarkPreview } from "./bookmark-preview.js";
 import { applyPreparedWallMask, prepareBuildingAppearance } from "./building-appearance.js";
 import { buildingTexture, isDamaged } from "./building-rules.js";
@@ -24,8 +25,6 @@ let renderVersion = 0;
 let lastCityTiles = [];
 let selectedCategory = null;
 let pickerCategory = null;
-let pickerColor = "#a6bce9";
-let pickerHue = 220;
 let colorSaveTimer;
 let pendingColorChange = null;
 let draftColorChange = null;
@@ -153,6 +152,7 @@ function showTooltip(bookmark, category, link) {
         item.classList.toggle("focused-building", item.dataset.bookmark === bookmark.id);
     const url = safeUrl(bookmark.url);
     $("tooltip-name").textContent = bookmark.name;
+    $("tooltip-name").title = bookmark.name;
     $("tooltip-category").textContent = category.name;
 
     $("preview-domain").textContent = url?.hostname ?? "주소를 확인해 주세요";
@@ -250,7 +250,7 @@ function createBuilding(bookmark, category, cell, labels) {
     // Anchor the building's base at the bottom corner of its cell.
     const position = project(cell.x + 1, cell.y + 1);
     const damaged = isDamaged(bookmark);
-    const texture = buildingTexture(bookmark.clickCount, bookmark.id, damaged);
+    const texture = buildingTexture(bookmark.clickCount, bookmark.id, damaged, bookmark.buildingDesign);
     const wrapper = element("div", "building");
     wrapper.dataset.bookmark = bookmark.id;
     wrapper.dataset.category = category.id;
@@ -486,45 +486,21 @@ async function render() {
 }
 
 function openColorPicker(categoryId, trigger, color, onDraftChange = null) {
-    draftColorChange = onDraftChange;
     if (pendingColorChange && pendingColorChange.categoryId !== categoryId) {
         clearTimeout(colorSaveTimer);
         persistPendingColor();
     }
-    const picker = $("category-color-picker");
-    if (pickerCategory === categoryId && !picker.hidden) {
-        picker.hidden = true;
+    if (pickerCategory === categoryId && colorPicker.isOpen) {
+        colorPicker.close();
         return;
     }
     pickerCategory = categoryId;
-    pickerColor = color;
-    const [r, g, b] = color.match(/[\da-f]{2}/gi).map((part) => Number.parseInt(part, 16) / 255);
-    const max = Math.max(r, g, b),
-        min = Math.min(r, g, b),
-        delta = max - min;
-    pickerHue =
-        delta === 0
-            ? 0
-            : max === r
-              ? (((g - b) / delta) % 6) * 60
-              : max === g
-                ? ((b - r) / delta + 2) * 60
-                : ((r - g) / delta + 4) * 60;
-    if (pickerHue < 0) pickerHue += 360;
-    picker.querySelector(".picker-hue").value = String(Math.round(pickerHue));
-    const saturationField = picker.querySelector(".picker-saturation");
-    saturationField.style.backgroundColor = `hsl(${pickerHue} 100% 50%)`;
-    saturationField.querySelector(".picker-selector").style.left = `${(max === 0 ? 0 : delta / max) * 100}%`;
-    saturationField.querySelector(".picker-selector").style.top = `${(1 - max) * 100}%`;
-    picker.querySelector(".picker-hex").value = color.slice(1).toUpperCase();
-    picker.style.setProperty("--picker-color", color);
-    picker.hidden = false;
-    positionColorPicker(trigger);
+    draftColorChange = onDraftChange;
+    colorPicker.open(color, trigger);
 }
 
-function positionColorPicker(trigger) {
-    const picker = $("category-color-picker"),
-        canvas = $("canvas");
+function positionColorPicker(picker, trigger) {
+    const canvas = $("canvas");
     const bounds = canvas.getBoundingClientRect(),
         anchor = trigger.getBoundingClientRect();
     const scaleX = bounds.width / canvas.offsetWidth,
@@ -534,21 +510,26 @@ function positionColorPicker(trigger) {
 }
 
 function updatePickerColor(color) {
-    if (!/^#[\da-f]{6}$/i.test(color)) return;
-    pickerColor = color.toLowerCase();
-    const picker = $("category-color-picker");
-    picker.querySelector(".picker-hex").value = pickerColor.slice(1).toUpperCase();
-    picker.querySelector(".picker-saturation").style.backgroundColor = `hsl(${pickerHue} 100% 50%)`;
-    picker.style.setProperty("--picker-color", pickerColor);
-    paintCategory(pickerCategory, pickerColor);
+    paintCategory(pickerCategory, color);
     if (draftColorChange) {
-        draftColorChange(pickerColor);
+        draftColorChange(color);
         return;
     }
-    pendingColorChange = { categoryId: pickerCategory, color: pickerColor };
+    pendingColorChange = { categoryId: pickerCategory, color };
     clearTimeout(colorSaveTimer);
     colorSaveTimer = setTimeout(persistPendingColor, 180);
 }
+
+const colorPicker = createColorPicker($("category-color-picker"), {
+    onChange: updatePickerColor,
+    onClose() {
+        clearTimeout(colorSaveTimer);
+        persistPendingColor();
+    },
+    onError: toast,
+    position: positionColorPicker,
+    ignoreOutside: (target) => Boolean(target.closest(".category-color")),
+});
 
 async function persistPendingColor() {
     const change = pendingColorChange;
@@ -561,106 +542,6 @@ async function persistPendingColor() {
         console.error(error);
     }
 }
-
-function hsvHex(hue, saturation, value) {
-    const chroma = value * saturation,
-        x = chroma * (1 - Math.abs(((hue / 60) % 2) - 1)),
-        m = value - chroma;
-    const [r, g, b] =
-        hue < 60
-            ? [chroma, x, 0]
-            : hue < 120
-              ? [x, chroma, 0]
-              : hue < 180
-                ? [0, chroma, x]
-                : hue < 240
-                  ? [0, x, chroma]
-                  : hue < 300
-                    ? [x, 0, chroma]
-                    : [chroma, 0, x];
-    return `#${[r, g, b]
-        .map((component) =>
-            Math.round((component + m) * 255)
-                .toString(16)
-                .padStart(2, "0"),
-        )
-        .join("")}`;
-}
-
-function commitPickerField(event) {
-    const field = event.currentTarget,
-        rect = field.getBoundingClientRect();
-    const saturation = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
-    const value = 1 - Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
-    setPickerPoint(field, saturation, value);
-}
-
-function setPickerPoint(field, saturation, value) {
-    updatePickerColor(hsvHex(pickerHue, saturation, value));
-    field.querySelector(".picker-selector").style.left = `${saturation * 100}%`;
-    field.querySelector(".picker-selector").style.top = `${(1 - value) * 100}%`;
-}
-
-const saturationField = $("category-color-picker").querySelector(".picker-saturation");
-let selectingColor = false;
-saturationField.addEventListener("pointerdown", (event) => {
-    selectingColor = true;
-    saturationField.setPointerCapture(event.pointerId);
-    commitPickerField(event);
-});
-saturationField.addEventListener("pointermove", (event) => {
-    if (selectingColor) commitPickerField(event);
-});
-saturationField.addEventListener("pointerup", () => {
-    selectingColor = false;
-});
-saturationField.addEventListener("keydown", (event) => {
-    const selector = saturationField.querySelector(".picker-selector");
-    let saturation = Number.parseFloat(selector.style.left) / 100;
-    let value = 1 - Number.parseFloat(selector.style.top) / 100;
-    if (event.key === "ArrowLeft") saturation -= 0.04;
-    else if (event.key === "ArrowRight") saturation += 0.04;
-    else if (event.key === "ArrowUp") value += 0.04;
-    else if (event.key === "ArrowDown") value -= 0.04;
-    else return;
-    event.preventDefault();
-    saturation = Math.max(0, Math.min(1, saturation));
-    value = Math.max(0, Math.min(1, value));
-    setPickerPoint(saturationField, saturation, value);
-});
-$("category-color-picker")
-    .querySelector(".picker-hue")
-    .addEventListener("input", (event) => {
-        pickerHue = Number(event.currentTarget.value);
-        saturationField.style.backgroundColor = `hsl(${pickerHue} 100% 50%)`;
-        const selector = saturationField.querySelector(".picker-selector").getBoundingClientRect();
-        const rect = saturationField.getBoundingClientRect();
-        const saturation = Math.max(0, Math.min(1, (selector.left + selector.width / 2 - rect.left) / rect.width));
-        const value = 1 - Math.max(0, Math.min(1, (selector.top + selector.height / 2 - rect.top) / rect.height));
-        updatePickerColor(hsvHex(pickerHue, saturation, value));
-    });
-$("category-color-picker")
-    .querySelector(".picker-hex")
-    .addEventListener("change", (event) => {
-        const value = event.currentTarget.value.trim();
-        if (/^[\da-f]{6}$/i.test(value)) {
-            const id = pickerCategory;
-            const anchor = [...$("category-list").children]
-                .find((row) => row.dataset.category === id)
-                ?.querySelector(".category-color");
-            $("category-color-picker").hidden = true;
-            if (anchor) openColorPicker(id, anchor, `#${value}`, draftColorChange);
-            updatePickerColor(`#${value}`);
-        } else event.currentTarget.value = pickerColor.slice(1).toUpperCase();
-    });
-document.addEventListener("pointerdown", (event) => {
-    const picker = $("category-color-picker");
-    if (!picker.hidden && !picker.contains(event.target) && !event.target.closest(".category-color")) {
-        picker.hidden = true;
-        clearTimeout(colorSaveTimer);
-        persistPendingColor();
-    }
-});
 
 tooltip.addEventListener("mouseleave", scheduleHide);
 document.addEventListener("mousemove", (event) => {
@@ -709,12 +590,7 @@ $("confirm-bookmark-delete").addEventListener("click", async () => {
 document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
         hideTooltip();
-        const picker = $("category-color-picker");
-        if (!picker.hidden) {
-            picker.hidden = true;
-            clearTimeout(colorSaveTimer);
-            persistPendingColor();
-        }
+        colorPicker.close();
     }
 });
 window.addEventListener("resize", fitCanvas);
@@ -812,7 +688,7 @@ $("edit-bookmark").addEventListener("click", async () => {
 const nameChanged = () => $("edit-name").value.trim() !== editingBookmark?.name;
 const urlChanged = () => $("edit-url").value.trim() !== editingBookmark?.url;
 function validateEditor() {
-    const nameMessage = nameChanged() ? nameError($("edit-name").value, 20, "북마크 이름") : "";
+    const nameMessage = nameChanged() ? bookmarkNameError($("edit-name").value) : "";
     const urlMessage = !urlChanged() || webUrl($("edit-url").value) ? "" : "http 또는 https 주소를 입력해 주세요.";
     $("edit-name-error").textContent = nameMessage;
     $("edit-url-error").textContent = urlMessage;
@@ -849,29 +725,6 @@ $("edit-form").addEventListener("submit", async (event) => {
     }
 });
 $("bookmark-editor").addEventListener("close", hideTooltip);
-
-$("picker-eyedropper").addEventListener("click", async () => {
-    if (!globalThis.EyeDropper) {
-        toast("이 브라우저에서는 화면 색상 추출을 지원하지 않습니다.");
-        return;
-    }
-    try {
-        const { sRGBHex } = await new EyeDropper().open();
-        const trigger = [...$("category-list").children]
-            .find((row) => row.dataset.category === pickerCategory)
-            ?.querySelector(".category-color");
-        if (trigger) {
-            $("category-color-picker").hidden = true;
-            openColorPicker(pickerCategory, trigger, sRGBHex, draftColorChange);
-            updatePickerColor(sRGBHex);
-        }
-    } catch (error) {
-        if (error.name !== "AbortError") {
-            console.error(error);
-            toast("화면 색상을 가져오지 못했습니다.");
-        }
-    }
-});
 
 $("sync-bookmarks").addEventListener("click", async () => {
     const button = $("sync-bookmarks");

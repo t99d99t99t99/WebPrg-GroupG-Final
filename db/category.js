@@ -53,10 +53,12 @@ export class CategoryDB {
 
             if (newCategory.name.trim() === GENERAL_CATEGORY_NAME)
                 throw new Error("카테고리 일반은 이미 존재하는 기본 카테고리입니다.");
+            const error = categoryError(newCategory.name, categories);
+            if (error) throw new Error(error);
 
             const category = {
                 id: newCategory.id,
-                name: newCategory.name,
+                name: newCategory.name.trim(),
                 createdAt: newCategory.createdAt ?? Date.now(),
             };
             if (newCategory.color !== undefined) {

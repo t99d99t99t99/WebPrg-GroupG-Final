@@ -19,6 +19,8 @@
 | `homepage/category-colors.js` | 카테고리 기본 색 배정, 벽면 명도와 잔디 채도·명도 보정 |
 | `db/storage.js` | Chrome 저장소 및 웹 미리보기 어댑터, 저장 변경 알림, 공통 쓰기 잠금 |
 | `shared/` | 홈페이지 이름·URL 검증, 키보드로 조작할 수 있는 카테고리 선택 목록 |
+| `shared/building-designs.js` | 건물 5개 계열의 성장 에셋과 좌우 방향별 기본 디자인 10종. 팝업 선택·DB 검증·지도 렌더링이 공유 |
+| `shared/color-picker.js`, `shared/color-picker.css` | 홈페이지와 팝업이 함께 쓰는 컬러피커 UI·스타일. 채도/밝기 드래그·방향키, 색조, HEX, 스포이트, Escape·바깥 클릭 닫기. 저장은 호출 화면에서 처리 |
 | `homepage/bookmark-preview.js` | 호버 시 URL의 sandbox iframe 미리보기(저장 이미지가 있으면 우선 표시). 카드가 닫히면 iframe과 크기 관찰 해제 |
 | `homepage/google-account.js` | 계정 표시 전용 어댑터. 전달받은 이름·HTTPS 사진 URL을 표시하고 사진 부재·실패 시 기본 아바타로 복귀. 인증·권한·저장소 접근 없음 |
 | `homepage/category-manager.js` | 카테고리 생성·이름 수정·순서 이동·삭제 확인 |
@@ -40,8 +42,8 @@
 
 | 화면 | manifest 항목 | 불러오는 순서 |
 |---|---|---|
-| 새 탭 | `chrome_url_overrides.newtab` | `homepage/homepage.html` → `daisyui.generated.css`, `style.css`, `homepage.css`, `homepage.js`(module) |
-| 팝업 | `action.default_popup` | `popup/popup.html` → `daisyui.generated.css`, `style.css`, `popup.css`, `popup.js`(module) |
+| 새 탭 | `chrome_url_overrides.newtab` | `homepage/homepage.html` → `daisyui.generated.css`, `style.css`, `homepage.css`, `shared/color-picker.css`, `homepage.js`(module) |
+| 팝업 | `action.default_popup` | `popup/popup.html` → `daisyui.generated.css`, `style.css`, `popup.css`, `shared/color-picker.css`, `popup.js`(module) |
 
 ## 호출 관계
 
@@ -59,6 +61,10 @@ popup/popup.js ──> chrome.tabs.query (현재 탭 제목·URL)
 homepage/homepage.js ──> chrome.bookmarks.getTree → db/db.js (importChromeBookmarks)
 popup/popup.js ──> shared/category-select.js / shared/validation.js
 popup/popup.js / homepage/category-manager.js ──> db/category.js (기본 카테고리 판별)
+popup/popup.js ──> homepage/category-colors.js (기존 카테고리 색상·새 카테고리 초기 색상)
+popup/popup.js ──> homepage/building-appearance.js (미리보기 벽면 마스크)
+popup/popup.js / homepage/homepage.js ──> shared/color-picker.js
+popup/popup.js / db/bookmark.js / homepage/building-rules.js ──> shared/building-designs.js
 homepage/category-manager.js ──> db/db.js
 homepage/homepage.js ──> shared/
 debug/building-color-test/building-color-test.js ──> assets/Isometric City/Buildings/ 및 벽면 마스크 이미지
@@ -73,13 +79,16 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 
 - `db/db.js`가 저장 키와 `bookmarks`, `categories` 싱글턴, 초기화 Promise인 `ready`, 변경 알림 `subscribe`를 제공합니다.
 - 홈페이지 왼쪽 아래의 "크롬 북마크 동기화"는 클릭할 때 `chrome.bookmarks.getTree`로 읽은 트리를 `importChromeBookmarks`에 전달합니다. 북마크바·기타·모바일 등 Chrome 기본 컨테이너 안의 사용자 폴더를 카테고리로 만들고, 하위 폴더의 북마크는 해당 상위 카테고리로 합칩니다. 폴더 밖의 북마크는 "카테고리 일반"으로 가져옵니다. 같은 이름의 카테고리는 재사용하고, 정규화한 URL이 이미 있으면 건너뜁니다. HTTP/HTTPS 주소만 가져오며 이름은 Chrome 원본을 보존합니다. 공통 쓰기 잠금 안에서 최신 데이터와 합쳐 두 배열을 함께 저장합니다. Chrome 원본을 수정하지 않으며, 기존 항목의 변경·삭제를 추적하는 실시간 동기화는 하지 않습니다.
-- 팝업은 `Bookmark`, `Category` 클래스와 `add` API로 현재 페이지를 저장합니다. 새 카테고리 이름은 `shared/validation.js`로 검사하고, 카테고리 목록은 `shared/category-select.js`를 사용합니다. 북마크 이름은 20자, 메모는 50자까지 저장하며 메모는 기존 `memo` 필드에 기록합니다. 홈페이지 폼도 같은 공유 모듈을 사용합니다.
+- 팝업은 `Bookmark`, `Category` 클래스와 `add` API로 현재 페이지를 저장합니다. 팝업은 374×600 크기의 각진 컨테이너이며 입력 영역만 세로 스크롤하고 하단 74px 영역의 작업 버튼은 고정합니다. 현재 탭 제목을 초기 페이지 이름으로 표시하며, 이름은 빈 값만 거부하고 이름·메모 모두 언어·기호·글자 수 제한 없이 저장합니다. 홈페이지 이름 수정과 메모도 같은 제한을 적용합니다. 긴 이름은 입력란·지도 라벨에서 말줄임하고 상세 카드에서 줄바꿈합니다.
+- 새 카테고리 입력은 “일반”으로 시작하며 한글·영문·숫자·공백 10자 이내, 빈 값·이름 중복 금지 규칙을 UI와 DB에서 검사합니다. 기존 카테고리 목록은 `shared/category-select.js`로 색상 칩과 이름을 함께 표시하고 4개 항목 높이에서 스크롤합니다. 새 카테고리는 임의의 팔레트 색상으로 시작하며 색상 선택기·HEX 입력으로 바꿉니다. 불투명도는 100%로 표시합니다. 선택한 색상은 기존 `color` 필드에 저장합니다.
+- 건물 선택은 5개 계열의 좌우 방향별 기본 디자인 10종이며 기본값은 도심 주택 왼쪽입니다. 선택 상태는 회색 반투명 배경으로 강조하며 양 끝의 진행 불가 화살표는 숨깁니다. 미리보기는 홈페이지와 같은 벽면 마스크, 색상 블렌딩 및 `wallColorAdjustments`를 사용하고 카테고리 선택·색상·HEX 변경 즉시 갱신합니다. 북마크의 선택적 `buildingDesign` 필드에 저장하고 지도에 선택한 계열·방향과 카테고리 색상을 적용합니다. 필드가 없는 기존 북마크의 ID 기반 자동 선택과 이전에 저장한 카페·피자 가게 디자인 ID도 유지합니다.
 - 상세 카드의 메모 입력은 `BookmarkDB.edit`, 북마크 수정도 같은 메서드를 사용합니다. 수정 창은 팝업에서 저장한 제목·주소가 홈페이지 규칙과 달라도 저장할 수 있도록, 바뀐 이름·URL만 검사해서 보냅니다. 북마크 삭제는 상세 카드의 삭제 버튼에서 확인 창을 거쳐 `BookmarkDB.remove`를 사용합니다. 카테고리 삭제는 `deleteCategory`가 카테고리와 포함된 북마크를 함께 삭제합니다. 순서는 카테고리 배열 순서로 저장합니다.
 - DB는 초기화가 끝난 뒤 저장소를 읽습니다. 조회 시 최신 데이터를 다시 읽어 다른 탭의 저장을 반영합니다.
 - 두 저장 키가 모두 없는 최초 환경에서만 시연 데이터를 넣습니다. 기존 배열은 빈 배열이어도 덮어쓰지 않습니다. Web Locks로 여러 탭의 초기화를 직렬화합니다.
 - 지도는 저장 변경 알림, 화면 재진입(다른 탭에서 돌아옴), 새 탭 로드 시 데이터를 갱신합니다. 메모·NEW·미리보기 필드만 바뀐 저장은 다시 그리지 않습니다. 기존 팝업과 같은 저장소와 객체 형식을 사용합니다.
 - 새 탭은 `updateCity` 안에서 최신 배열을 읽고 `planCity`로 배치를 계산합니다. 바뀐 위치·기본 색을 한 번에 저장합니다. 모든 데이터 변경은 공통 Web Locks(`webprg-bookmarkmap-data`)를 사용하므로 팝업 저장·메모·색상·도시 배치가 서로 덮어쓰지 않습니다. Web Locks가 없는 환경은 같은 페이지의 Promise 큐로 순차 처리합니다.
 - 새 탭은 색이 없는 카테고리 색을 `category-colors.js` 규칙으로 정하고 `db.js`에서 저장합니다. 카테고리 색상 편집은 입력 즉시 목록의 색상 표시·구역 강조 영역·건물 벽·잔디 색에 반영되고 `CategoryDB.edit`로 저장합니다.
+- 두 화면은 같은 `createColorPicker`와 CSS를 사용합니다. 홈페이지는 캔버스 배율에 맞춰 피커 위치를 정하고 기존 색상 미리보기·지연 저장을 처리합니다. 팝업은 새 카테고리 이름 입력창 내부 왼쪽의 색상 칩을 누르면 같은 피커를 화면 안에 엽니다. 상단에 별도 색상 섹션은 없으며 HEX·불투명도는 피커 안에 표시합니다. 바뀐 색은 칩과 건물 미리보기에 즉시 반영하되 저장하기 전에는 DB에 쓰지 않습니다.
 - 도시 배치 규칙 (`homepage/layout.js`):
   - 그리드 한 칸에 건물 하나. 카테고리 구역은 2×2 → 2×3 → 3×3 → 3×4 … 순서로 북마크 수에 맞춰 커지고 줄어듭니다.
   - 모든 구역 둘레에 1칸 도로가 있고, 이웃 구역과 도로를 공유합니다(구역 사이 최소 1칸).
@@ -99,7 +108,7 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 | `webprg-bookmarkmap-bookmarks` | 북마크 객체 배열 |
 | `webprg-bookmarkmap-categories` | 카테고리 객체 배열 |
 
-**북마크:** `{ id, url, name, category, savedAt, clickCount, cell, lastVisitedAt?, memo?, isNew?, preview?, iconUrl? }`
+**북마크:** `{ id, url, name, category, savedAt, clickCount, cell, lastVisitedAt?, memo?, isNew?, preview?, iconUrl?, buildingDesign? }`
 - `id`: `crypto.randomUUID()` 문자열
 - `category`: 카테고리의 `id`. 일치하는 카테고리가 없으면 DB 초기화 및 도시 갱신 시 "카테고리 일반"의 ID로 바꾸어 저장합니다
 - `savedAt`: 저장 시각(`Date.now()`). Chrome 북마크 가져오기는 원래 등록일(`dateAdded`)을 사용합니다.
@@ -107,7 +116,8 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 - `lastVisitedAt`: 지도에서 마지막으로 방문한 시각(`Date.now()`). `clickCount`를 올릴 때 함께 저장합니다. Chrome 북마크를 새로 가져올 때는 가져온 현재 시각으로 초기화해 정상 건물로 시작합니다. 그 외 방문 기록이 없는 북마크는 파손 판정에 `savedAt`을 사용합니다.
 - `cell`: 지도 그리드에서 건물이 놓인 칸 `{ x, y }`(절대 좌표). 새 탭이 처음 그릴 때 채웁니다. 카테고리를 바꾸면(`edit`) 지워지고 새로 배정됩니다
 
-- `memo`: 최대 50자 메모. 기존 데이터에 없으면 빈 메모로 표시합니다.
+- `memo`: 글자 수 제한 없는 문자열 메모. 기존 데이터에 없으면 빈 메모로 표시합니다. 팝업에서는 최종 저장 버튼을 누를 때만 북마크와 함께 저장합니다.
+- `buildingDesign`: 선택적 디자인 ID (`blue-homes:a` 등). `shared/building-designs.js`의 ID만 `add`/`edit`에서 허용합니다. 선택한 계열과 방향을 성장·파손 단계에서도 유지하며, 필드가 없는 기존 데이터는 ID 기반 규칙을 사용합니다.
 - `iconUrl`: 선택 사항인 웹사이트 아이콘의 HTTP/HTTPS URL 문자열. `Bookmark` 생성자의 여섯 번째 인자 또는 `BookmarkDB.add` 객체의 `iconUrl`로 저장하고, `BookmarkDB.edit(id, { iconUrl })`로 수정합니다. 빈 문자열은 아이콘 없음이며, 필드가 없는 기존 데이터도 그대로 읽습니다. 현재 화면은 아이콘을 자동 수집하거나 표시하지 않습니다.
 - `isNew`: 새로 저장한 건물의 NEW 표시. 건물을 호버·포커스하면 false로 저장합니다. 새 탭을 떠날 때(다른 탭으로 전환), 그 화면을 보기 시작한 시각보다 먼저 저장된 북마크도 false로 저장합니다. 따라서 새로 연 탭에서는 NEW가 보이고, 한 번 본 뒤 다시 들어오면 사라집니다. 기존 데이터에는 표시하지 않습니다.
 - `preview`: 선택 사항인 로컬 JPEG data URL. 값이 제공되면 이미지로 표시하고, 없거나 이미지 로딩이 실패하면 저장된 URL을 iframe으로 연결합니다. 홈페이지에서는 캡처하거나 외부 서버로 전송하지 않습니다. 현재 팝업은 이 필드를 수집하지 않습니다.

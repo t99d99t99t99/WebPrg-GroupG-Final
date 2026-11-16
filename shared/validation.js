@@ -4,6 +4,9 @@ export function nameError(value, limit, kind = "이름") {
     if (!/^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9 ]+$/.test(value)) return "한글, 영문, 숫자, 공백만 사용할 수 있습니다.";
     return "";
 }
+export function bookmarkNameError(value) {
+    return typeof value === "string" && value.trim() ? "" : "페이지 이름을 입력해 주세요.";
+}
 export function categoryError(value, categories, exceptId) {
     return (
         nameError(value, 10, "카테고리 이름") ||
