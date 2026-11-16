@@ -25,6 +25,24 @@ export function categoryManager({ openColorPicker, highlightCategory, toggleCate
             console.error(error);
         }
     }
+    function askDelete(category, groups) {
+        deleting = category.id;
+        $("delete-name").textContent =
+            `‘${category.name}’ 카테고리와 북마크 ${groups.find((group) => group.category.id === category.id)?.items.length ?? 0}개가 함께 삭제됩니다.`;
+        $("delete-status").textContent = "";
+        $("category-delete").showModal();
+    }
+    function iconButton(src, label, onClick) {
+        const button = node("button", "icon-button");
+        button.type = "button";
+        button.setAttribute("aria-label", label);
+        const icon = node("img", "");
+        icon.src = src;
+        icon.alt = "";
+        button.append(icon);
+        button.addEventListener("click", onClick);
+        return button;
+    }
     function render(groups) {
         saved = groups.map((group) => group.category);
         const list = $("category-list"),
@@ -86,11 +104,7 @@ export function categoryManager({ openColorPicker, highlightCategory, toggleCate
                         render(groups);
                         return;
                     }
-                    deleting = category.id;
-                    $("delete-name").textContent =
-                        `‘${category.name}’ 카테고리와 북마크 ${groups.find((group) => group.category.id === category.id)?.items.length ?? 0}개가 함께 삭제됩니다.`;
-                    $("delete-status").textContent = "";
-                    $("category-delete").showModal();
+                    askDelete(category, groups);
                 });
                 form.addEventListener("submit", async (event) => {
                     event.preventDefault();
@@ -140,20 +154,20 @@ export function categoryManager({ openColorPicker, highlightCategory, toggleCate
                 filter.addEventListener("click", () => toggleCategory(category.id));
                 row.append(filter);
                 if (!isGeneralCategory(category)) {
-                    const edit = node("button", "icon-button");
-                    edit.type = "button";
-                    edit.setAttribute("aria-label", `${category.name} 수정`);
-                    const icon = node("img", "");
-                    icon.src = "../assets/ui/edit.svg";
-                    icon.alt = "";
-                    edit.append(icon);
-                    edit.addEventListener("click", () => {
+                    const edit = iconButton("../assets/ui/edit.svg", `${category.name} 수정`, () => {
                         editing = category.id;
                         draft = category.name;
                         render(groups);
+                        // Editing a category also opens its color picker, as if its color chip was clicked.
+                        const chip = list.querySelector(`[data-category="${category.id}"] .category-color`);
+                        if (chip) openColorPicker(category.id, chip, category.color, null);
                         list.querySelector("input")?.focus();
                     });
-                    row.append(edit);
+                    const remove = iconButton("../assets/ui/delete.svg", `${category.name} 삭제`, () =>
+                        askDelete(category, groups),
+                    );
+                    remove.classList.add("category-delete-button");
+                    row.append(edit, remove);
                 }
                 row.draggable = !isGeneralCategory(category);
                 row.addEventListener("dragstart", (event) => {
