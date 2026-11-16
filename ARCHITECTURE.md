@@ -5,6 +5,12 @@
 
 ## 구조
 
+건물 팝업의 간격은 `building-appearance.js`가 계산한 그림자 제외 건물 테두리(알파 128 이상)와 호버 확대·상승을 기준으로 좌우 동일하게 맞춥니다. 호버 윤곽과 해당 경계 사각형은 에셋별로 캐시합니다. 팝업 이동 경로와 겹치는 중간 건물은 마우스 반응을 잠시 끄고, 팝업을 닫으면 복원합니다. 카테고리 선택과 건물 호버는 공통 강조 처리를 사용하며 빨간 외곽선은 개별 건물 호버에만 적용합니다.
+
+카테고리 순서 이동은 `homepage/category-reorder.js`가 Pointer Events로 처리합니다. 행을 끌면 다른 행이 빈 슬롯을 만들고, 놓으면 320ms 정착 애니메이션 후 `category-manager.js`를 통해 기존 `CategoryDB.reorder`로 저장합니다. 일반 카테고리는 고정하며 드래그 중 들어온 목록 갱신은 정착 후 반영합니다.
+
+건물 상세가 열리면 사이드바의 해당 카테고리명과 행 배경·테두리를 강조하고, 닫히면 기존 선택 상태를 유지합니다. 카테고리를 선택한 뒤 카테고리 행이나 해당 건물·상세 카드 외 영역을 클릭하면 선택을 해제합니다.
+
 | 경로 | 책임 |
 |---|---|
 | `BUILDING_FAMILIES.md` | 사용 중인 5개 건물 계열, 성장 단계별 에셋, 통합·미사용 목록, 이미지·마스크 파일명 규칙 |
@@ -18,6 +24,8 @@
 | `homepage/decorations.js` | 구역 빈칸의 나무·꽃·풀·바위·거리 소품(가로등·쓰레기통·우체통) 장식과 집 앞마당(울타리·우체통) 계산(순수 함수). 픽셀이 고르지 않게 보이지 않도록 원본 크기로만 그림. 카테고리와 구역 안 칸 위치로 고정해 고름 |
 | `homepage/traffic.js` | 장식용 도시 움직임. 매 렌더의 도로 칸을 받아 사람(인도로 걷다 가끔 멈춤, 교차로의 옆길은 횡단보도로 건넘, 막다른 길에서는 같은 인도로 돌아섬)과 차(오른쪽 차선, 같은 차선의 앞차와 간격 유지·교차로에서 서로 막히면 한쪽 우선, 교차로 앞 횡단보도에서 가끔 정지, 일정 시간 뒤 다른 차로 교체, 큰 차일수록 드묾)를 1~2개씩 움직이고, 가끔 헬리콥터가 지도를 가로지름. 횡단보도(planRoads의 pelican 타일) 중 칸 위치로 정한 30% 정도에 길 양쪽 인도로 신호등 한 쌍을 세움(서로 길 건너편을 보도록 방향별 그림 선택). 움직임 줄이기 설정이면 멈춤. 건물 상세가 열리면 지도와 함께 흐려짐. 앞뒤 순서는 바닥 위치(x+y)로 건물 칸 중심과 비교하고, `#traffic`을 `#buildings` 뒤에 두며 매 프레임 자식 순서를 바닥 위치순으로 맞춰 z-index가 같을 때도 어긋나지 않게 함. 저장소·포인터 이벤트 없음 |
 | `homepage/background.js` | 구역·도로 밖을 채우는 미개발 공터 바닥 타일 계산(순수 함수). 칸 좌표로 정한 흙 변형 타일, 화면 범위를 칸 범위로 바꾸는 역변환 |
+| `homepage/background-renderer.js` | 공터 타일을 화면 해상도 기준 캔버스 하나에 그림. 이미지 로딩을 공유하고 뒤늦게 끝난 이전 요청은 버림 |
+| `homepage/spatial-index.js` | 건물의 월드 좌표 사각형을 격자로 색인해 팝업 이동 경로 주변 건물만 검색 |
 | `homepage/building-move.js` | 건물 이동 계산(순수 함수). 놓은 자리의 의미(이동·자리 교환·밀어내기·한 줄 끼워 넣기) 결정, 끼워 넣은 줄 너머 땅 밀기, 이동을 적용한 `planCity` 결과 미리 계산, 배치 지문 |
 | `homepage/building-drag.js` | 건물 길게 누르기·끌기·놓기 화면 동작. 반투명 건물과 놓일 칸 표시, 꽉 찬 땅 테두리 게이지와 넓힐 칸, 넓힌 뒤 지도 미리보기, Esc·지도 밖 취소, 끈 뒤 사이트 방문 막기. 안내 문구는 쓰지 않고 표시로만 알립니다 |
 | `homepage/building-rules.js` | 5개 계열의 3단계 에셋 목록, 북마크 ID 기반 계열·a/b·형태 선택, 7일 미방문 파손 판정 |
@@ -30,6 +38,7 @@
 | `shared/color-picker.js`, `shared/color-picker.css` | 홈페이지와 팝업이 함께 쓰는 컬러피커 UI·스타일. 채도/밝기 드래그·방향키, 색조, HEX, 스포이트, Escape·바깥 클릭 닫기. 저장은 호출 화면에서 처리 |
 | `homepage/google-account.js` | 계정 표시 전용 어댑터. 전달받은 이름·HTTPS 사진 URL을 표시하고 사진 부재·실패 시 기본 아바타로 복귀. 인증·권한·저장소 접근 없음 |
 | `homepage/category-manager.js` | 카테고리 목록 패널. 생성·이름 수정·드래그 순서 이동·삭제 확인, 색상 칩으로 컬러피커 열기(연필로 이름을 수정할 때도 함께 열림), 휴지통 버튼으로 삭제 창 열기, 카테고리 강조 선택 |
+| `homepage/category-reorder.js` | 행의 포인터 드래그·자동 스크롤·정착 애니메이션·취소와 저장 콜백 처리 |
 | `debug/` | 개발자용 정적 디버그 도구 모음. 앱 저장소나 Chrome API를 사용하지 않음 |
 | `debug/index.html` | 디버그 도구 진입 페이지 |
 | `debug/debug.css` | 디버그 도구 목록과 건물 색상 테스트의 공통 레이아웃·테마 스타일 |
@@ -61,12 +70,14 @@
 ```
 homepage/homepage.js ──> homepage/layout.js (planCity, planRoads)
 homepage/homepage.js ──> homepage/decorations.js (decorationsFor) ──> homepage/layout.js (hashText)
-homepage/homepage.js ──> homepage/background.js (planBackground, cellBounds) ──> homepage/layout.js (타일 크기)
+homepage/homepage.js ──> homepage/background-renderer.js ──> homepage/background.js (planBackground, cellBounds) ──> homepage/layout.js (타일 크기)
+homepage/homepage.js ──> homepage/spatial-index.js (팝업 이동 경로 후보 검색)
 homepage/homepage.js ──> homepage/building-drag.js ──> homepage/building-move.js ──> homepage/layout.js (planCity)
 homepage/homepage.js ──> db/db.js (moveBookmark: 건물 이동 저장)
 homepage/homepage.js ──> homepage/category-colors.js
 homepage/homepage.js ──> homepage/building-rules.js / homepage/building-appearance.js
 homepage/homepage.js ──> homepage/category-manager.js / homepage/google-account.js
+homepage/category-manager.js ──> homepage/category-reorder.js
 homepage/homepage.js ──> homepage/traffic.js ──> homepage/layout.js (project, planRoads 결과의 칸·타일 이름)
 homepage/homepage.js ─┐
                       ├─> db/db.js ──> db/bookmark.js / db/category.js ──> db/storage.js
@@ -104,6 +115,8 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 - DB는 초기화가 끝난 뒤 저장소를 읽습니다. 조회 시 최신 데이터를 다시 읽어 다른 탭의 저장을 반영합니다.
 - 두 저장 키가 모두 없는 최초 환경에서만 시연 데이터를 넣습니다. 기존 배열은 빈 배열이어도 덮어쓰지 않습니다. Web Locks로 여러 탭의 초기화를 직렬화합니다.
 - 지도는 저장 변경 알림, 화면 재진입(다른 탭에서 돌아옴), 새 탭 로드 시 데이터를 갱신합니다. 메모·NEW·미리보기 필드만 바뀐 저장은 다시 그리지 않습니다. 팝업과 홈페이지는 저장소와 객체 형식을 공유합니다.
+- 지도 전체의 표시 데이터가 같으면 DOM 갱신을 건너뛰고, 일부만 바뀌면 변경 없는 카테고리의 건물·장식·잔디·라벨 노드를 재사용합니다. 드래그 미리보기 뒤에는 정상 지도를 다시 그립니다. 배치 계산은 북마크를 카테고리별로 한 번 묶어 사용합니다.
+- 공터 배경은 수천 개의 이미지 요소 대신 화면 크기(최대 400만 픽셀)의 캔버스 하나로 표시합니다. 건물 호버 윤곽은 에셋마다 CSS 규칙 하나를 공유하며, 팝업 이동 경로와 겹치는 건물은 캐시한 월드 좌표와 공간 색인으로 찾습니다. 저장 형식은 바꾸지 않습니다.
 - 새 탭은 `updateCity` 안에서 최신 배열을 읽고 `planCity`로 배치를 계산합니다. 바뀐 위치·기본 색을 한 번에 저장합니다. 모든 데이터 변경은 공통 Web Locks(`webprg-bookmarkmap-data`)를 사용하므로 팝업 저장·메모·색상·도시 배치가 서로 덮어쓰지 않습니다. Web Locks가 없는 환경은 같은 페이지의 Promise 큐로 순차 처리합니다.
 - 새 탭은 색이 없는 카테고리 색을 `category-colors.js` 규칙으로 정하고 `db.js`에서 저장합니다. 카테고리 색상 편집은 입력 즉시 목록의 색상 표시·구역 강조 영역·건물 벽·잔디 색에 반영되고 `CategoryDB.edit`로 저장합니다.
 - 두 화면은 같은 `createColorPicker`와 CSS를 사용합니다. 홈페이지는 캔버스 배율에 맞춰 피커 위치를 정하고 색상 미리보기·지연 저장을 처리합니다. 팝업은 새 카테고리 이름 입력창 내부 왼쪽의 색상 칩을 누르면 피커를 엽니다. HEX·불투명도는 피커 안에 표시합니다. 바뀐 색은 칩과 건물 미리보기에 즉시 반영하되 저장하기 전에는 DB에 쓰지 않습니다.
