@@ -12,7 +12,7 @@
 | `assets/icons/` | 확장 프로그램 아이콘 PNG 4종(16·32px 단독 집, 48·128px 건물 모음)과 `source/`의 수정 가능한 SVG 원본. `manifest.json`에서 크기별로 연결하며 새 탭 파비콘은 16px 아이콘을 사용 |
 | `db/` | 저장소 계층. `chrome.storage.local`을 직접 다루는 유일한 곳 |
 | `popup/` | 툴바 아이콘을 누르면 뜨는 팝업. 현재 탭을 카테고리에 저장 |
-| `homepage/` | 새 탭 지도. 카테고리별 자동 도시 배치, 설명 카드, 사이트 방문, 링크 복사 |
+| `homepage/` | 새 탭 지도. 카테고리별 자동 도시 배치, 설명 카드, 사이트 방문, 링크 복사, 카테고리 관리 패널, Google 서비스 바로가기 패널, 크롬 북마크 동기화 버튼 |
 | `homepage/layout.js` | 도시 배치 계산(순수 함수). 그리드 위 구역·건물 칸 결정, 구역 둘레 도로 타일, 아이소메트릭 좌표 변환 |
 | `homepage/building-rules.js` | 5개 계열의 3단계 에셋 목록, 북마크 ID 기반 계열·a/b·형태 선택, 7일 미방문 파손 판정 |
 | `homepage/building-appearance.js` | 그림자를 제외한 호버 윤곽, 건물별 사전 제작 벽면 마스크 연결 |
@@ -23,7 +23,7 @@
 | `shared/color-picker.js`, `shared/color-picker.css` | 홈페이지와 팝업이 함께 쓰는 컬러피커 UI·스타일. 채도/밝기 드래그·방향키, 색조, HEX, 스포이트, Escape·바깥 클릭 닫기. 저장은 호출 화면에서 처리 |
 | `homepage/bookmark-preview.js` | 호버 시 URL의 sandbox iframe 미리보기(저장 이미지가 있으면 우선 표시). 카드가 닫히면 iframe과 크기 관찰 해제 |
 | `homepage/google-account.js` | 계정 표시 전용 어댑터. 전달받은 이름·HTTPS 사진 URL을 표시하고 사진 부재·실패 시 기본 아바타로 복귀. 인증·권한·저장소 접근 없음 |
-| `homepage/category-manager.js` | 카테고리 생성·이름 수정·순서 이동·삭제 확인 |
+| `homepage/category-manager.js` | 카테고리 목록 패널. 생성·이름 수정·드래그 순서 이동·삭제 확인, 색상 칩으로 컬러피커 열기, 카테고리 강조 선택 |
 | `debug/` | 개발자용 정적 디버그 도구 모음. 앱 저장소나 Chrome API를 사용하지 않음 |
 | `debug/index.html` | 디버그 도구 진입 페이지 |
 | `debug/debug.css` | 디버그 도구 목록과 건물 색상 테스트의 공통 레이아웃·테마 스타일 |
@@ -34,8 +34,10 @@
 | `demo/seed-data.js` | 화면 로직과 분리된 시연용 카테고리 4개·북마크 8개 |
 | `style.css` | 두 페이지가 공유하는 디자인 토큰(CSS 변수)과 기본 스타일 |
 | `daisyui.generated.css` | `homepage/`와 `popup/`이 사용하는 daisyUI 정적 번들. `debug/ui-preview/src/app.css`에서 자동 생성하며 직접 수정하지 않음 |
-| `assets/` | 아이콘과 건물 이미지. `assets/Isometric City/`는 지도에 쓰는 도로·바닥 타일과 건물. `wall-mask-buildings/`는 건물 에셋별 벽면 마스크. 출처는 README.md |
+| `assets/` | 아이콘과 건물 이미지. `assets/Isometric City/`는 에셋 팩 원본으로, 지도에는 도로·바닥 타일과 건물만 쓰고 `Characters/`·`Props/`·`Vehicles/`는 아직 쓰지 않음. `wall-mask-buildings/`는 건물 에셋별 벽면 마스크. `ui/`는 화면 버튼 SVG(추가·수정·펼치기·NEW 말풍선 등)와 `google/`의 Google 서비스 아이콘. 출처는 README.md |
 | `biome.json` | 포맷·린트 설정 |
+| `package.json`, `package-lock.json` | 개발 도구 의존성(Biome, Chrome 타입 정의). 서비스 실행에는 필요 없음 |
+| `.claude/skills/sync-project/` | 노션 기획 문서로 `PROJECT.md`를 다시 쓰는 Claude Code 스킬 |
 | `.github/workflows/biome.yml` | PR과 `main` push 때 Biome 검사 |
 
 ## 진입점
@@ -53,6 +55,7 @@
 homepage/homepage.js ──> homepage/layout.js (planCity, planRoads)
 homepage/homepage.js ──> homepage/category-colors.js
 homepage/homepage.js ──> homepage/building-rules.js / homepage/building-appearance.js
+homepage/homepage.js ──> homepage/bookmark-preview.js / homepage/category-manager.js / homepage/google-account.js
 homepage/homepage.js ─┐
                       ├─> db/db.js ──> db/bookmark.js / db/category.js ──> db/storage.js
 popup/popup.js ───────┘          └─> demo/seed-data.js                       ├─> chrome.storage.local
@@ -67,6 +70,7 @@ popup/popup.js / homepage/homepage.js ──> shared/color-picker.js
 popup/popup.js / db/bookmark.js / homepage/building-rules.js ──> shared/building-designs.js
 homepage/category-manager.js ──> db/db.js
 homepage/homepage.js ──> shared/
+homepage/category-manager.js / homepage/bookmark-preview.js / db/db.js / db/bookmark.js / db/category.js ──> shared/validation.js
 debug/building-color-test/building-color-test.js ──> assets/Isometric City/Buildings/ 및 벽면 마스크 이미지
 debug/building-color-test/building-color-test.js ──> homepage/category-colors.js (벽면 명도 보정)
 debug/building-color-test/building-color-test.js ──> debug/building-color-test/mask-editor.js (마스크 편집)
@@ -146,11 +150,12 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 - 건물 규칙은 `building-rules.js`에 모읍니다. 정상 에셋 32종을 5개 계열의 3단계로 사용합니다. 착색 결과가 겹치는 주택은 파란 주택으로 통합하고 정원 주택은 소형 노랑·중형 흰색·대형 초록만 남기며, 갈색 벽돌 주택 계열은 사용하지 않습니다. 통합·미사용 목록은 `BUILDING_FAMILIES.md`에 명시합니다. 방문 0~4/5~14/15회 이상에 small/medium/tall 에셋을 선택합니다. 에셋은 원본 픽셀 크기로 그립니다(대부분 128px 폭, 일부 129~132px). 각 북마크 ID 해시로 계열, a/b 방향, 단계별 세부 형태를 선택하므로 한 카테고리 안에서도 계열이 섞입니다. 마지막 방문(없으면 저장 시각)부터 7일이 지나면 같은 형태의 `_damaged` 에셋으로 바뀌고, 지도에서 방문하면 바로 원래 건물로 돌아옵니다. 시간 경과는 새 탭을 열거나 화면에 다시 들어올 때 반영됩니다. 공사 중 에셋은 사용하지 않습니다.
 - `building-appearance.js`는 알파 128 미만의 그림자·여백을 제외한 호버 윤곽을 이미지 URL별 Promise로 캐시합니다. 벽면 마스크는 모든 건물에 같은 `assets/wall-mask-buildings/wall-mask-<건물 이미지 파일명>` 규칙으로 정적 PNG를 연결하며, 디버그 페이지도 같은 경로를 사용합니다. 계열별 에셋 목록은 `BUILDING_FAMILIES.md`에 정리합니다. `customColor` 값은 보존하지만 건물 렌더링에는 사용하지 않습니다.
 - 집과 잔디는 카테고리 `color`로 착색합니다. 집은 정적 벽면 마스크에 색상층과 명도 보정층을 적용합니다. 상점 지붕 테두리·문틀·창틀·벽 접합부는 포함하고 유리·문짝·벽돌 줄눈은 제외하며, 파손 얼룩과 모서리는 벽면에 포함합니다. 검정 보정층의 불투명도는 0.6 이하로 제한해 원본 명암 차이를 최소 40% 남깁니다. 홈페이지와 디버그 페이지가 같은 `wallColorAdjustments`를 사용합니다. 잔디는 `category-colors.js`에서 채도·명도를 보정한 뒤 색상층과 명도 보정층을 적용합니다. 구역 강조는 카테고리 색으로 채운 영역으로 표시합니다.
+- 잔디는 모든 카테고리에서 `tile_ground_grass.png` 한 장을 쓰고, 카테고리 색으로 착색합니다.
 
 ## Google 계정 표시 연결
 
 확장프로그램 담당자는 홈페이지에서 `google-account.js`의 `setGoogleAccount({ displayName, photoUrl })`를 호출해 인증이 끝난 계정을 표시할 수 있습니다. 로그아웃은 `setGoogleAccount(null)`입니다. 현재 홈페이지는 기본 아바타로 시작하며, 이 모듈 자체는 로그인·계정 조회·토큰 저장을 수행하지 않습니다. 사진이 없으면 이름의 첫 글자(이름도 없으면 기본 사람 아이콘), 이미지 로드 실패 시에도 같은 대체 표시를 사용합니다.
 
-페이지 미리보기는 홈페이지에서만 처리합니다. 지도 위를 지나가기만 할 때 사이트를 불러오지 않도록, 건물 위에 0.5초 머문 뒤 iframe을 만듭니다. iframe은 1024×576 페이지를 카드 너비에 맞춰 축소하며 `sandbox="allow-scripts"`로 부모 페이지 접근·새 창·폼 제출을 허용하지 않습니다. 원본 새 탭 링크를 별도로 제공합니다. 대상 사이트의 X-Frame-Options/CSP 정책으로 차단될 수 있으며, 교차 출처 iframe의 성공 여부를 신뢰성 있게 판별하지 않으므로 항상 제한 가능 안내를 표시합니다. 차단 정책을 우회하거나 확장 권한을 추가하지 않습니다.
+## 페이지 미리보기
 
-- 잔디는 모든 카테고리에서 `tile_ground_grass.png` 한 장을 쓰고, 카테고리 색으로 착색합니다. 카테고리 강조는 구역을 채운 영역으로 표시합니다.
+페이지 미리보기는 홈페이지에서만 처리합니다. 지도 위를 지나가기만 할 때 사이트를 불러오지 않도록, 건물 위에 0.5초 머문 뒤 iframe을 만듭니다. iframe은 1024×576 페이지를 카드 너비에 맞춰 축소하며 `sandbox="allow-scripts"`로 부모 페이지 접근·새 창·폼 제출을 허용하지 않습니다. 원본 새 탭 링크를 별도로 제공합니다. 대상 사이트의 X-Frame-Options/CSP 정책으로 차단될 수 있으며, 교차 출처 iframe의 성공 여부를 신뢰성 있게 판별하지 않으므로 항상 제한 가능 안내를 표시합니다. 차단 정책을 우회하거나 확장 권한을 추가하지 않습니다.
