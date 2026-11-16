@@ -13,7 +13,8 @@
 | `db/` | 저장소 계층. `chrome.storage.local`을 직접 다루는 유일한 곳 |
 | `popup/` | 툴바 아이콘을 누르면 뜨는 팝업. 현재 탭을 카테고리에 저장 |
 | `homepage/` | 새 탭 지도. 카테고리별 자동 도시 배치, 설명 카드, 사이트 방문, 링크 복사, 카테고리 관리 패널, Google 서비스 바로가기 패널, 크롬 북마크 동기화 버튼 |
-| `homepage/layout.js` | 도시 배치 계산(순수 함수). 그리드 위 구역·건물 칸 결정, 구역 둘레 도로 타일, 아이소메트릭 좌표 변환 |
+| `homepage/layout.js` | 도시 배치 계산(순수 함수). 그리드 위 구역·건물 칸 결정, 구역 둘레 도로 타일(교차로에 붙은 직선 도로는 횡단보도 타일), 아이소메트릭 좌표 변환 |
+| `homepage/traffic.js` | 장식용 도시 움직임. 매 렌더의 도로 칸을 받아 사람(인도로 걷다 가끔 멈춤, 교차로의 옆길은 횡단보도로 건넘, 막다른 길에서는 같은 인도로 돌아섬)과 차(오른쪽 차선, 같은 차선의 앞차와 간격 유지·교차로에서 서로 막히면 한쪽 우선, 교차로 앞 횡단보도에서 가끔 정지, 일정 시간 뒤 다른 차로 교체, 큰 차일수록 드묾)를 1~2개씩 움직이고, 가끔 헬리콥터가 지도를 가로지름. 횡단보도(planRoads의 pelican 타일) 중 칸 위치로 정한 30% 정도에 길 양쪽 인도로 신호등 한 쌍을 세움(서로 길 건너편을 보도록 방향별 그림 선택). 움직임 줄이기 설정이면 멈춤. 건물 상세가 열리면 지도와 함께 흐려짐. 앞뒤 순서는 바닥 위치(x+y)로 건물 칸 중심과 비교하고, `#traffic`을 `#buildings` 뒤에 두며 매 프레임 자식 순서를 바닥 위치순으로 맞춰 z-index가 같을 때도 어긋나지 않게 함. 저장소·포인터 이벤트 없음 |
 | `homepage/background.js` | 구역·도로 밖을 채우는 미개발 공터 바닥 타일 계산(순수 함수). 칸 좌표로 정한 흙 변형 타일, 화면 범위를 칸 범위로 바꾸는 역변환 |
 | `homepage/building-move.js` | 건물 이동 계산(순수 함수). 놓은 자리의 의미(이동·자리 교환·밀어내기·한 줄 끼워 넣기) 결정, 끼워 넣은 줄 너머 땅 밀기, 이동을 적용한 `planCity` 결과 미리 계산, 배치 지문 |
 | `homepage/building-drag.js` | 건물 길게 누르기·끌기·놓기 화면 동작. 반투명 건물과 놓일 칸 표시, 꽉 찬 땅 테두리 게이지와 넓힐 칸, 넓힌 뒤 지도 미리보기, Esc·지도 밖 취소, 끈 뒤 사이트 방문 막기. 안내 문구는 쓰지 않고 표시로만 알립니다 |
@@ -38,7 +39,7 @@
 | `style.css` | 두 페이지가 공유하는 디자인 토큰(CSS 변수)과 기본 스타일 |
 | `assets/ui/popup-arrow-left.svg`, `assets/ui/popup-arrow-right.svg` | 건물 선택 화살표 SVG. 표시 크기는 왼쪽 14×15, 오른쪽 14×14이며 출처는 README.md |
 | `daisyui.generated.css` | `homepage/`와 `popup/`이 사용하는 daisyUI 정적 번들. `debug/ui-preview/src/app.css`에서 자동 생성하며 직접 수정하지 않음 |
-| `assets/` | 아이콘과 건물 이미지. `assets/Isometric City/`는 에셋 팩 원본으로, 지도에는 도로·바닥 타일과 건물만 쓰고 `Characters/`·`Props/`·`Vehicles/`는 아직 쓰지 않음. `wall-mask-buildings/`는 건물 에셋별 벽면 마스크. `ui/`는 화면 버튼 SVG(추가·수정·펼치기·NEW 말풍선 등)와 `google/`의 Google 서비스 아이콘. 출처는 README.md |
+| `assets/` | 아이콘과 건물 이미지. `assets/Isometric City/`는 에셋 팩 원본으로, 지도에는 도로·바닥 타일, 건물, `Characters/`(사람)·`Vehicles/`(차·헬리콥터), `Props/`의 신호등을 쓰고 나머지 소품은 아직 쓰지 않음. `wall-mask-buildings/`는 건물 에셋별 벽면 마스크. `ui/`는 화면 버튼 SVG(추가·수정·펼치기·NEW 말풍선 등)와 `google/`의 Google 서비스 아이콘. 출처는 README.md |
 | `biome.json` | 포맷·린트 설정 |
 | `package.json`, `package-lock.json` | 개발 도구 의존성(Biome, Chrome 타입 정의). 서비스 실행에는 필요 없음 |
 | `.claude/skills/sync-project/` | 노션 기획 문서로 `PROJECT.md`를 다시 쓰는 Claude Code 스킬 |
@@ -63,6 +64,7 @@ homepage/homepage.js ──> db/db.js (moveBookmark: 건물 이동 저장)
 homepage/homepage.js ──> homepage/category-colors.js
 homepage/homepage.js ──> homepage/building-rules.js / homepage/building-appearance.js
 homepage/homepage.js ──> homepage/bookmark-preview.js / homepage/category-manager.js / homepage/google-account.js
+homepage/homepage.js ──> homepage/traffic.js ──> homepage/layout.js (project, planRoads 결과의 칸·타일 이름)
 homepage/homepage.js ─┐
                       ├─> db/db.js ──> db/bookmark.js / db/category.js ──> db/storage.js
 popup/popup.js ───────┘          └─> demo/seed-data.js                       ├─> chrome.storage.local

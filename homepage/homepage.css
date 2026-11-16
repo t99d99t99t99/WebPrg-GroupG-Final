@@ -313,6 +313,46 @@ a:hover {
     filter: blur(1px);
 }
 
+/* City life on the roads (homepage/traffic.js). Drawn at native pixel size; never takes the pointer. */
+.traffic-pedestrian,
+.traffic-car,
+.traffic-helicopter {
+    position: absolute;
+    max-width: none;
+    pointer-events: none;
+    image-rendering: pixelated;
+    /* Fade in/out with a transition, not an animation: traffic.js re-inserts elements to keep depth
+       order, which would restart an animation (flicker) but does not replay a transition. */
+    transition: opacity 0.6s ease;
+}
+/* Pedestrian feet (row 30 of the 24x32 sprite) sit on the point. Vehicles are anchored in traffic.js. */
+.traffic-pedestrian {
+    transform: translate(-12px, -30px);
+}
+/* Traffic lights: the centre of the pole's base (x 5, y 38 of the sprite; the shadow runs below it) sits on the point. */
+.traffic-light {
+    position: absolute;
+    max-width: none;
+    pointer-events: none;
+    image-rendering: pixelated;
+    transform: translate(-5px, -38px);
+}
+/* Fade with the rest of the map while a building's details are open. Per element, to keep depth order. */
+.detail-focus #traffic > * {
+    opacity: 0.45;
+    filter: blur(1px);
+}
+.traffic-car.leaving {
+    opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+    .traffic-pedestrian,
+    .traffic-car,
+    .traffic-helicopter {
+        transition: none;
+    }
+}
+
 /* Buildings */
 .building {
     position: absolute;

@@ -384,8 +384,19 @@ export function planRoads(areas) {
         }
     }
     const order = ["NW", "NE", "SE", "SW"];
+    // A straight road next to a junction gets a crosswalk ("pelican") on that end.
+    const steps = { NW: [-1, 0], SE: [1, 0], NE: [0, -1], SW: [0, 1] };
+    const opposite = { NW: "SE", SE: "NW", NE: "SW", SW: "NE" };
+    const isJunction = (x, y, from) => {
+        const road = roads.get(`${x},${y}`);
+        return road && road.sides.size >= 3 && road.sides.has(from);
+    };
     return [...roads.values()].map(({ x, y, sides }) => {
-        const name = roadTiles[order.filter((side) => sides.has(side)).join(",")];
+        let name = roadTiles[order.filter((side) => sides.has(side)).join(",")];
+        if (name.startsWith("straight_")) {
+            const end = [...sides].find((side) => isJunction(x + steps[side][0], y + steps[side][1], opposite[side]));
+            if (end) name = `pelican_${end}`;
+        }
         return { x, y, tile: `../assets/Isometric City/Roads and Grounds/tile_road_${name}_normal.png` };
     });
 }
