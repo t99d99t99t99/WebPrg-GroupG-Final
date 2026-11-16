@@ -10,6 +10,14 @@ export function siteIconUrlForPage(pageUrl, size = 32) {
     return iconUrl.href;
 }
 
+// The icon address shown for a bookmark on the map and in its hover card: the saved icon,
+// or Chrome's favicon of the page. Empty when there is none (web preview without chrome).
+export function bookmarkIconUrl(bookmark) {
+    return isSiteIconUrl(bookmark.iconUrl)
+        ? bookmark.iconUrl || siteIconUrlForPage(bookmark.url)
+        : siteIconUrlForPage(bookmark.url);
+}
+
 export function isSiteIconUrl(value) {
     if (typeof value !== "string") return false;
     if (value === "" || webUrl(value)) return true;
