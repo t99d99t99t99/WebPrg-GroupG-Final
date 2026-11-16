@@ -7,6 +7,7 @@
     --color-surface-raised: #ffffff;
     --color-text: var(--color-base-content);
     --color-neutral-500: #828282;
+    --color-selection-overlay: color-mix(in srgb, var(--color-neutral-500) 40%, transparent);
     --color-text-muted: #6d776f;
     --color-secondary-selected: #e4eaf2;
     --zone-color: #a1baee;
@@ -123,9 +124,9 @@
     --popup-width: 374px;
     --popup-height: 600px;
     --popup-control-height: 40px;
-    --popup-font-size: 12px;
-    --popup-label-size: 12px;
-    --popup-title-size: 16px;
+    --popup-font-size: var(--font-size-base);
+    --popup-label-size: var(--font-size-base);
+    --popup-title-size: var(--font-size-lg);
     --popup-header-icon-size: 34px;
     --popup-header-height: 42px;
     --popup-section-gap: 16px;
@@ -204,4 +205,26 @@ textarea {
 
 button {
     color: inherit;
+}
+
+.category-select-trigger,
+.category-options button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+.category-select-chip {
+    display: inline-block;
+    flex: 0 0 var(--space-4);
+    width: var(--space-4);
+    height: var(--space-4);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-sm);
+}
+.category-select-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }

@@ -20,6 +20,21 @@ export function categorySelect(
     host.append(trigger, list);
     let items = [],
         value = "";
+    function itemContent(item) {
+        const fragment = document.createDocumentFragment();
+        if (item) {
+            const chip = document.createElement("span");
+            chip.className = "category-select-chip";
+            chip.setAttribute("aria-hidden", "true");
+            chip.style.backgroundColor = /^#[\da-f]{6}$/i.test(item.color) ? item.color : "var(--color-text-muted)";
+            fragment.append(chip);
+        }
+        const text = document.createElement("span");
+        text.className = "category-select-name";
+        text.textContent = item?.name ?? placeholder;
+        fragment.append(text);
+        return fragment;
+    }
     function close() {
         list.hidden = true;
         trigger.setAttribute("aria-expanded", "false");
@@ -31,7 +46,7 @@ export function categorySelect(
     }
     function select(id) {
         value = items.some((item) => item.id === id) ? id : "";
-        trigger.textContent = items.find((item) => item.id === value)?.name ?? placeholder;
+        trigger.replaceChildren(itemContent(items.find((item) => item.id === value)));
         trigger.classList.toggle("has-selection", Boolean(value));
         for (const option of list.children) option.setAttribute("aria-selected", String(option.dataset.id === value));
     }
@@ -84,7 +99,7 @@ export function categorySelect(
                 option.setAttribute("role", "option");
                 option.tabIndex = -1;
                 option.dataset.id = item.id;
-                option.textContent = item.name;
+                option.append(itemContent(item));
                 option.addEventListener("click", () => {
                     select(item.id);
                     close();

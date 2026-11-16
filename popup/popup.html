@@ -1,76 +1,136 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko" data-theme="livingtaco">
     <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="stylesheet" href="../daisyui.generated.css" />
-        <link rel="stylesheet" href="../style.css" />
-        <link rel="stylesheet" href="popup.css" />
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="../daisyui.generated.css">
+        <link rel="stylesheet" href="../style.css">
+        <link rel="stylesheet" href="popup.css">
+        <link rel="stylesheet" href="../shared/color-picker.css">
         <title>페이지 저장</title>
     </head>
     <body class="popup-page">
         <main class="popup-shell">
             <form id="bookmarkForm" class="save-card" novalidate>
-                <header class="popup-heading">
-                    <span class="popup-logo" aria-hidden="true">💾</span>
-                    <h1>현재 페이지를 북마크로 저장합니다.</h1>
-                </header>
+                <div class="popup-content">
+                    <header class="popup-heading">
+                        <span class="popup-logo" aria-hidden="true">💾</span>
+                        <h1>현재 페이지를 북마크로 저장합니다.</h1>
+                    </header>
 
-                <div class="popup-divider" aria-hidden="true"></div>
+                    <div class="popup-divider" aria-hidden="true"></div>
 
-                <section class="form-section page-name-section">
-                    <label for="bookmarkName">페이지 이름</label>
-                    <input
-                        id="bookmarkName"
-                        name="name"
-                        type="text"
-                        autocomplete="off"
-                        placeholder="페이지 이름을 입력하세요."
-                        aria-describedby="bookmarkNameError"
-                    />
-                    <p id="bookmarkNameError" class="field-error" role="status" hidden></p>
-                </section>
-
-                <section class="form-section category-section" aria-labelledby="categoryLabel">
-                    <span id="categoryLabel" class="field-label">카테고리</span>
-                    <div id="categorySelect" class="category-select-host"></div>
-                    <p id="categorySelectionError" class="field-error" role="status" hidden></p>
-                    <button id="newCategoryButton" class="text-button" type="button">＋ 새 카테고리 만들기</button>
-
-                    <div id="newCategoryFields" class="new-category-fields" hidden>
-                        <label for="newCategoryName">새 카테고리 이름</label>
+                    <section class="form-section page-name-section">
+                        <label for="bookmarkName">페이지 이름</label>
                         <input
-                            id="newCategoryName"
+                            id="bookmarkName"
+                            name="name"
                             type="text"
                             autocomplete="off"
-                            placeholder="새 카테고리 이름을 입력하세요."
-                            aria-describedby="newCategoryNameError"
-                        />
-                        <p id="newCategoryNameError" class="field-error" role="status" hidden></p>
-                        <button id="existingCategoryButton" class="text-button" type="button">
-                            기존 카테고리 선택
-                        </button>
-                    </div>
-                </section>
+                            placeholder="페이지 이름을 입력하세요."
+                            aria-describedby="bookmarkNameError"
+                        >
+                        <p id="bookmarkNameError" class="field-error" role="status" hidden></p>
+                    </section>
 
-                <section class="form-section memo-section">
-                    <label for="bookmarkMemo">메모</label>
-                    <textarea
-                        id="bookmarkMemo"
-                        name="memo"
-                        placeholder="페이지를 설명하는 메모를 입력하세요."
-                        aria-describedby="bookmarkMemoError"
-                    ></textarea>
-                    <p id="bookmarkMemoError" class="field-error" role="status" hidden></p>
-                </section>
+                    <section class="form-section category-section" aria-labelledby="categoryLabel">
+                        <span id="categoryLabel" class="field-label">카테고리</span>
+                        <div id="categorySelect" class="category-select-host"></div>
+                        <p id="categorySelectionError" class="field-error" role="status" hidden></p>
+                        <button id="newCategoryButton" class="text-button" type="button">＋ 새 카테고리 만들기</button>
 
+                        <div id="newCategoryFields" class="new-category-fields" hidden>
+                            <div class="new-category-input">
+                                <button
+                                    id="categoryColor"
+                                    class="category-select-chip"
+                                    type="button"
+                                    aria-label="새 카테고리 색상 선택"
+                                    aria-haspopup="dialog"
+                                    aria-expanded="false"
+                                    aria-controls="popup-color-picker"
+                                ></button>
+                                <input
+                                    id="newCategoryName"
+                                    aria-label="새 카테고리 이름"
+                                    type="text"
+                                    value="일반"
+                                    autocomplete="off"
+                                    placeholder="새 카테고리 이름을 입력하세요."
+                                    aria-describedby="newCategoryNameError"
+                                >
+                            </div>
+                            <p id="newCategoryNameError" class="field-error" role="status" hidden></p>
+                            <button id="existingCategoryButton" class="text-button" type="button">
+                                기존 카테고리 선택
+                            </button>
+                        </div>
+                    </section>
+
+                    <section class="form-section memo-section">
+                        <label for="bookmarkMemo">메모</label>
+                        <textarea
+                            id="bookmarkMemo"
+                            name="memo"
+                            placeholder="페이지를 설명하는 메모를 입력하세요."
+                            aria-describedby="bookmarkMemoError"
+                        ></textarea>
+                        <p id="bookmarkMemoError" class="field-error" role="status" hidden></p>
+                    </section>
+
+                    <section class="form-section building-section" aria-labelledby="buildingDesignLabel">
+                        <span id="buildingDesignLabel" class="field-label">건물 디자인</span>
+                        <div class="building-selector">
+                            <button
+                                id="previousDesign"
+                                class="design-arrow"
+                                type="button"
+                                aria-label="이전 건물 디자인"
+                            >
+                                <svg viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                                    <path
+                                        d="M7.75 2.5 4.25 6l3.5 3.5"
+                                        stroke="currentColor"
+                                        stroke-width="1.8"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                    />
+                                </svg>
+                            </button>
+                            <fieldset
+                                id="buildingDesigns"
+                                class="building-designs"
+                                aria-label="건물 디자인 선택"
+                            ></fieldset>
+                            <button id="nextDesign" class="design-arrow" type="button" aria-label="다음 건물 디자인">
+                                <svg viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                                    <path
+                                        d="M4.25 2.5 7.75 6l-3.5 3.5"
+                                        stroke="currentColor"
+                                        stroke-width="1.8"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+                    </section>
+
+                    <p id="status" class="status-message" role="status" aria-live="polite"></p>
+                </div>
                 <div class="form-actions">
                     <button id="cancelButton" class="cancel-button" type="button">취소하기</button>
                     <button id="saveButton" class="save-button" type="submit">저장하기</button>
                 </div>
-                <p id="status" class="status-message" role="status" aria-live="polite"></p>
             </form>
         </main>
+        <section
+            id="popup-color-picker"
+            class="category-color-picker"
+            role="dialog"
+            aria-label="카테고리 색상 선택"
+            hidden
+        ></section>
         <script type="module" src="popup.js"></script>
     </body>
 </html>
