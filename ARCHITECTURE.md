@@ -26,7 +26,6 @@
 | `shared/` | 홈페이지 이름·URL 검증, 키보드로 조작할 수 있는 카테고리 선택 목록 |
 | `shared/building-designs.js` | 건물 5개 계열의 성장 에셋과 좌우 방향별 기본 디자인 10종. 팝업 선택·DB 검증·지도 렌더링이 공유 |
 | `shared/color-picker.js`, `shared/color-picker.css` | 홈페이지와 팝업이 함께 쓰는 컬러피커 UI·스타일. 채도/밝기 드래그·방향키, 색조, HEX, 스포이트, Escape·바깥 클릭 닫기. 저장은 호출 화면에서 처리 |
-| `homepage/bookmark-preview.js` | 호버 시 URL의 sandbox iframe 미리보기(저장 이미지가 있으면 우선 표시). 카드가 닫히면 iframe과 크기 관찰 해제 |
 | `homepage/google-account.js` | 계정 표시 전용 어댑터. 전달받은 이름·HTTPS 사진 URL을 표시하고 사진 부재·실패 시 기본 아바타로 복귀. 인증·권한·저장소 접근 없음 |
 | `homepage/category-manager.js` | 카테고리 목록 패널. 생성·이름 수정·드래그 순서 이동·삭제 확인, 색상 칩으로 컬러피커 열기, 카테고리 강조 선택 |
 | `debug/` | 개발자용 정적 디버그 도구 모음. 앱 저장소나 Chrome API를 사용하지 않음 |
@@ -65,7 +64,7 @@ homepage/homepage.js ──> homepage/building-drag.js ──> homepage/building
 homepage/homepage.js ──> db/db.js (moveBookmark: 건물 이동 저장)
 homepage/homepage.js ──> homepage/category-colors.js
 homepage/homepage.js ──> homepage/building-rules.js / homepage/building-appearance.js
-homepage/homepage.js ──> homepage/bookmark-preview.js / homepage/category-manager.js / homepage/google-account.js
+homepage/homepage.js ──> homepage/category-manager.js / homepage/google-account.js
 homepage/homepage.js ──> homepage/traffic.js ──> homepage/layout.js (project, planRoads 결과의 칸·타일 이름)
 homepage/homepage.js ─┐
                       ├─> db/db.js ──> db/bookmark.js / db/category.js ──> db/storage.js
@@ -81,7 +80,7 @@ popup/popup.js / homepage/homepage.js ──> shared/color-picker.js
 popup/popup.js / db/bookmark.js / homepage/building-rules.js ──> shared/building-designs.js
 homepage/category-manager.js ──> db/db.js
 homepage/homepage.js ──> shared/
-homepage/category-manager.js / homepage/bookmark-preview.js / db/db.js / db/bookmark.js / db/category.js ──> shared/validation.js
+homepage/category-manager.js / db/db.js / db/bookmark.js / db/category.js ──> shared/validation.js
 debug/building-color-test/building-color-test.js ──> assets/Isometric City/Buildings/ 및 벽면 마스크 이미지
 debug/building-color-test/building-color-test.js ──> homepage/category-colors.js (벽면 명도 보정)
 debug/building-color-test/building-color-test.js ──> debug/building-color-test/mask-editor.js (마스크 편집)
@@ -142,7 +141,7 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 - `buildingDesign`: 선택적 디자인 ID (`blue-homes:a` 등). `shared/building-designs.js`의 ID를 `add`/`edit`에서 검증합니다. 선택한 계열과 방향을 성장·파손 단계에서도 유지하며, 필드가 없으면 ID 기반 규칙을 사용합니다. 데이터 호환을 위해 `cafe:a`·`pizza:a`도 허용하며 각각 카페·피자 가게의 외형 단계부터 표시합니다.
 - `iconUrl`: 선택 사항인 웹사이트 아이콘의 HTTP/HTTPS URL 문자열. `Bookmark` 생성자의 여섯 번째 인자 또는 `BookmarkDB.add` 객체의 `iconUrl`로 저장하고, `BookmarkDB.edit(id, { iconUrl })`로 수정합니다. 빈 문자열은 아이콘 없음이며, 필드가 없는 기존 데이터도 그대로 읽습니다. 현재 화면은 아이콘을 자동 수집하거나 표시하지 않습니다.
 - `isNew`: 새로 저장한 건물의 NEW 표시. 건물을 호버·포커스하면 false로 저장합니다. 새 탭을 떠날 때(다른 탭으로 전환), 그 화면을 보기 시작한 시각보다 먼저 저장된 북마크도 false로 저장합니다. 따라서 새로 연 탭에서는 NEW가 보이고, 한 번 본 뒤 다시 들어오면 사라집니다. 기존 데이터에는 표시하지 않습니다.
-- `preview`: 선택 사항인 로컬 JPEG data URL. 값이 제공되면 이미지로 표시하고, 없거나 이미지 로딩이 실패하면 저장된 URL을 iframe으로 연결합니다. 홈페이지에서는 캡처하거나 외부 서버로 전송하지 않습니다. 현재 팝업은 이 필드를 수집하지 않습니다.
+- `preview`: 예전 페이지 미리보기용 로컬 JPEG data URL. 미리보기 기능을 없애 현재 화면은 이 필드를 표시하거나 수집하지 않으며, 기존 데이터에 남아 있어도 그대로 둡니다.
 
 **카테고리:** `{ id, name, createdAt, area, color, customColor?, buildingFamily?, isGeneral? }`
 
@@ -173,7 +172,3 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 ## Google 계정 표시 연결
 
 `google-account.js`의 `setGoogleAccount({ displayName, photoUrl })`는 인증된 계정 정보를 입력받아 표시합니다. 계정 표시 해제는 `setGoogleAccount(null)`입니다. 홈페이지는 기본 아바타로 시작하며, 이 모듈은 로그인·계정 조회·토큰 저장을 수행하지 않습니다. 사진이 없으면 이름의 첫 글자(이름도 없으면 기본 사람 아이콘), 이미지 로드 실패 시에도 같은 대체 표시를 사용합니다.
-
-## 페이지 미리보기
-
-페이지 미리보기는 홈페이지에서만 처리합니다. 지도 위를 지나가기만 할 때 사이트를 불러오지 않도록, 건물 위에 0.5초 머문 뒤 iframe을 만듭니다. iframe은 1024×576 페이지를 카드 너비에 맞춰 축소하며 `sandbox="allow-scripts"`로 부모 페이지 접근·새 창·폼 제출을 허용하지 않습니다. 원본 새 탭 링크를 별도로 제공합니다. 대상 사이트의 X-Frame-Options/CSP 정책으로 차단될 수 있으며, 교차 출처 iframe의 성공 여부를 신뢰성 있게 판별하지 않으므로 항상 제한 가능 안내를 표시합니다. 차단 정책을 우회하거나 확장 권한을 추가하지 않습니다.
