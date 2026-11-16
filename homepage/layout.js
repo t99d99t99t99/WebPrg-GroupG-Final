@@ -6,8 +6,12 @@
 export const TILE_WIDTH = 128;
 export const TILE_HEIGHT = 64;
 
-// Land cells per building (the name picket included), so a land keeps empty cells between buildings.
-const MARGIN = 1.5;
+// Land cells per building (the name picket included), so a land keeps some empty cells between buildings.
+const MARGIN = 1.3;
+// A land grows once buildings (and the picket) fill more than MAX_FILL of it, and shrinks once
+// they fill less than MIN_FILL.
+const MAX_FILL = 0.85;
+const MIN_FILL = 0.45;
 
 // 2x2 -> 2x3 -> 3x3 -> 3x4 -> 4x4 ... holding `count` cells, returned as [short, long].
 function shapeFor(count) {
@@ -25,14 +29,15 @@ function targetShape(count) {
     return shapeFor(Math.ceil((count + 1) * MARGIN));
 }
 
-// Grow only when almost no empty cell is left, and shrink only when far too many are, so adding
+// Grow only when the land gets crowded, and shrink only when far too many cells are empty, so adding
 // or removing a bookmark or two does not resize a land and push its neighbours around.
 function needsGrow(group) {
-    return group.area.w * group.area.h - group.count - 1 < Math.ceil(group.count / 4);
+    return group.count + 1 > group.area.w * group.area.h * MAX_FILL;
 }
 function needsShrink(group) {
-    const [short, long] = targetShape(group.count + 3);
-    return group.area.w * group.area.h > short * long;
+    const [short, long] = targetShape(group.count);
+    const cells = group.area.w * group.area.h;
+    return group.count + 1 < cells * MIN_FILL && short * long < cells;
 }
 
 // FNV-1a: a fixed pseudo-random number for a text, so random choices stay the same every render.
@@ -42,6 +47,13 @@ export function hashText(text) {
         hash ^= char.codePointAt(0);
         hash = Math.imul(hash, 16777619);
     }
+    // Mix the bits (MurmurHash3 finaliser): texts that differ only in the last character
+    // would otherwise share their high bits and pick the same item.
+    hash ^= hash >>> 16;
+    hash = Math.imul(hash, 0x85ebca6b);
+    hash ^= hash >>> 13;
+    hash = Math.imul(hash, 0xc2b2ae35);
+    hash ^= hash >>> 16;
     return hash >>> 0;
 }
 
@@ -234,7 +246,14 @@ function shrink(group) {
     dropEmptyLines(group, short * long);
     if (group.area.w * group.area.h <= short * long) return;
     const old = group.area;
-    const [w, h] = old.w >= old.h ? [long, short] : [short, long];
+    // Only a shape that fits inside the old area, so shrinking never reaches into a neighbour
+    // (a building move can leave a long thin land that a squarer shape would stick out of).
+    const fits = ([w, h]) => w <= old.w && h <= old.h;
+    const shape = [old.w >= old.h ? [long, short] : [short, long], old.w >= old.h ? [short, long] : [long, short]].find(
+        fits,
+    );
+    if (!shape) return;
+    const [w, h] = shape;
     // Keep the side nearest the middle; buildings outside are repacked later.
     const [cx, cy] = centerOf(old);
     group.area = {
@@ -317,13 +336,15 @@ function fixDoubleRoads(groups, pinned) {
     }
 }
 
-function placeBuildings(group) {
+// `spread` places every building of the land anew (after the land changed size), so buildings
+// stand apart across the whole land instead of keeping their old corner.
+function placeBuildings(group, spread) {
     const { area } = group;
     const taken = new Set();
     const cells = new Map();
     const waiting = [];
     for (const bookmark of group.items) {
-        const cell = currentCell(group, bookmark);
+        const cell = spread ? null : currentCell(group, bookmark);
         const key = cell && `${cell.x},${cell.y}`;
         const inside =
             cell &&
@@ -349,13 +370,29 @@ function placeBuildings(group) {
     let picket = null;
     for (const cell of free) if (!picket || nearFront(cell) < nearFront(picket)) picket = cell;
     const open = free.filter((cell) => cell !== picket);
-    // New buildings take a free cell picked by their id, so empty cells stay scattered.
+    // New buildings prefer a free cell with no building beside it, then the checkerboard cells
+    // (the picket's colour stays for decorations), then a cell picked by the bookmark id.
+    const neighbours = (cell) =>
+        [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+        ].filter(([dx, dy]) => taken.has(`${cell.x + dx},${cell.y + dy}`)).length;
+    const offBoard = (cell) => (cell.x + cell.y + front.x + front.y + 1) % 2;
     for (const bookmark of waiting) {
         if (!open.length) {
             open.push(picket); // no room left: the picket gives way until the land grows
             picket = null;
         }
-        const [cell] = open.splice(hashText(String(bookmark.id)) % open.length, 1);
+        const score = (cell) => [neighbours(cell), offBoard(cell), hashText(`${bookmark.id}:${cell.x},${cell.y}`)];
+        let best = 0;
+        for (let i = 1; i < open.length; i++) {
+            const [a, b] = [score(open[i]), score(open[best])];
+            if (a[0] < b[0] || (a[0] === b[0] && (a[1] < b[1] || (a[1] === b[1] && a[2] < b[2])))) best = i;
+        }
+        const [cell] = open.splice(best, 1);
+        taken.add(`${cell.x},${cell.y}`);
         cells.set(bookmark.id, cell);
     }
     group.picket = picket;
@@ -418,9 +455,11 @@ export function planCity(savedCategories, savedBookmarks, { pinned = [], compact
 
     const changed = { areas: new Map(), cells: new Map() };
     for (const group of groups) {
-        group.cells = placeBuildings(group);
-        if (!group.keepCells) continue;
         const saved = group.category.area;
+        // A land the plan resized spreads its buildings again; lands a building move pinned keep theirs.
+        const resized = !saved || saved.w !== group.area.w || saved.h !== group.area.h;
+        group.cells = placeBuildings(group, resized && !pinnedIds.includes(String(group.category.id)));
+        if (!group.keepCells) continue;
         const { x, y, w, h } = group.area;
         if (!saved || saved.x !== x || saved.y !== y || saved.w !== w || saved.h !== h)
             changed.areas.set(group.category.id, group.area);
