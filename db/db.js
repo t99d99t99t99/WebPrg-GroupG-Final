@@ -1,10 +1,26 @@
 import { createDemoData } from "../demo/seed-data.js";
+import { webUrl } from "../shared/validation.js";
 import { BookmarkDB } from "./bookmark.js";
-import { CategoryDB } from "./category.js";
+import { CategoryDB, GENERAL_CATEGORY_NAME, generalCategoryLast, isGeneralCategory } from "./category.js";
 import { storage, subscribeStorage, withWriteLock } from "./storage.js";
 
 const BOOKMARK_DB_KEY = "webprg-bookmarkmap-bookmarks";
 const CATEGORY_DB_KEY = "webprg-bookmarkmap-categories";
+
+function assignUncategorized(data) {
+    const savedCategories = data[CATEGORY_DB_KEY];
+    const general = savedCategories.find(isGeneralCategory);
+    if (!general) return false;
+    const known = new Set(savedCategories.map((category) => String(category.id)));
+    let changed = false;
+    for (const bookmark of data[BOOKMARK_DB_KEY]) {
+        if (known.has(String(bookmark.category))) continue;
+        bookmark.category = general.id;
+        delete bookmark.cell;
+        changed = true;
+    }
+    return changed;
+}
 
 // Seed only a new demo installation; an existing empty array is also user data.
 async function initializeDemo() {
@@ -13,6 +29,29 @@ async function initializeDemo() {
         const demo = createDemoData();
         await storage.set({ [BOOKMARK_DB_KEY]: demo.bookmarks, [CATEGORY_DB_KEY]: demo.categories });
     }
+    await withWriteLock(async () => {
+        const data = await storage.get({ [CATEGORY_DB_KEY]: [], [BOOKMARK_DB_KEY]: [] });
+        const saved = data[CATEGORY_DB_KEY];
+        let general = saved.find(isGeneralCategory);
+        if (!general) {
+            general = saved.find((category) => category.name === GENERAL_CATEGORY_NAME);
+            if (general) general.isGeneral = true;
+            else {
+                general = {
+                    id: crypto.randomUUID(),
+                    name: GENERAL_CATEGORY_NAME,
+                    createdAt: Date.now(),
+                    isGeneral: true,
+                };
+                saved.push(general);
+            }
+            await storage.set({ [CATEGORY_DB_KEY]: generalCategoryLast(saved) });
+        } else if (general.name !== GENERAL_CATEGORY_NAME || saved.at(-1) !== general) {
+            general.name = GENERAL_CATEGORY_NAME;
+            await storage.set({ [CATEGORY_DB_KEY]: generalCategoryLast(saved) });
+        }
+        if (assignUncategorized(data)) await storage.set({ [BOOKMARK_DB_KEY]: data[BOOKMARK_DB_KEY] });
+    });
 }
 
 export const ready = globalThis.navigator?.locks
@@ -21,6 +60,75 @@ export const ready = globalThis.navigator?.locks
 
 export const bookmarks = new BookmarkDB(BOOKMARK_DB_KEY, ready, CATEGORY_DB_KEY);
 export const categories = new CategoryDB(CATEGORY_DB_KEY, ready);
+
+export async function importChromeBookmarks(tree) {
+    await ready;
+    return withWriteLock(async () => {
+        const data = await storage.get({ [BOOKMARK_DB_KEY]: [], [CATEGORY_DB_KEY]: [] });
+        const savedCategories = data[CATEGORY_DB_KEY];
+        const savedBookmarks = data[BOOKMARK_DB_KEY];
+        const general = savedCategories.find(isGeneralCategory);
+        if (!general) throw new Error("기본 카테고리를 찾지 못했습니다. 새로고침 후 다시 시도해 주세요.");
+        const urls = new Set(savedBookmarks.map((bookmark) => webUrl(bookmark.url)?.href ?? bookmark.url));
+        const result = { bookmarks: 0, categories: 0, duplicates: 0, skipped: 0 };
+
+        function collect(node, category) {
+            if (node.url !== undefined) {
+                const url = webUrl(node.url);
+                if (!url) {
+                    result.skipped++;
+                    return;
+                }
+                if (urls.has(url.href)) {
+                    result.duplicates++;
+                    return;
+                }
+                savedBookmarks.push({
+                    id: crypto.randomUUID(),
+                    url: url.href,
+                    name: node.title?.trim() || url.hostname,
+                    category: category.id,
+                    savedAt: node.dateAdded ?? Date.now(),
+                    lastVisitedAt: Date.now(),
+                    clickCount: 0,
+                    isNew: true,
+                });
+                urls.add(url.href);
+                result.bookmarks++;
+            } else {
+                for (const child of node.children ?? []) collect(child, category);
+            }
+        }
+
+        // Chrome's root children are system folders (bookmark bar, other, mobile).
+        // Only user folders inside these containers become categories.
+        for (const root of tree) {
+            for (const container of root.children ?? []) {
+                for (const node of container.children ?? []) {
+                    if (node.url !== undefined) {
+                        collect(node, general);
+                        continue;
+                    }
+                    const name = node.title?.trim() || "이름 없는 폴더";
+                    let category = savedCategories.find((item) => item.name === name);
+                    if (!category) {
+                        category = { id: crypto.randomUUID(), name, createdAt: Date.now() };
+                        savedCategories.push(category);
+                        result.categories++;
+                    }
+                    collect(node, category);
+                }
+            }
+        }
+        if (result.bookmarks || result.categories) {
+            await storage.set({
+                [CATEGORY_DB_KEY]: generalCategoryLast(savedCategories),
+                [BOOKMARK_DB_KEY]: savedBookmarks,
+            });
+        }
+        return result;
+    });
+}
 
 // Saves planned map positions (category `area`, bookmark `cell`) in one write so
 // both arrays stay in step. Only the given ids change; other fields are kept.
@@ -62,10 +170,11 @@ export async function updateCity(planner) {
     await ready;
     return withWriteLock(async () => {
         const data = await storage.get({ [BOOKMARK_DB_KEY]: [], [CATEGORY_DB_KEY]: [] });
-        const result = planner(data[CATEGORY_DB_KEY], data[BOOKMARK_DB_KEY]);
+        const reassigned = assignUncategorized(data);
+        const result = planner(generalCategoryLast(data[CATEGORY_DB_KEY]), data[BOOKMARK_DB_KEY]);
         const { areas, cells } = result.plan.changed;
         const families = result.families ?? new Map();
-        if (areas.size || cells.size || result.colors.size || families.size) {
+        if (reassigned || areas.size || cells.size || result.colors.size || families.size) {
             await storage.set({
                 [CATEGORY_DB_KEY]: data[CATEGORY_DB_KEY].map((item) => ({
                     ...item,
@@ -85,6 +194,8 @@ export async function deleteCategory(id) {
     await ready;
     return withWriteLock(async () => {
         const data = await storage.get({ [BOOKMARK_DB_KEY]: [], [CATEGORY_DB_KEY]: [] });
+        if (isGeneralCategory(data[CATEGORY_DB_KEY].find((category) => category.id === id)))
+            throw new Error("카테고리 일반은 삭제할 수 없습니다.");
         await storage.set({
             [CATEGORY_DB_KEY]: data[CATEGORY_DB_KEY].filter((item) => item.id !== id),
             [BOOKMARK_DB_KEY]: data[BOOKMARK_DB_KEY].filter((item) => item.category !== id),

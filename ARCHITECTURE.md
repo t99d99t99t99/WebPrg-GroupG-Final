@@ -8,7 +8,7 @@
 | 경로 | 책임 |
 |---|---|
 | `BUILDING_FAMILIES.md` | 사용 중인 5개 건물 계열, 성장 단계별 에셋, 통합·미사용 목록, 이미지·마스크 파일명 규칙 |
-| `manifest.json` | 확장 설정(Manifest V3). 새 탭과 팝업을 연결하고 권한(`storage`, `activeTab`)을 선언 |
+| `manifest.json` | 확장 설정(Manifest V3). 새 탭과 팝업을 연결하고 권한(`storage`, `activeTab`, `bookmarks`)을 선언 |
 | `assets/icons/` | 확장 프로그램 아이콘 PNG 4종(16·32px 단독 집, 48·128px 건물 모음)과 `source/`의 수정 가능한 SVG 원본. `manifest.json`에서 크기별로 연결하며 새 탭 파비콘은 16px 아이콘을 사용 |
 | `db/` | 저장소 계층. `chrome.storage.local`을 직접 다루는 유일한 곳 |
 | `popup/` | 툴바 아이콘을 누르면 뜨는 팝업. 현재 탭을 카테고리에 저장 |
@@ -56,7 +56,9 @@ homepage/homepage.js ─┐
 popup/popup.js ───────┘          └─> demo/seed-data.js                       ├─> chrome.storage.local
                                                                            └─> localStorage (웹 미리보기)
 popup/popup.js ──> chrome.tabs.query (현재 탭 제목·URL)
+homepage/homepage.js ──> chrome.bookmarks.getTree → db/db.js (importChromeBookmarks)
 popup/popup.js ──> shared/category-select.js / shared/validation.js
+popup/popup.js / homepage/category-manager.js ──> db/category.js (기본 카테고리 판별)
 homepage/category-manager.js ──> db/db.js
 homepage/homepage.js ──> shared/
 debug/building-color-test/building-color-test.js ──> assets/Isometric City/Buildings/ 및 벽면 마스크 이미지
@@ -70,6 +72,7 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 `mask-editor.js`는 선택한 정적 PNG를 읽어 픽셀과 불투명도를 편집하고 변경된 마스크를 카드에 미리 보여 줍니다. 원본 보기와 선택 픽셀의 불투명도 복사, 확대·축소를 버튼과 단축키로 제공합니다. 변경된 PNG는 디버그 페이지의 `sessionStorage`에 임시 보관해 같은 탭의 새로고침 후에도 복원하며, 탭 세션이 끝나면 사라집니다. 개별 PNG나 변경된 마스크·전체 마스크 ZIP을 다운로드하고 파일을 직접 교체해야 실제 에셋에 반영됩니다. 앱 데이터 저장 키와 Chrome 저장소는 사용하지 않습니다.
 
 - `db/db.js`가 저장 키와 `bookmarks`, `categories` 싱글턴, 초기화 Promise인 `ready`, 변경 알림 `subscribe`를 제공합니다.
+- 홈페이지 왼쪽 아래의 "크롬 북마크 동기화"는 클릭할 때 `chrome.bookmarks.getTree`로 읽은 트리를 `importChromeBookmarks`에 전달합니다. 북마크바·기타·모바일 등 Chrome 기본 컨테이너 안의 사용자 폴더를 카테고리로 만들고, 하위 폴더의 북마크는 해당 상위 카테고리로 합칩니다. 폴더 밖의 북마크는 "카테고리 일반"으로 가져옵니다. 같은 이름의 카테고리는 재사용하고, 정규화한 URL이 이미 있으면 건너뜁니다. HTTP/HTTPS 주소만 가져오며 이름은 Chrome 원본을 보존합니다. 공통 쓰기 잠금 안에서 최신 데이터와 합쳐 두 배열을 함께 저장합니다. Chrome 원본을 수정하지 않으며, 기존 항목의 변경·삭제를 추적하는 실시간 동기화는 하지 않습니다.
 - 팝업은 `Bookmark`, `Category` 클래스와 `add` API로 현재 페이지를 저장합니다. 새 카테고리 이름은 `shared/validation.js`로 검사하고, 카테고리 목록은 `shared/category-select.js`를 사용합니다. 북마크 이름은 20자, 메모는 50자까지 저장하며 메모는 기존 `memo` 필드에 기록합니다. 홈페이지 폼도 같은 공유 모듈을 사용합니다.
 - 상세 카드의 메모 입력은 `BookmarkDB.edit`, 북마크 수정도 같은 메서드를 사용합니다. 수정 창은 팝업에서 저장한 제목·주소가 홈페이지 규칙과 달라도 저장할 수 있도록, 바뀐 이름·URL만 검사해서 보냅니다. 북마크 삭제는 상세 카드의 삭제 버튼에서 확인 창을 거쳐 `BookmarkDB.remove`를 사용합니다. 카테고리 삭제는 `deleteCategory`가 카테고리와 포함된 북마크를 함께 삭제합니다. 순서는 카테고리 배열 순서로 저장합니다.
 - DB는 초기화가 끝난 뒤 저장소를 읽습니다. 조회 시 최신 데이터를 다시 읽어 다른 탭의 저장을 반영합니다.
@@ -83,7 +86,7 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
   - 새 카테고리는 중앙에서 가장 가까운 빈 자리에 놓입니다. 구역은 바깥쪽으로 커집니다.
   - 커질 자리가 없으면 구역 하나만 옮깁니다(자기 자신 또는 막고 있는 이웃 하나 중 덜 움직이는 쪽). 구역이 옮겨지면 건물도 같이 옮겨집니다.
   - 추가할 때 기존 건물 칸은 바뀌지 않습니다. 구역이 줄어들 때만 건물을 다시 채우고, 구역들을 중앙 쪽으로 당깁니다.
-  - "분류 없음" 구역은 저장하지 않고 매번 마지막에 계산합니다.
+  - 카테고리를 삭제하면 포함된 북마크도 함께 삭제합니다. 저장 데이터에서 카테고리 ID가 일치하지 않는 북마크가 발견되면 DB 초기화 및 도시 갱신 시 "카테고리 일반"의 ID로 바꾸어 저장하고 기존 칸을 지워 다시 배치합니다. 별도의 임시 구역은 만들지 않습니다.
   - 도시 전체가 지도 영역에 들어가도록 확대·축소합니다.
 - Chrome 확장프로그램에서는 `chrome.storage.local`, 웹 미리보기에서는 별도의 `localStorage`를 사용합니다.
 
@@ -98,10 +101,10 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 
 **북마크:** `{ id, url, name, category, savedAt, clickCount, cell, lastVisitedAt?, memo?, isNew?, preview?, iconUrl? }`
 - `id`: `crypto.randomUUID()` 문자열
-- `category`: 카테고리의 `id`. 일치하는 카테고리가 없으면 새 탭에서 "분류 없음"에 표시됩니다
-- `savedAt`: 저장 시각(`Date.now()`)
+- `category`: 카테고리의 `id`. 일치하는 카테고리가 없으면 DB 초기화 및 도시 갱신 시 "카테고리 일반"의 ID로 바꾸어 저장합니다
+- `savedAt`: 저장 시각(`Date.now()`). Chrome 북마크 가져오기는 원래 등록일(`dateAdded`)을 사용합니다.
 - `clickCount`: 지도에서 사이트를 방문한 횟수(일반 클릭, Ctrl/⌘ 클릭, 휠 클릭). 기존 북마크는 클릭 전까지 필드가 없으며, 클릭하면 1부터 저장됩니다
-- `lastVisitedAt`: 지도에서 마지막으로 방문한 시각(`Date.now()`). `clickCount`를 올릴 때 함께 저장합니다. 방문한 적 없는 북마크에는 없으며, 이때 파손 판정은 `savedAt`을 기준으로 합니다
+- `lastVisitedAt`: 지도에서 마지막으로 방문한 시각(`Date.now()`). `clickCount`를 올릴 때 함께 저장합니다. Chrome 북마크를 새로 가져올 때는 가져온 현재 시각으로 초기화해 정상 건물로 시작합니다. 그 외 방문 기록이 없는 북마크는 파손 판정에 `savedAt`을 사용합니다.
 - `cell`: 지도 그리드에서 건물이 놓인 칸 `{ x, y }`(절대 좌표). 새 탭이 처음 그릴 때 채웁니다. 카테고리를 바꾸면(`edit`) 지워지고 새로 배정됩니다
 
 - `memo`: 최대 50자 메모. 기존 데이터에 없으면 빈 메모로 표시합니다.
@@ -109,7 +112,9 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 - `isNew`: 새로 저장한 건물의 NEW 표시. 건물을 호버·포커스하면 false로 저장합니다. 새 탭을 떠날 때(다른 탭으로 전환), 그 화면을 보기 시작한 시각보다 먼저 저장된 북마크도 false로 저장합니다. 따라서 새로 연 탭에서는 NEW가 보이고, 한 번 본 뒤 다시 들어오면 사라집니다. 기존 데이터에는 표시하지 않습니다.
 - `preview`: 선택 사항인 로컬 JPEG data URL. 값이 제공되면 이미지로 표시하고, 없거나 이미지 로딩이 실패하면 저장된 URL을 iframe으로 연결합니다. 홈페이지에서는 캡처하거나 외부 서버로 전송하지 않습니다. 현재 팝업은 이 필드를 수집하지 않습니다.
 
-**카테고리:** `{ id, name, createdAt, area, color, customColor?, buildingFamily? }`
+**카테고리:** `{ id, name, createdAt, area, color, customColor?, buildingFamily?, isGeneral? }`
+
+- `isGeneral`: true이면 기본 카테고리인 “카테고리 일반”. 이미 저장된 기본 카테고리의 이름도 초기화 때 ID와 연결된 북마크를 유지한 채 갱신합니다. 초기화 때 없으면 UUID로 생성하고, 같은 이름의 기존 카테고리가 있으면 ID와 북마크를 유지한 채 이 표시를 추가합니다. 기존 카테고리·북마크는 보존합니다. 이름 변경과 삭제는 `CategoryDB` 및 `deleteCategory`에서 거부하며 색상 변경은 허용합니다. 저장·조회·정렬 및 지도 렌더링에서 항상 마지막이고 순서 이동 UI는 제공하지 않습니다. 팝업의 카테고리 선택은 이 항목을 기본값으로 사용합니다.
 
 - `area`: 지도 그리드에서 구역이 차지하는 칸 `{ x, y, w, h }`. 새 탭이 처음 그릴 때 채웁니다
 - `color`: 카테고리 목록의 색상 표시, 구역 강조 영역, 구역 안 집·잔디 색에 적용하는 6자리 hex 색상. 비어 있는 기존 카테고리는 지도에서 자동 지정해 저장합니다.

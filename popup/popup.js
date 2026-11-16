@@ -1,5 +1,5 @@
 import { Bookmark } from "../db/bookmark.js";
-import { Category } from "../db/category.js";
+import { Category, isGeneralCategory } from "../db/category.js";
 import { bookmarks, categories } from "../db/db.js";
 import { categorySelect } from "../shared/category-select.js";
 import { categoryError as getCategoryError, nameError } from "../shared/validation.js";
@@ -59,7 +59,7 @@ function validateMemo() {
 
 async function loadCategories(selectedId = "") {
     savedCategories = await categories.get();
-    categoryPicker.setItems(savedCategories, selectedId);
+    categoryPicker.setItems(savedCategories, selectedId || savedCategories.find(isGeneralCategory)?.id);
 }
 
 const categoryPicker = categorySelect(categoryHost, {
