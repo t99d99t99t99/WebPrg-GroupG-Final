@@ -1,6 +1,6 @@
 # daisyUI 부품 모음
 
-기존 [preview.html](preview.html) 한 페이지에서 daisyUI 컴포넌트를 비교하고 필요한 부품을 Figma 목업으로 가져가는 작업 공간입니다. 미리보기는 프로젝트 기능·데이터와 연결하지 않지만, 같은 테마와 설치 버전으로 실제 확장 프로그램용 정적 CSS도 생성합니다.
+[preview.html](preview.html)에서 daisyUI 컴포넌트를 비교하고 필요한 부품을 Figma 목업으로 가져가는 작업 공간입니다. 미리보기는 프로젝트 기능·데이터와 연결하지 않지만, 같은 테마와 설치 버전으로 실제 확장 프로그램용 정적 CSS도 생성합니다.
 
 **daisyUI 5.7.50**과 `livingtaco` 테마를 사용합니다. UI 미리보기와 디버그 목록·건물 색상 테스트가 저장소에 포함된 [preview.generated.css](preview.generated.css)를 함께 참조하므로 페이지를 열 때 npm 설치나 CSS 빌드가 필요하지 않습니다.
 
@@ -54,8 +54,8 @@ npm.cmd run build
 
 ## 수정 위치
 
-- [src/theme.css](src/theme.css): Export한 `@plugin "daisyui/theme" { ... }` 블록을 붙여넣는 위치입니다. 현재는 제공받은 `livingtaco` 테마의 색상·둥글기·그림자·노이즈 값을 그대로 사용합니다.
-- [src/additional.css](src/additional.css): 테마 토큰과 분리해서 추가할 개별 스타일입니다. 기존 규칙 뒤의 `.catalog-*` 규칙은 부품 모음 전용 배치입니다.
+- [src/theme.css](src/theme.css): `livingtaco` 테마의 색상·둥글기·그림자·노이즈 토큰을 정의하는 `@plugin "daisyui/theme" { ... }` 블록입니다.
+- [src/additional.css](src/additional.css): 테마 토큰과 분리된 개별 스타일입니다. `.catalog-*` 규칙은 부품 모음 전용 배치입니다.
 - [preview.html](preview.html): **부품을 추가하는 파일**입니다. 해당 종류의 `.catalog-group`에서 `figure.catalog-sample`을 복사하고 이름·클래스 설명과 `.catalog-stage` 안의 부품을 함께 수정합니다. 클래스는 HTML에 그대로 적어 기존 빌드에서 탐색되게 합니다.
 - [src/input.css](src/input.css): Tailwind, daisyUI 기본 light 테마, 위 두 CSS 파일을 연결합니다. UI 부품 모음과 디버그 목록·건물 색상 테스트 HTML의 클래스를 탐색합니다.
 - [src/app.css](src/app.css): 실제 `homepage/`와 `popup/`의 클래스만 탐색해 서비스용 정적 CSS를 만드는 진입점입니다. 미리보기 전용 [src/additional.css](src/additional.css)는 불러오지 않습니다.

@@ -1,4 +1,4 @@
-// Homepage display adapter only. Authentication belongs to the extension owner.
+// Account display adapter; authentication is supplied by the caller.
 // Pass an already-authorized account after sign-in; pass null on sign-out.
 export function setGoogleAccount(account = null) {
     const link = document.getElementById("google-account-link");

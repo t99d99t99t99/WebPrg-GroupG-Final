@@ -1,6 +1,6 @@
 # 사용 중인 건물 계열
 
-현재 지도에서 선택하는 계열은 아래 5개입니다. 기준 코드는 [homepage/building-rules.js](homepage/building-rules.js)의 `BUILDING_FAMILIES`입니다. 계열이나 단계별 건물을 바꾸면 이 문서도 함께 갱신합니다.
+지도에서 사용하는 계열은 아래 5개입니다. 계열 정의는 [shared/building-designs.js](shared/building-designs.js)의 `BUILDING_FAMILIES`, 렌더링 규칙은 [homepage/building-rules.js](homepage/building-rules.js)에 있습니다. 계열이나 단계별 건물을 바꾸면 이 문서도 함께 갱신합니다.
 
 ## 계열과 성장 단계
 
@@ -18,7 +18,7 @@
 
 ## 통합·미사용 건물
 
-벽면을 착색한 결과가 같거나 거의 같은 형태는 다음 대표 건물로 통합했습니다. 아래 미사용 형태의 a/b 방향과 정상·파손 이미지 모두 지도 선정 목록과 디버그 목록에서 제외합니다. 원본 이미지와 마스크 파일은 보존합니다.
+벽면 착색 결과가 같거나 거의 같은 형태는 아래 대표 건물만 사용합니다. 미사용 형태의 a/b 방향과 정상·파손 이미지는 지도 선정 목록과 디버그 목록에서 제외하며, 원본 이미지와 마스크 파일은 보존합니다.
 
 | 구분 | 사용하는 대표 형태 | 사용하지 않는 형태 |
 |---|---|---|
@@ -26,13 +26,13 @@
 | 중형 주택 통합 | `house_medium_blue` | `house_medium_green` |
 | 대형 주택 통합 | `house_tall_blue` | `house_tall_brown`, `house_tall_purple` |
 
-정원 주택에는 위 통합 대상 이외의 `house_small_yellow`·`house_medium_white`·`house_tall_green`만 남깁니다.
+정원 주택은 `house_small_yellow`·`house_medium_white`·`house_tall_green`을 사용합니다.
 
-갈색 벽돌 주택(`warm-brick-homes`) 계열은 폐지했습니다. 해당 계열의 `house_small_brickbrown`·`house_medium_brown`·`house_tall_brickbrown`은 사용하지 않으며, `house_tall_brown`도 위 대형 주택 통합에 따라 사용하지 않습니다. 합계 8개 형태, a/b 및 파손을 포함한 이미지 32개가 미사용입니다.
+갈색 벽돌 주택(`warm-brick-homes`) 계열의 `house_small_brickbrown`·`house_medium_brown`·`house_tall_brickbrown`도 미사용 형태입니다. 표의 5개와 합쳐 총 8개 형태, a/b 및 파손을 포함한 이미지 32개가 미사용입니다.
 
 ## 선택과 파손 규칙
 
-- 북마크 ID 해시로 계열·a/b 방향·단계별 형태를 결정합니다. 같은 카테고리 안에서도 여러 계열과 방향이 섞입니다.
+- 북마크의 `buildingDesign`이 있으면 선택한 계열과 a/b 방향을 사용하고, 없으면 ID 해시로 결정합니다. 단계별 세부 형태는 해당 계열에서 ID 해시로 선택합니다. 같은 카테고리 안에서도 여러 계열과 방향이 섞입니다.
 - 같은 북마크는 방문 횟수가 늘어도 계열과 방향을 유지하고, 해당 계열의 다음 단계 건물로 바뀝니다.
 - 마지막 방문부터 7일이 지나면 같은 형태와 방향의 파손 이미지로 바뀝니다. 방문 기록이 없으면 저장 시각을 기준으로 하며, 지도에서 방문하면 정상 이미지로 돌아옵니다.
 - 이전에 카테고리에 저장된 `buildingFamily` 값은 보존하지만 현재 건물 선택에는 사용하지 않습니다.

@@ -816,7 +816,7 @@ $("edit-bookmark").addEventListener("click", async () => {
         console.error(error);
     }
 });
-// Popup-saved names and URLs may not follow the homepage rules, so only edited values are checked.
+// Validate changed fields; preserve untouched names and URLs from stored data.
 const nameChanged = () => $("edit-name").value.trim() !== editingBookmark?.name;
 const urlChanged = () => $("edit-url").value.trim() !== editingBookmark?.url;
 function validateEditor() {
