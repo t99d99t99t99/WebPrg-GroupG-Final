@@ -9,6 +9,7 @@ import { assignCategoryColors, colors, grassAppearanceForCategory, wallColorAdju
 import { categoryManager } from "./category-manager.js";
 import { setGoogleAccount } from "./google-account.js";
 import { planCity, planRoads, project, TILE_HEIGHT, TILE_WIDTH } from "./layout.js";
+import { createTraffic } from "./traffic.js";
 
 // Canvas region the city is fitted into (left of the category panel).
 const MAP_AREA = { left: 24, top: 200, width: 1400, height: 800 };
@@ -17,6 +18,7 @@ const MAX_ZOOM = 1.7;
 const $ = (id) => document.getElementById(id);
 const tooltip = $("bookmark-tooltip");
 const hoverBridge = $("bookmark-hover-bridge");
+const traffic = createTraffic($("traffic"));
 let activeBookmark;
 let activeLink;
 let hoverCorridor = [];
@@ -465,6 +467,7 @@ async function render() {
             tiles.push(road);
         }
         fitCity(tiles);
+        traffic.update(tiles);
         $("ground").replaceChildren(ground);
         $("zones").replaceChildren(zones);
         $("buildings").replaceChildren(map);
