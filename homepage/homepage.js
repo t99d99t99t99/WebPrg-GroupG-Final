@@ -732,7 +732,8 @@ const colorPicker = createColorPicker($("category-color-picker"), {
     },
     onError: toast,
     position: positionColorPicker,
-    ignoreOutside: (target) => Boolean(target.closest(".category-color")),
+    // The name field of a category being edited keeps the picker open, so both can be used together.
+    ignoreOutside: (target) => Boolean(target.closest(".category-color, .category-edit-input")),
 });
 
 async function persistPendingColor() {
