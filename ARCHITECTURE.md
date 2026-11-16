@@ -5,6 +5,10 @@
 
 ## 구조
 
+건물 팝업의 간격은 `building-appearance.js`가 계산한 그림자 포함 가시 영역과 호버 확대·상승을 기준으로 맞춥니다. 그림자를 제외한 호버 윤곽과 가시 영역은 별도로 캐시합니다. 팝업 이동 경로와 겹치는 중간 건물은 마우스 반응을 잠시 끄고, 팝업을 닫으면 복원합니다. 카테고리 선택과 건물 호버는 공통 강조 처리를 사용하며 빨간 외곽선은 개별 건물 호버에만 적용합니다.
+
+카테고리 순서 이동은 `homepage/category-reorder.js`가 Pointer Events로 처리합니다. 행을 끌면 다른 행이 빈 슬롯을 만들고, 놓으면 320ms 정착 애니메이션 후 `category-manager.js`를 통해 기존 `CategoryDB.reorder`로 저장합니다. 일반 카테고리는 고정하며 드래그 중 들어온 목록 갱신은 정착 후 반영합니다.
+
 | 경로 | 책임 |
 |---|---|
 | `BUILDING_FAMILIES.md` | 사용 중인 5개 건물 계열, 성장 단계별 에셋, 통합·미사용 목록, 이미지·마스크 파일명 규칙 |
@@ -30,6 +34,7 @@
 | `shared/color-picker.js`, `shared/color-picker.css` | 홈페이지와 팝업이 함께 쓰는 컬러피커 UI·스타일. 채도/밝기 드래그·방향키, 색조, HEX, 스포이트, Escape·바깥 클릭 닫기. 저장은 호출 화면에서 처리 |
 | `homepage/google-account.js` | 계정 표시 전용 어댑터. 전달받은 이름·HTTPS 사진 URL을 표시하고 사진 부재·실패 시 기본 아바타로 복귀. 인증·권한·저장소 접근 없음 |
 | `homepage/category-manager.js` | 카테고리 목록 패널. 생성·이름 수정·드래그 순서 이동·삭제 확인, 색상 칩으로 컬러피커 열기(연필로 이름을 수정할 때도 함께 열림), 휴지통 버튼으로 삭제 창 열기, 카테고리 강조 선택 |
+| `homepage/category-reorder.js` | 행의 포인터 드래그·자동 스크롤·정착 애니메이션·취소와 저장 콜백 처리 |
 | `debug/` | 개발자용 정적 디버그 도구 모음. 앱 저장소나 Chrome API를 사용하지 않음 |
 | `debug/index.html` | 디버그 도구 진입 페이지 |
 | `debug/debug.css` | 디버그 도구 목록과 건물 색상 테스트의 공통 레이아웃·테마 스타일 |
@@ -67,6 +72,7 @@ homepage/homepage.js ──> db/db.js (moveBookmark: 건물 이동 저장)
 homepage/homepage.js ──> homepage/category-colors.js
 homepage/homepage.js ──> homepage/building-rules.js / homepage/building-appearance.js
 homepage/homepage.js ──> homepage/category-manager.js / homepage/google-account.js
+homepage/category-manager.js ──> homepage/category-reorder.js
 homepage/homepage.js ──> homepage/traffic.js ──> homepage/layout.js (project, planRoads 결과의 칸·타일 이름)
 homepage/homepage.js ─┐
                       ├─> db/db.js ──> db/bookmark.js / db/category.js ──> db/storage.js

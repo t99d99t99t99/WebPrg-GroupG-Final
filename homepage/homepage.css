@@ -312,7 +312,8 @@ a:hover {
     --focus-fade-opacity: 0.8;
     --focus-fade-blur: 0.5px;
     --hover-grow: 1.05;
-    --hover-lift: translateY(-3px) scale(var(--hover-grow));
+    --hover-rise: 3px;
+    --hover-lift: translateY(calc(-1 * var(--hover-rise))) scale(var(--hover-grow));
     --hover-duration: 0.25s;
 }
 /* Fade in and out smoothly instead of switching at once. */
@@ -410,6 +411,10 @@ a:hover {
     display: block;
     transition: transform var(--hover-duration) ease-out;
 }
+.building.popup-obstructed .building-hit-area {
+    /* biome-ignore lint/complexity/noImportantStyles: override the prepared hit area's inline pointer-events while crossing to the popup. */
+    pointer-events: none !important;
+}
 .building-wall-tint,
 .building-wall-light {
     position: absolute;
@@ -477,13 +482,7 @@ a:hover {
     border-top: 0;
     background: #8a5a2e;
 }
-.building.dimmed,
-.building-icon.dimmed,
-.decoration.dimmed,
-.category-picket.dimmed {
-    opacity: 0.24;
-}
-.detail-focus .building:not(.focused-building),
+.detail-focus .building:not(.emphasized-building),
 .detail-focus .category-picket,
 .detail-focus .decoration {
     opacity: var(--focus-fade-opacity);
@@ -493,9 +492,9 @@ a:hover {
     /* biome-ignore lint/complexity/noImportantStyles: selected building must be above per-cell inline depth. */
     z-index: 1999 !important;
 }
-.building.focused-building .building-image,
-.building.focused-building .building-wall-tint,
-.building.focused-building .building-wall-light {
+.building.emphasized-building .building-image,
+.building.emphasized-building .building-wall-tint,
+.building.emphasized-building .building-wall-light {
     transform: var(--hover-lift);
 }
 /* Keep this order: the hover outline replaces the NEW outline on the same building. */
@@ -636,23 +635,42 @@ a:hover {
 .category-row {
     position: relative;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: var(--space-2);
     width: var(--category-list-item-width);
     min-height: var(--category-list-item-height);
     padding-left: var(--space-4);
     padding-right: var(--space-1);
+    padding-block: calc((var(--category-list-item-height) - var(--compact-input-height)) / 2);
     margin-bottom: var(--space-2);
 }
 .category-row:has(.category-edit-form) {
     align-items: flex-start;
     gap: var(--space-2);
 }
-.category-row.dragging {
-    opacity: 0.4;
+.category-row[data-sortable] {
+    touch-action: none;
 }
-.category-row.drop-target {
-    box-shadow: 0 -2px 0 var(--color-primary);
+.category-row.category-sorting {
+    transition: transform 160ms ease;
+}
+.category-row.category-lifted {
+    z-index: 10;
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-card);
+    border-radius: var(--radius-control);
+    transition: none;
+}
+body.category-dragging,
+/* biome-ignore lint/style/noDescendingSpecificity: global drag cursor does not override map opacity styles. */
+body.category-dragging * {
+    cursor: grabbing;
+    user-select: none;
+}
+@media (prefers-reduced-motion: reduce) {
+    .category-row.category-sorting {
+        transition: none;
+    }
 }
 .category-color {
     flex-shrink: 0;
@@ -663,14 +681,14 @@ a:hover {
     border-radius: var(--radius-pill);
     background: var(--zone-color);
 }
-.category-row:has(.category-edit-form) > .category-color {
-    margin-top: calc((var(--compact-input-height) - var(--space-8)) / 2);
-}
 .category-filter {
+    display: flex;
+    align-items: center;
     flex: 1;
     min-width: 0;
-    padding: 0;
-    border: 0;
+    min-height: var(--compact-input-height);
+    padding: 0 var(--compact-input-padding-inline);
+    border: var(--border-width-emphasis) solid transparent;
     background: transparent;
     text-align: left;
     font-size: var(--category-font-size);
@@ -712,6 +730,8 @@ a:hover {
 .category-edit-form input {
     width: 100%;
     min-height: var(--compact-input-height);
+    height: var(--compact-input-height);
+    border-width: var(--border-width-emphasis);
     padding-inline: var(--compact-input-padding-inline);
     border-radius: var(--radius-control);
     font-size: var(--category-font-size);
@@ -847,6 +867,7 @@ a:hover {
 
 /* Bookmark detail card */
 .bookmark-tooltip {
+    --building-popup-gap: var(--space-4);
     position: fixed;
     z-index: 3000;
     width: var(--tooltip-width);
@@ -1232,7 +1253,7 @@ body.building-dragging .zone svg {
 /* The hovered building's hit area only grows from its base, without the lift: grown that way it
    still covers the resting silhouette, so a pointer on the edge does not leave, shrink the area
    back, enter again and flicker. */
-.building.focused-building .building-hit-area {
+.building.emphasized-building .building-hit-area {
     transform: scale(var(--hover-grow));
     transform-origin: bottom center;
 }

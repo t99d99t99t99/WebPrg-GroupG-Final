@@ -13,7 +13,7 @@ import { createColorPicker } from "../shared/color-picker.js";
 import { bookmarkIconUrl } from "../shared/site-icons.js";
 import { bookmarkNameError, webUrl } from "../shared/validation.js";
 import { cellBounds, planBackground } from "./background.js";
-import { applyPreparedWallMask, prepareBuildingAppearance } from "./building-appearance.js";
+import { applyPreparedWallMask, buildingVisualBounds, prepareBuildingAppearance } from "./building-appearance.js";
 import { createBuildingDrag } from "./building-drag.js";
 import { layoutFingerprint, planMove, snapshotFromGroups } from "./building-move.js";
 import { buildingTexture, isDamaged } from "./building-rules.js";
@@ -118,8 +118,8 @@ function hideTooltip() {
     hoverCorridor = [];
     if (activeLink) activeLink.removeAttribute("aria-describedby");
     activeLink = null;
-    $("world").classList.remove("detail-focus");
-    for (const item of $("buildings").children) item.classList.remove("focused-building");
+    for (const item of $("buildings").children) item.classList.remove("focused-building", "popup-obstructed");
+    syncMapEmphasis();
 }
 
 function scheduleHide(event) {
@@ -169,6 +169,7 @@ function positionHoverBridge() {
     hoverBridge.hidden = width <= 0 || height <= 0;
     if (hoverBridge.hidden) {
         hoverCorridor = [];
+        for (const building of $("buildings").children) building.classList.remove("popup-obstructed");
         return;
     }
     hoverBridge.style.left = `${left}px`;
@@ -176,6 +177,35 @@ function positionHoverBridge() {
     hoverBridge.style.width = `${width}px`;
     hoverBridge.style.height = `${height}px`;
     hoverBridge.style.clipPath = `polygon(${hoverCorridor.map((point) => `${((point.x - left) / width) * 100}% ${((point.y - top) / height) * 100}%`).join(",")})`;
+    for (const building of $("buildings").querySelectorAll(":scope > .building")) {
+        building.classList.toggle(
+            "popup-obstructed",
+            !building.contains(activeLink) && intersectsHoverCorridor(building.getBoundingClientRect()),
+        );
+    }
+}
+
+function intersectsHoverCorridor(rect) {
+    if (hoverCorridor.length !== 4) return false;
+    const corners = [
+        { x: rect.left, y: rect.top },
+        { x: rect.right, y: rect.top },
+        { x: rect.right, y: rect.bottom },
+        { x: rect.left, y: rect.bottom },
+    ];
+    const axes = [
+        { x: 1, y: 0 },
+        { x: 0, y: 1 },
+    ];
+    hoverCorridor.forEach((point, index) => {
+        const next = hoverCorridor[(index + 1) % hoverCorridor.length];
+        axes.push({ x: -(next.y - point.y), y: next.x - point.x });
+    });
+    return axes.every((axis) => {
+        const a = corners.map((point) => point.x * axis.x + point.y * axis.y);
+        const b = hoverCorridor.map((point) => point.x * axis.x + point.y * axis.y);
+        return Math.max(...a) >= Math.min(...b) && Math.max(...b) >= Math.min(...a);
+    });
 }
 
 function showTooltip(bookmark, category, link) {
@@ -184,7 +214,7 @@ function showTooltip(bookmark, category, link) {
     if (activeLink && activeLink !== link) activeLink.removeAttribute("aria-describedby");
     activeLink = link;
     activeBookmark = bookmark;
-    $("world").classList.add("detail-focus");
+    syncMapEmphasis();
     for (const item of $("buildings").children)
         item.classList.toggle("focused-building", item.dataset.bookmark === bookmark.id);
     const url = safeUrl(bookmark.url);
@@ -209,19 +239,36 @@ function showTooltip(bookmark, category, link) {
     tooltip.hidden = false;
     link.setAttribute("aria-describedby", "bookmark-tooltip");
     const anchor = link.getBoundingClientRect();
+    const image = link.querySelector(".building-image");
+    const bounds = buildingVisualBounds(image);
+    const worldStyle = getComputedStyle($("world"));
+    const grow = Number.parseFloat(worldStyle.getPropertyValue("--hover-grow"));
+    const rise = Number.parseFloat(worldStyle.getPropertyValue("--hover-rise"));
+    const nativeWidth = image.naturalWidth || anchor.width;
+    const canvasScale = anchor.height / (image.naturalHeight || anchor.height || 1);
+    const visualWidth = nativeWidth * canvasScale * grow;
+    const visualHeight = anchor.height * grow;
+    const visualLeft = anchor.left + (nativeWidth * canvasScale - visualWidth) / 2;
+    const visualTop = anchor.bottom - visualHeight - rise * canvasScale;
+    const visible = {
+        left: visualLeft + bounds.left * visualWidth,
+        right: visualLeft + bounds.right * visualWidth,
+        top: visualTop + bounds.top * visualHeight,
+    };
     const box = tooltip.getBoundingClientRect();
     const zone = [...$("zones").children].find((item) => item.dataset.category === String(category.id));
     const area = zone?.querySelector("svg").getBoundingClientRect();
     const building = link.closest(".building").getBoundingClientRect();
     const preferRight = area && building.left + building.width / 2 > area.left + area.width / 2 + 0.5;
-    const left = anchor.left - box.width - 16;
-    const right = anchor.right + 16;
+    const gap = Number.parseFloat(getComputedStyle(tooltip).getPropertyValue("--building-popup-gap"));
+    const left = visible.left - box.width - gap;
+    const right = visible.right + gap;
     const leftFits = left >= 12;
     const rightFits = right + box.width <= innerWidth - 12;
     let x = preferRight ? right : left;
     if (preferRight && !rightFits && leftFits) x = left;
     if (!preferRight && !leftFits && rightFits) x = right;
-    const y = Math.max(12, Math.min(anchor.top, innerHeight - box.height - 12));
+    const y = Math.max(12, Math.min(visible.top, innerHeight - box.height - 12));
     tooltip.style.left = `${Math.max(12, Math.min(x, innerWidth - box.width - 12))}px`;
     tooltip.style.top = `${y}px`;
     positionHoverBridge();
@@ -233,13 +280,20 @@ function highlightCategory(id) {
         zone.classList.toggle("active", zone.dataset.category === id);
 }
 
+function syncMapEmphasis() {
+    $("world").classList.toggle("detail-focus", Boolean(activeLink) || selectedCategory !== null);
+    for (const item of $("buildings").querySelectorAll(":scope > .building")) {
+        item.classList.toggle(
+            "emphasized-building",
+            activeLink
+                ? item.dataset.bookmark === activeBookmark.id
+                : selectedCategory !== null && item.dataset.category === selectedCategory,
+        );
+    }
+}
+
 function applyFilter() {
-    for (const item of $("buildings").children) {
-        item.classList.toggle("dimmed", selectedCategory !== null && item.dataset.category !== selectedCategory);
-    }
-    for (const icon of $("building-labels").children) {
-        icon.classList.toggle("dimmed", selectedCategory !== null && icon.dataset.category !== selectedCategory);
-    }
+    syncMapEmphasis();
     for (const row of $("category-list").children) {
         row.querySelector(".category-filter")?.setAttribute(
             "aria-pressed",
@@ -358,11 +412,13 @@ function createBuilding(bookmark, category, cell, labels, interactive = true) {
         return wrapper;
     }
     buildingDrag.attach(link, wrapper, bookmark);
-    link.addEventListener("mouseenter", () => {
+    link.addEventListener("mouseenter", (event) => {
+        if (activeLink && activeLink !== link && inHoverCorridor(event.clientX, event.clientY)) return;
         highlightCategory(category.id);
         showTooltip(bookmark, category, link);
     });
     link.addEventListener("mouseleave", (event) => {
+        if (activeLink !== link) return;
         highlightCategory(selectedCategory);
         scheduleHide(event);
     });
@@ -892,6 +948,7 @@ $("edit-bookmark").addEventListener("click", async () => {
         const left = tooltip.style.left,
             top = tooltip.style.top;
         tooltip.hidden = true;
+        for (const building of $("buildings").children) building.classList.remove("popup-obstructed");
         $("bookmark-editor").style.left = left;
         $("bookmark-editor").style.top = top;
         $("bookmark-editor").showModal();
