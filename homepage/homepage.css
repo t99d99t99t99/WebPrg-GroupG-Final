@@ -307,10 +307,28 @@ a:hover {
 .zone:focus-within svg {
     opacity: 1;
 }
+/* How much the rest of the map fades and the hovered building lifts while its details are open. */
+#world {
+    --focus-fade-opacity: 0.8;
+    --focus-fade-blur: 0.5px;
+    --hover-grow: 1.05;
+    --hover-lift: translateY(-3px) scale(var(--hover-grow));
+    --hover-duration: 0.25s;
+}
+/* Fade in and out smoothly instead of switching at once. */
+#ground,
+#zones,
+.building,
+.decoration,
+.category-picket {
+    transition:
+        opacity var(--hover-duration) ease,
+        filter var(--hover-duration) ease;
+}
 .detail-focus #ground,
 .detail-focus #zones {
-    opacity: 0.45;
-    filter: blur(1px);
+    opacity: var(--focus-fade-opacity);
+    filter: blur(var(--focus-fade-blur));
 }
 
 /* City life on the roads (homepage/traffic.js). Drawn at native pixel size; never takes the pointer. */
@@ -339,8 +357,8 @@ a:hover {
 }
 /* Fade with the rest of the map while a building's details are open. Per element, to keep depth order. */
 .detail-focus #traffic > * {
-    opacity: 0.45;
-    filter: blur(1px);
+    opacity: var(--focus-fade-opacity);
+    filter: blur(var(--focus-fade-blur));
 }
 .traffic-car.leaving {
     opacity: 0;
@@ -381,20 +399,23 @@ a:hover {
     height: auto;
     pointer-events: none;
     image-rendering: pixelated;
-    transition: transform 0.18s;
+    transition:
+        transform var(--hover-duration) ease-out,
+        filter var(--hover-duration) ease-out;
     transform-origin: bottom center;
 }
 .building-hit-area {
     position: absolute;
     inset: 0;
     display: block;
+    transition: transform var(--hover-duration) ease-out;
 }
 .building-wall-tint,
 .building-wall-light {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    transition: transform 0.18s;
+    transition: transform var(--hover-duration) ease-out;
     transform-origin: bottom center;
     mask-image: var(--wall-mask);
     -webkit-mask-image: var(--wall-mask);
@@ -457,7 +478,7 @@ a:hover {
     background: #8a5a2e;
 }
 .building.dimmed,
-.building-badge.dimmed,
+.building-icon.dimmed,
 .decoration.dimmed,
 .category-picket.dimmed {
     opacity: 0.24;
@@ -465,8 +486,8 @@ a:hover {
 .detail-focus .building:not(.focused-building),
 .detail-focus .category-picket,
 .detail-focus .decoration {
-    opacity: 0.45;
-    filter: blur(1px);
+    opacity: var(--focus-fade-opacity);
+    filter: blur(var(--focus-fade-blur));
 }
 .building.focused-building {
     /* biome-ignore lint/complexity/noImportantStyles: selected building must be above per-cell inline depth. */
@@ -475,7 +496,7 @@ a:hover {
 .building.focused-building .building-image,
 .building.focused-building .building-wall-tint,
 .building.focused-building .building-wall-light {
-    transform: translateY(-7px) scale(1.15);
+    transform: var(--hover-lift);
 }
 /* Keep this order: the hover outline replaces the NEW outline on the same building. */
 .building.is-new .building-image {
@@ -520,23 +541,30 @@ a:hover {
     z-index: 2000;
     pointer-events: none;
 }
-.building-badge {
+.building-icon {
     position: absolute;
     transform: translate(-50%, -100%);
-    width: max-content;
-    max-width: 112px;
-    padding: 3px 6px;
-    border: var(--border-width) solid var(--color-text);
-    border-radius: 4px;
+    display: flex;
+    width: 24px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-1);
+    border: 1px solid #8cb8a9;
+    border-radius: var(--radius-box);
     background: var(--color-surface);
-    color: var(--color-text);
-    font-size: 11px;
-    line-height: 1.3;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: #35514e;
+    font-size: var(--font-size-md);
+    line-height: 1;
     pointer-events: none;
+}
+.building-site-icon {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+}
+.building-icon-fallback {
+    display: block;
 }
 #map-status {
     position: absolute;
@@ -1180,7 +1208,15 @@ a:hover {
 @media (prefers-reduced-motion: reduce) {
     #world.animated,
     .zone svg,
-    .building-image {
+    #ground,
+    #zones,
+    .building,
+    .building-image,
+    .building-hit-area,
+    .building-wall-tint,
+    .building-wall-light,
+    .decoration,
+    .category-picket {
         transition: none;
     }
     .app-toast.toast-subtle {
@@ -1231,9 +1267,11 @@ body.building-dragging .zone svg {
 .building.drag-arming .building-wall-light {
     transform: translateY(-14px) scale(1.15);
 }
-/* The enlarged hovered building can be pressed anywhere it is drawn. */
+/* The hovered building's hit area only grows from its base, without the lift: grown that way it
+   still covers the resting silhouette, so a pointer on the edge does not leave, shrink the area
+   back, enter again and flicker. */
 .building.focused-building .building-hit-area {
-    transform: translateY(-7px) scale(1.15);
+    transform: scale(var(--hover-grow));
     transform-origin: bottom center;
 }
 /* Buildings of the drag preview map: pictures only. */
