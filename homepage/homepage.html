@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="../daisyui.generated.css">
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="homepage.css">
+    <link rel="stylesheet" href="../shared/color-picker.css">
     <title>새로고침 — 나의 북마크 도시</title>
 </head>
 <body class="bg-base-100 text-base-content">
@@ -51,13 +52,9 @@
                 <p id="category-status" class="field-error" role="status"></p>
             </aside>
 
+            <button id="sync-bookmarks" class="bookmark-sync-button" type="button">크롬 북마크 동기화</button>
+
             <section id="category-color-picker" class="category-color-picker card" aria-label="카테고리 색상 선택" hidden>
-                <button class="picker-saturation" type="button" aria-label="채도와 밝기 선택">
-                    <span class="picker-selector"></span>
-                </button>
-                <label class="picker-hue-label">색조<input class="picker-hue" type="range" min="0" max="359" value="220" aria-label="색조"></label>
-                <label class="picker-hex-label">Hex <input class="picker-hex" maxlength="6" value="A6BCE9" aria-label="16진수 색상"></label>
-                <div class="picker-tools"><button id="picker-eyedropper" type="button" aria-label="화면에서 색상 추출">⌁</button><span class="picker-preview" aria-hidden="true"></span><span>100 %</span></div>
             </section>
 
         </div>
@@ -69,7 +66,7 @@
         <p id="preview-domain" class="tooltip-domain"></p>
         <section class="page-preview" aria-label="페이지 미리보기" hidden></section>
         <label class="memo-heading" for="tooltip-memo">메모</label>
-        <textarea id="tooltip-memo" maxlength="50" placeholder="메모를 입력해 주세요. (최대 50자)" aria-label="북마크 메모"></textarea>
+        <textarea id="tooltip-memo" placeholder="메모를 입력해 주세요." aria-label="북마크 메모"></textarea>
         <div class="tooltip-bottom"><button id="delete-bookmark" type="button">삭제</button><button id="edit-bookmark" type="button">수정</button><button id="copy-link" type="button">링크 복사</button></div>
     </section>
     <dialog id="bookmark-editor" class="app-dialog bookmark-editor" aria-labelledby="editor-title">

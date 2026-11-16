@@ -1,8 +1,9 @@
-import { nameError, webUrl } from "../shared/validation.js";
+import { buildingDesignById } from "../shared/building-designs.js";
+import { bookmarkNameError, webUrl } from "../shared/validation.js";
 import { storage, withWriteLock } from "./storage.js";
 
 export class Bookmark {
-    constructor(_id, _url, _name, _category, _memo = "") {
+    constructor(_id, _url, _name, _category, _memo = "", _iconUrl = "") {
         this.id = _id;
         this.url = _url;
         this.name = _name;
@@ -10,6 +11,7 @@ export class Bookmark {
         this.savedAt = Date.now();
         this.clickCount = 0;
         this.memo = _memo;
+        this.iconUrl = _iconUrl;
     }
 }
 
@@ -45,6 +47,13 @@ export class BookmarkDB {
             if (!newBookmark || newBookmark.id == null || !newBookmark.url || !newBookmark.name) {
                 throw new TypeError("A bookmark with an id, URL, and name is required.");
             }
+            const error = bookmarkNameError(newBookmark.name);
+            if (error) throw new Error(error);
+            if (this.categoryKey) {
+                const data = await storage.get({ [this.categoryKey]: [] });
+                if (!data[this.categoryKey].some((category) => category.id === newBookmark.category))
+                    throw new Error("카테고리가 삭제되었습니다. 다시 선택해 주세요.");
+            }
 
             const bookmark = {
                 id: newBookmark.id,
@@ -57,12 +66,22 @@ export class BookmarkDB {
                         ? newBookmark.clickCount
                         : 0,
             };
-            if (
-                newBookmark.memo !== undefined &&
-                (typeof newBookmark.memo !== "string" || Array.from(newBookmark.memo).length > 50)
-            )
-                throw new Error("메모는 50자 이내로 입력해 주세요.");
+            if (newBookmark.memo !== undefined && typeof newBookmark.memo !== "string")
+                throw new Error("메모는 문자열로 입력해 주세요.");
             if (newBookmark.memo) bookmark.memo = newBookmark.memo;
+            if (newBookmark.buildingDesign !== undefined) {
+                if (!buildingDesignById(newBookmark.buildingDesign))
+                    throw new Error("건물 디자인을 다시 선택해 주세요.");
+                bookmark.buildingDesign = newBookmark.buildingDesign;
+            }
+            if (newBookmark.iconUrl !== undefined) {
+                if (
+                    typeof newBookmark.iconUrl !== "string" ||
+                    (newBookmark.iconUrl !== "" && !webUrl(newBookmark.iconUrl))
+                )
+                    throw new Error("아이콘은 http 또는 https 주소를 입력해 주세요.");
+                bookmark.iconUrl = newBookmark.iconUrl;
+            }
             bookmark.isNew = newBookmark.isNew ?? true;
             bookmarks.push(bookmark);
             await storage.set({ [this.key]: bookmarks });
@@ -92,16 +111,20 @@ export class BookmarkDB {
             }
 
             if (changes.name !== undefined) {
-                const error = nameError(changes.name, 20, "북마크 이름");
+                const error = bookmarkNameError(changes.name);
                 if (error) throw new Error(error);
             }
             if (changes.url !== undefined && !webUrl(changes.url))
                 throw new Error("http 또는 https 주소를 입력해 주세요.");
             if (
-                changes.memo !== undefined &&
-                (typeof changes.memo !== "string" || Array.from(changes.memo).length > 50)
+                changes.iconUrl !== undefined &&
+                (typeof changes.iconUrl !== "string" || (changes.iconUrl !== "" && !webUrl(changes.iconUrl)))
             )
-                throw new Error("메모는 50자 이내로 입력해 주세요.");
+                throw new Error("아이콘은 http 또는 https 주소를 입력해 주세요.");
+            if (changes.memo !== undefined && typeof changes.memo !== "string")
+                throw new Error("메모는 문자열로 입력해 주세요.");
+            if (changes.buildingDesign !== undefined && !buildingDesignById(changes.buildingDesign))
+                throw new Error("건물 디자인을 다시 선택해 주세요.");
             if (changes.category !== undefined && this.categoryKey) {
                 const data = await storage.get({ [this.categoryKey]: [] });
                 if (!data[this.categoryKey].some((item) => item.id === changes.category))
@@ -109,7 +132,7 @@ export class BookmarkDB {
             }
             // A building's cell belongs to its old category's area; the map assigns a new one.
             if (changes.category !== undefined && changes.category !== bookmark.category) delete bookmark.cell;
-            for (const field of ["url", "name", "category", "memo", "isNew"]) {
+            for (const field of ["url", "name", "category", "memo", "isNew", "iconUrl", "buildingDesign"]) {
                 if (changes[field] !== undefined) bookmark[field] = changes[field];
             }
             await storage.set({ [this.key]: this.bookmarks });

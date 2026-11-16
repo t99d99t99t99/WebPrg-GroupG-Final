@@ -1,3 +1,4 @@
+import { isGeneralCategory } from "../db/category.js";
 import { categories, deleteCategory } from "../db/db.js";
 import { categoryError } from "../shared/validation.js";
 
@@ -25,7 +26,7 @@ export function categoryManager({ openColorPicker, highlightCategory, toggleCate
         }
     }
     function render(groups) {
-        saved = groups.map((group) => group.category).filter((item) => item.id !== "uncategorized");
+        saved = groups.map((group) => group.category);
         const list = $("category-list"),
             fragment = document.createDocumentFragment();
         const rows = [...groups.map((group) => group.category)];
@@ -37,7 +38,6 @@ export function categoryManager({ openColorPicker, highlightCategory, toggleCate
             const color = node("button", "category-color");
             color.type = "button";
             color.setAttribute("aria-label", `${category.name || "새 카테고리"} 색상 변경`);
-            color.disabled = category.id === "uncategorized";
             color.addEventListener("click", () =>
                 openColorPicker(
                     category.id,
@@ -139,7 +139,7 @@ export function categoryManager({ openColorPicker, highlightCategory, toggleCate
                 );
                 filter.addEventListener("click", () => toggleCategory(category.id));
                 row.append(filter);
-                if (category.id !== "uncategorized") {
+                if (!isGeneralCategory(category)) {
                     const edit = node("button", "icon-button");
                     edit.type = "button";
                     edit.setAttribute("aria-label", `${category.name} 수정`);
@@ -155,7 +155,7 @@ export function categoryManager({ openColorPicker, highlightCategory, toggleCate
                     });
                     row.append(edit);
                 }
-                row.draggable = category.id !== "uncategorized";
+                row.draggable = !isGeneralCategory(category);
                 row.addEventListener("dragstart", (event) => {
                     dragging = category.id;
                     event.dataTransfer.setData("text/plain", category.id);
@@ -168,13 +168,14 @@ export function categoryManager({ openColorPicker, highlightCategory, toggleCate
                     for (const item of list.children) item.classList.remove("drop-target");
                 });
                 row.addEventListener("dragover", (event) => {
-                    if (dragging && category.id !== "uncategorized") {
+                    if (dragging && !isGeneralCategory(category)) {
                         event.preventDefault();
                         row.classList.add("drop-target");
                     }
                 });
                 row.addEventListener("dragleave", () => row.classList.remove("drop-target"));
                 async function move(id, target) {
+                    if ([id, target].some((key) => isGeneralCategory(saved.find((item) => item.id === key)))) return;
                     const ids = saved.map((item) => item.id);
                     const from = ids.indexOf(id),
                         to = ids.indexOf(target);

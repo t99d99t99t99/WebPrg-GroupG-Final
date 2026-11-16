@@ -7,6 +7,7 @@
     --color-surface-raised: #ffffff;
     --color-text: var(--color-base-content);
     --color-neutral-500: #828282;
+    --color-selection-overlay: color-mix(in srgb, var(--color-neutral-500) 40%, transparent);
     --color-text-muted: #6d776f;
     --color-secondary-selected: #e4eaf2;
     --zone-color: #a1baee;
@@ -79,6 +80,8 @@
     --shadow-card: 0 8px 20px rgb(32 40 35 / 14%);
     --shadow-dialog: 0 6px 8px rgb(0 0 0 / 12%);
     --shadow-control: 0 1px 2px rgb(32 40 35 / 10%);
+    /* Figma effect style: livingtaco/Depth 1 (also used by Depth + Noise). */
+    --shadow-depth-1: 0 6px 16px rgb(0 0 0 / 12%);
 
     /* Shared component sizing */
     --control-height-md: 44px;
@@ -122,20 +125,33 @@
     --shadow-tooltip: 0 5px 10px 1px rgb(0 0 0 / 25%);
     --popup-width: 374px;
     --popup-height: 600px;
-    --popup-control-height: 40px;
-    --popup-font-size: 12px;
-    --popup-label-size: 12px;
-    --popup-title-size: 16px;
+    --popup-control-height: calc(var(--size-field) * 10);
+    --popup-font-size: var(--font-size-base);
+    --popup-label-size: var(--font-size-base);
+    --popup-title-size: var(--font-size-lg);
     --popup-header-icon-size: 34px;
     --popup-header-height: 42px;
-    --popup-section-gap: 16px;
-    --popup-divider-gap: 12px;
+    --popup-section-gap: var(--space-4);
+    --popup-divider-gap: var(--space-3);
     --popup-padding-inline: 17px;
     --popup-padding-block-start: 17px;
     --popup-padding-block-end: 20px;
     --popup-textarea-height: 91px;
     --popup-action-width: 150px;
-    --popup-action-gap: 24px;
+    --popup-action-gap: var(--space-6);
+    /* Fixed popup geometry; these Figma instance values have no variable binding. */
+    --popup-header-gap: 11px;
+    --popup-field-gap: 5px;
+    --popup-field-padding-inline: 11px;
+    --popup-page-field-height: 68px;
+    --popup-category-action-gap: 7px;
+    --popup-text-action-width: 104px;
+    --popup-category-text-offset: 12.5px;
+    --popup-existing-text-offset: 3.5px;
+    --popup-menu-offset: 3px;
+    --popup-design-strip-height: 95px;
+    --popup-design-width: 88px;
+    --popup-design-height: 66px;
     --icon-button-size-compact: 32px;
     --icon-button-size-default: 44px;
     --icon-size-compact: 18px;
@@ -204,4 +220,26 @@ textarea {
 
 button {
     color: inherit;
+}
+
+.category-select-trigger,
+.category-options button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+.category-select-chip {
+    display: inline-block;
+    flex: 0 0 var(--space-4);
+    width: var(--space-4);
+    height: var(--space-4);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-sm);
+}
+.category-select-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }

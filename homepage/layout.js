@@ -279,7 +279,6 @@ function placeBuildings(group) {
  * @param {{pinned?: Iterable<string>, compactAll?: boolean}} [options]
  */
 export function planCity(savedCategories, savedBookmarks, { pinned = [], compactAll = false } = {}) {
-    const known = new Set(savedCategories.map((category) => String(category.id)));
     const groups = savedCategories.map((category) => {
         const items = savedBookmarks.filter((bookmark) => String(bookmark.category) === String(category.id));
         return { category, items, count: items.length, area: null, dx: 0, dy: 0, extra: new Map(), keepCells: true };
@@ -321,23 +320,6 @@ export function planCity(savedCategories, savedBookmarks, { pinned = [], compact
 
     if (shrank || compactAll) compact(placed, new Set([...pinned].map(String)));
 
-    // Bookmarks whose category no longer exists. Not saved, so it is always placed last.
-    const unassigned = savedBookmarks.filter((bookmark) => !known.has(String(bookmark.category)));
-    if (unassigned.length) {
-        const [short, long] = shapeFor(unassigned.length);
-        const others = placed.map((item) => item.area);
-        groups.push({
-            category: { id: "uncategorized", name: "분류 없음" },
-            items: unassigned,
-            count: unassigned.length,
-            area: findSpot(long, short, others, 0, 0),
-            dx: 0,
-            dy: 0,
-            extra: new Map(),
-            keepCells: false,
-        });
-    }
-
     const changed = { areas: new Map(), cells: new Map() };
     for (const group of groups) {
         group.cells = placeBuildings(group);
@@ -351,6 +333,7 @@ export function planCity(savedCategories, savedBookmarks, { pinned = [], compact
             if (bookmark.cell?.x !== cell.x || bookmark.cell?.y !== cell.y) changed.cells.set(bookmark.id, cell);
         }
     }
+    groups.sort((a, b) => Number(a.category.isGeneral === true) - Number(b.category.isGeneral === true));
     return { groups, changed };
 }
 
