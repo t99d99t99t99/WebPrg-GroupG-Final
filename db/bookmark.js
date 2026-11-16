@@ -1,4 +1,5 @@
 import { buildingDesignById } from "../shared/building-designs.js";
+import { isSiteIconUrl } from "../shared/site-icons.js";
 import { bookmarkNameError, webUrl } from "../shared/validation.js";
 import { storage, withWriteLock } from "./storage.js";
 
@@ -75,11 +76,7 @@ export class BookmarkDB {
                 bookmark.buildingDesign = newBookmark.buildingDesign;
             }
             if (newBookmark.iconUrl !== undefined) {
-                if (
-                    typeof newBookmark.iconUrl !== "string" ||
-                    (newBookmark.iconUrl !== "" && !webUrl(newBookmark.iconUrl))
-                )
-                    throw new Error("아이콘은 http 또는 https 주소를 입력해 주세요.");
+                if (!isSiteIconUrl(newBookmark.iconUrl)) throw new Error("아이콘 주소를 확인해 주세요.");
                 bookmark.iconUrl = newBookmark.iconUrl;
             }
             bookmark.isNew = newBookmark.isNew ?? true;
@@ -116,11 +113,8 @@ export class BookmarkDB {
             }
             if (changes.url !== undefined && !webUrl(changes.url))
                 throw new Error("http 또는 https 주소를 입력해 주세요.");
-            if (
-                changes.iconUrl !== undefined &&
-                (typeof changes.iconUrl !== "string" || (changes.iconUrl !== "" && !webUrl(changes.iconUrl)))
-            )
-                throw new Error("아이콘은 http 또는 https 주소를 입력해 주세요.");
+            if (changes.iconUrl !== undefined && !isSiteIconUrl(changes.iconUrl))
+                throw new Error("아이콘 주소를 확인해 주세요.");
             if (changes.memo !== undefined && typeof changes.memo !== "string")
                 throw new Error("메모는 문자열로 입력해 주세요.");
             if (changes.buildingDesign !== undefined && !buildingDesignById(changes.buildingDesign))

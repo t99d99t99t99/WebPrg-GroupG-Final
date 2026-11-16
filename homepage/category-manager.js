@@ -1,6 +1,7 @@
 import { isGeneralCategory } from "../db/category.js";
 import { categories, deleteCategory } from "../db/db.js";
 import { categoryError } from "../shared/validation.js";
+import { categoryReorder } from "./category-reorder.js";
 
 const $ = (id) => document.getElementById(id);
 function node(tag, cls, text) {
@@ -13,10 +14,28 @@ export function categoryManager({ openColorPicker, highlightCategory, toggleCate
     let saved = [],
         editing = null,
         draft = "",
-        dragging = null,
         deleting = null,
         draftColor = "#485b78",
         draftColorTouched = false;
+    let deferredRender = false;
+    const sorter = categoryReorder($("category-list"), {
+        async commit(ids, original) {
+            const latest = (await categories.get()).map((category) => category.id);
+            if (JSON.stringify(latest) !== JSON.stringify(original))
+                throw new Error("카테고리 목록이 변경되어 이동을 취소했습니다. 다시 시도해 주세요.");
+            await categories.reorder(ids);
+        },
+        error(cause) {
+            console.error(cause);
+            toast(cause.message || "카테고리 순서를 저장하지 못했습니다.");
+        },
+        finish() {
+            if (deferredRender) {
+                deferredRender = false;
+                render(lastGroups);
+            }
+        },
+    });
     async function attempt(action) {
         try {
             await action();
@@ -25,7 +44,29 @@ export function categoryManager({ openColorPicker, highlightCategory, toggleCate
             console.error(error);
         }
     }
+    function askDelete(category, groups) {
+        deleting = category.id;
+        $("delete-name").textContent =
+            `‘${category.name}’ 카테고리와 북마크 ${groups.find((group) => group.category.id === category.id)?.items.length ?? 0}개가 함께 삭제됩니다.`;
+        $("delete-status").textContent = "";
+        $("category-delete").showModal();
+    }
+    function iconButton(src, label, onClick) {
+        const button = node("button", "icon-button");
+        button.type = "button";
+        button.setAttribute("aria-label", label);
+        const icon = node("img", "");
+        icon.src = src;
+        icon.alt = "";
+        button.append(icon);
+        button.addEventListener("click", onClick);
+        return button;
+    }
     function render(groups) {
+        if (sorter.active) {
+            deferredRender = true;
+            return;
+        }
         saved = groups.map((group) => group.category);
         const list = $("category-list"),
             fragment = document.createDocumentFragment();
@@ -86,11 +127,7 @@ export function categoryManager({ openColorPicker, highlightCategory, toggleCate
                         render(groups);
                         return;
                     }
-                    deleting = category.id;
-                    $("delete-name").textContent =
-                        `‘${category.name}’ 카테고리와 북마크 ${groups.find((group) => group.category.id === category.id)?.items.length ?? 0}개가 함께 삭제됩니다.`;
-                    $("delete-status").textContent = "";
-                    $("category-delete").showModal();
+                    askDelete(category, groups);
                 });
                 form.addEventListener("submit", async (event) => {
                     event.preventDefault();
@@ -140,40 +177,22 @@ export function categoryManager({ openColorPicker, highlightCategory, toggleCate
                 filter.addEventListener("click", () => toggleCategory(category.id));
                 row.append(filter);
                 if (!isGeneralCategory(category)) {
-                    const edit = node("button", "icon-button");
-                    edit.type = "button";
-                    edit.setAttribute("aria-label", `${category.name} 수정`);
-                    const icon = node("img", "");
-                    icon.src = "../assets/ui/edit.svg";
-                    icon.alt = "";
-                    edit.append(icon);
-                    edit.addEventListener("click", () => {
+                    const edit = iconButton("../assets/ui/edit.svg", `${category.name} 수정`, () => {
                         editing = category.id;
                         draft = category.name;
                         render(groups);
+                        // Editing a category also opens its color picker, as if its color chip was clicked.
+                        const chip = list.querySelector(`[data-category="${category.id}"] .category-color`);
+                        if (chip) openColorPicker(category.id, chip, category.color, null);
                         list.querySelector("input")?.focus();
                     });
-                    row.append(edit);
+                    const remove = iconButton("../assets/ui/delete.svg", `${category.name} 삭제`, () =>
+                        askDelete(category, groups),
+                    );
+                    remove.classList.add("category-delete-button");
+                    row.append(edit, remove);
                 }
-                row.draggable = !isGeneralCategory(category);
-                row.addEventListener("dragstart", (event) => {
-                    dragging = category.id;
-                    event.dataTransfer.setData("text/plain", category.id);
-                    event.dataTransfer.effectAllowed = "move";
-                    row.classList.add("dragging");
-                });
-                row.addEventListener("dragend", () => {
-                    dragging = null;
-                    row.classList.remove("dragging");
-                    for (const item of list.children) item.classList.remove("drop-target");
-                });
-                row.addEventListener("dragover", (event) => {
-                    if (dragging && !isGeneralCategory(category)) {
-                        event.preventDefault();
-                        row.classList.add("drop-target");
-                    }
-                });
-                row.addEventListener("dragleave", () => row.classList.remove("drop-target"));
+                if (!isGeneralCategory(category)) row.dataset.sortable = "true";
                 async function move(id, target) {
                     if ([id, target].some((key) => isGeneralCategory(saved.find((item) => item.id === key)))) return;
                     const ids = saved.map((item) => item.id);
@@ -184,11 +203,6 @@ export function categoryManager({ openColorPicker, highlightCategory, toggleCate
                     ids.splice(to, 0, id);
                     await attempt(() => categories.reorder(ids));
                 }
-                row.addEventListener("drop", (event) => {
-                    event.preventDefault();
-                    row.classList.remove("drop-target");
-                    move(dragging, category.id);
-                });
                 filter.setAttribute("aria-keyshortcuts", "Alt+ArrowUp Alt+ArrowDown");
                 filter.addEventListener("keydown", (event) => {
                     if (!event.altKey || !["ArrowUp", "ArrowDown"].includes(event.key)) return;

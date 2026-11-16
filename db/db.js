@@ -1,4 +1,5 @@
 import { createDemoData } from "../demo/seed-data.js";
+import { siteIconUrlForPage } from "../shared/site-icons.js";
 import { webUrl } from "../shared/validation.js";
 import { BookmarkDB } from "./bookmark.js";
 import { CategoryDB, GENERAL_CATEGORY_NAME, generalCategoryLast, isGeneralCategory } from "./category.js";
@@ -6,6 +7,31 @@ import { storage, subscribeStorage, withWriteLock } from "./storage.js";
 
 const BOOKMARK_DB_KEY = "webprg-bookmarkmap-bookmarks";
 const CATEGORY_DB_KEY = "webprg-bookmarkmap-categories";
+const ICON_BACKFILL_KEY = "webprg-bookmarkmap-icon-backfill-v1";
+
+export async function backfillMissingBookmarkIcons(once = false) {
+    await ready;
+    if (!siteIconUrlForPage("https://example.com")) return 0;
+
+    return withWriteLock(async () => {
+        const data = await storage.get({ [BOOKMARK_DB_KEY]: [], [ICON_BACKFILL_KEY]: false });
+        if (once && data[ICON_BACKFILL_KEY]) return 0;
+
+        let updatedCount = 0;
+        const updatedBookmarks = data[BOOKMARK_DB_KEY].map((bookmark) => {
+            if (bookmark.iconUrl) return bookmark;
+            const iconUrl = siteIconUrlForPage(bookmark.url);
+            if (!iconUrl) return bookmark;
+            updatedCount++;
+            return { ...bookmark, iconUrl };
+        });
+        const changes = {};
+        if (updatedCount) changes[BOOKMARK_DB_KEY] = updatedBookmarks;
+        if (once) changes[ICON_BACKFILL_KEY] = true;
+        if (Object.keys(changes).length) await storage.set(changes);
+        return updatedCount;
+    });
+}
 
 function assignUncategorized(data) {
     const savedCategories = data[CATEGORY_DB_KEY];
@@ -83,6 +109,7 @@ export async function importChromeBookmarks(tree) {
                     result.duplicates++;
                     return;
                 }
+                const iconUrl = siteIconUrlForPage(url.href);
                 savedBookmarks.push({
                     id: crypto.randomUUID(),
                     url: url.href,
@@ -92,6 +119,7 @@ export async function importChromeBookmarks(tree) {
                     lastVisitedAt: Date.now(),
                     clickCount: 0,
                     isNew: true,
+                    ...(iconUrl ? { iconUrl } : {}),
                 });
                 urls.add(url.href);
                 result.bookmarks++;

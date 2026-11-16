@@ -1,5 +1,27 @@
 // Cache the solid building silhouette; translucent shadows are not hover targets.
 const appearances = new Map();
+const visualBounds = new WeakMap();
+let shapeSheet;
+let shapeSequence = 0;
+
+function shareHitShape(hitShape) {
+    if (!shapeSheet) {
+        const style = document.createElement("style");
+        style.dataset.buildingHitShapes = "true";
+        document.head.append(style);
+        shapeSheet = style.sheet;
+    }
+    const className = `building-hit-shape-${++shapeSequence}`;
+    shapeSheet.insertRule(
+        `.${className} { clip-path: ${hitShape}; pointer-events: auto; }`,
+        shapeSheet.cssRules.length,
+    );
+    return className;
+}
+
+export function buildingVisualBounds(image) {
+    return visualBounds.get(image) ?? { left: 0, right: 1, top: 0, bottom: 1 };
+}
 
 async function readAppearance(image) {
     await image.decode();
@@ -11,6 +33,10 @@ async function readAppearance(image) {
     const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
     const left = [];
     const right = [];
+    let minX = canvas.width,
+        maxX = 0,
+        minY = canvas.height,
+        maxY = 0;
     const point = (x, y) => `${(x / canvas.width) * 100}% ${(y / canvas.height) * 100}%`;
     for (let y = 0; y < canvas.height; y++) {
         let first = -1;
@@ -18,6 +44,11 @@ async function readAppearance(image) {
         for (let x = 0; x < canvas.width; x++) {
             const i = (y * canvas.width + x) * 4;
             if (data[i + 3] < 128) continue;
+            // Use the same solid silhouette for popup spacing and hit testing.
+            minX = Math.min(minX, x);
+            maxX = Math.max(maxX, x + 1);
+            minY = Math.min(minY, y);
+            maxY = Math.max(maxY, y + 1);
             if (first === -1) first = x;
             last = x;
         }
@@ -26,7 +57,15 @@ async function readAppearance(image) {
         right.push(point(last + 1, y), point(last + 1, y + 1));
     }
     if (!left.length) throw new Error("건물 윤곽을 찾을 수 없습니다.");
-    return `polygon(${[...left, ...right.reverse()].join(",")})`;
+    return {
+        className: shareHitShape(`polygon(${[...left, ...right.reverse()].join(",")})`),
+        bounds: {
+            left: minX / canvas.width,
+            right: maxX / canvas.width,
+            top: minY / canvas.height,
+            bottom: maxY / canvas.height,
+        },
+    };
 }
 
 export async function prepareBuildingAppearance(image, hitArea) {
@@ -36,8 +75,9 @@ export async function prepareBuildingAppearance(image, hitArea) {
         appearances.set(image.src, appearance);
     }
     try {
-        hitArea.style.clipPath = await appearance;
-        hitArea.style.pointerEvents = "auto";
+        const { className, bounds } = await appearance;
+        visualBounds.set(image, bounds);
+        hitArea.classList.add(className);
     } catch (error) {
         appearances.delete(image.src);
         throw error;
