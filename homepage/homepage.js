@@ -12,7 +12,7 @@ import { categorySelect } from "../shared/category-select.js";
 import { createColorPicker } from "../shared/color-picker.js";
 import { bookmarkIconUrl } from "../shared/site-icons.js";
 import { bookmarkNameError, webUrl } from "../shared/validation.js";
-import { cellBounds, planBackground } from "./background.js";
+import { paintBackground } from "./background-renderer.js";
 import { applyPreparedWallMask, buildingVisualBounds, prepareBuildingAppearance } from "./building-appearance.js";
 import { createBuildingDrag } from "./building-drag.js";
 import { layoutFingerprint, planMove, snapshotFromGroups } from "./building-move.js";
@@ -22,6 +22,7 @@ import { categoryManager } from "./category-manager.js";
 import { decorationsFor, yardFor } from "./decorations.js";
 import { setGoogleAccount } from "./google-account.js";
 import { planCity, planRoads, project, TILE_HEIGHT, TILE_WIDTH } from "./layout.js";
+import { SpatialIndex } from "./spatial-index.js";
 import { createTraffic } from "./traffic.js";
 
 // Canvas region the city is fitted into (left of the category panel).
@@ -43,6 +44,18 @@ let pickerCategory = null;
 let colorSaveTimer;
 let pendingColorChange = null;
 let draftColorChange = null;
+let buildingIndex = new SpatialIndex();
+let obstructedBuildings = new Set();
+let drawnSignature = null;
+let emphasizedBuildings = new Set();
+let renderedGroups = new Map();
+const buildingWorldRects = new WeakMap();
+
+function setObstructedBuildings(next = new Set()) {
+    for (const node of obstructedBuildings) if (!next.has(node)) node.classList.remove("popup-obstructed");
+    for (const node of next) if (!obstructedBuildings.has(node)) node.classList.add("popup-obstructed");
+    obstructedBuildings = next;
+}
 
 function element(tag, className, text) {
     const node = document.createElement(tag);
@@ -118,7 +131,8 @@ function hideTooltip() {
     hoverCorridor = [];
     if (activeLink) activeLink.removeAttribute("aria-describedby");
     activeLink = null;
-    for (const item of $("buildings").children) item.classList.remove("focused-building", "popup-obstructed");
+    setObstructedBuildings();
+    for (const item of $("buildings").querySelectorAll(".focused-building")) item.classList.remove("focused-building");
     syncMapEmphasis();
 }
 
@@ -169,7 +183,7 @@ function positionHoverBridge() {
     hoverBridge.hidden = width <= 0 || height <= 0;
     if (hoverBridge.hidden) {
         hoverCorridor = [];
-        for (const building of $("buildings").children) building.classList.remove("popup-obstructed");
+        setObstructedBuildings();
         return;
     }
     hoverBridge.style.left = `${left}px`;
@@ -177,12 +191,33 @@ function positionHoverBridge() {
     hoverBridge.style.width = `${width}px`;
     hoverBridge.style.height = `${height}px`;
     hoverBridge.style.clipPath = `polygon(${hoverCorridor.map((point) => `${((point.x - left) / width) * 100}% ${((point.y - top) / height) * 100}%`).join(",")})`;
-    for (const building of $("buildings").querySelectorAll(":scope > .building")) {
-        building.classList.toggle(
-            "popup-obstructed",
-            !building.contains(activeLink) && intersectsHoverCorridor(building.getBoundingClientRect()),
-        );
-    }
+    const origin = $("world").getBoundingClientRect();
+    const canvas = $("canvas");
+    const scale =
+        (new DOMMatrixReadOnly(getComputedStyle($("world")).transform).a * canvas.getBoundingClientRect().width) /
+        canvas.offsetWidth;
+    const candidates = buildingIndex.search({
+        left: (left - origin.left) / scale,
+        right: (right - origin.left) / scale,
+        top: (top - origin.top) / scale,
+        bottom: (bottom - origin.top) / scale,
+    });
+    setObstructedBuildings(
+        new Set(
+            candidates
+                .filter(
+                    ({ rect, value }) =>
+                        !value.contains(activeLink) &&
+                        intersectsHoverCorridor({
+                            left: origin.left + rect.left * scale,
+                            right: origin.left + rect.right * scale,
+                            top: origin.top + rect.top * scale,
+                            bottom: origin.top + rect.bottom * scale,
+                        }),
+                )
+                .map(({ value }) => value),
+        ),
+    );
 }
 
 function intersectsHoverCorridor(rect) {
@@ -215,8 +250,10 @@ function showTooltip(bookmark, category, link) {
     activeLink = link;
     activeBookmark = bookmark;
     syncMapEmphasis();
-    for (const item of $("buildings").children)
-        item.classList.toggle("focused-building", item.dataset.bookmark === bookmark.id);
+    const focused = link.closest(".building");
+    for (const item of $("buildings").querySelectorAll(".focused-building"))
+        if (item !== focused) item.classList.remove("focused-building");
+    focused.classList.add("focused-building");
     const url = safeUrl(bookmark.url);
     showTooltipIcon(bookmark);
     $("tooltip-name").textContent = bookmark.name;
@@ -282,14 +319,24 @@ function highlightCategory(id) {
 
 function syncMapEmphasis() {
     $("world").classList.toggle("detail-focus", Boolean(activeLink) || selectedCategory !== null);
-    for (const item of $("buildings").querySelectorAll(":scope > .building")) {
-        item.classList.toggle(
-            "emphasized-building",
-            activeLink
-                ? item.dataset.bookmark === activeBookmark.id
-                : selectedCategory !== null && item.dataset.category === selectedCategory,
+    const hoveredCategory = activeLink?.closest(".building").dataset.category;
+    for (const row of $("category-list").children)
+        row.querySelector(".category-filter")?.classList.toggle(
+            "building-hovered",
+            row.dataset.category === hoveredCategory,
         );
-    }
+    const next = activeLink
+        ? new Set([activeLink.closest(".building")])
+        : new Set(
+              selectedCategory === null
+                  ? []
+                  : [...$("buildings").querySelectorAll(":scope > .building")].filter(
+                        (item) => item.dataset.category === selectedCategory,
+                    ),
+          );
+    for (const item of emphasizedBuildings) if (!next.has(item)) item.classList.remove("emphasized-building");
+    for (const item of next) if (!emphasizedBuildings.has(item)) item.classList.add("emphasized-building");
+    emphasizedBuildings = next;
 }
 
 function applyFilter() {
@@ -394,10 +441,23 @@ function createBuilding(bookmark, category, cell, labels, interactive = true) {
         siteIcon.append(iconImage);
     }
     labels.append(siteIcon);
-    prepareBuildingAppearance(image, hitArea).catch((error) => {
-        console.error(error);
-        toast("건물 표시를 불러오지 못했습니다. 새로고침해 주세요.");
-    });
+    prepareBuildingAppearance(image, hitArea)
+        .then(() => {
+            if (interactive) {
+                const rect = {
+                    left: position.left - TILE_WIDTH / 2,
+                    right: position.left - TILE_WIDTH / 2 + image.naturalWidth,
+                    top: position.top - image.naturalHeight,
+                    bottom: position.top,
+                };
+                buildingWorldRects.set(wrapper, rect);
+                if (wrapper.isConnected) buildingIndex.insert(rect, wrapper);
+            }
+        })
+        .catch((error) => {
+            console.error(error);
+            toast("건물 표시를 불러오지 못했습니다. 새로고침해 주세요.");
+        });
     applyPreparedWallMask(image, tint, light);
     link.append(image, tint, light, hitArea);
     if (bookmark.isNew) {
@@ -544,12 +604,16 @@ let backgroundLand = null;
 let backgroundView = null;
 function drawBackground(layer, land = backgroundLand) {
     if (!land || !backgroundView) return;
-    const { x, y, zoom } = backgroundView;
     const canvas = $("canvas");
-    const bounds = cellBounds(-x / zoom, -y / zoom, (canvas.offsetWidth - x) / zoom, (canvas.offsetHeight - y) / zoom);
-    const tiles = document.createDocumentFragment();
-    for (const tile of planBackground(land, bounds)) tiles.append(groundTile(tile.x, tile.y, tile.src));
-    layer.replaceChildren(tiles);
+    paintBackground(layer, {
+        land,
+        view: backgroundView,
+        width: canvas.offsetWidth,
+        height: canvas.offsetHeight,
+    }).catch((error) => {
+        console.error(error);
+        toast("배경을 불러오지 못했습니다. 새로고침해 주세요.");
+    });
 }
 
 // Plan positions and save what changed. The lock keeps several new tabs from planning at once.
@@ -652,16 +716,42 @@ function createPicket(cell, category) {
     return picket;
 }
 
+function groupRenderKey(group) {
+    return JSON.stringify([
+        group.category,
+        group.area,
+        group.picket,
+        group.items.map((bookmark) => [bookmark, group.cells.get(bookmark.id), isDamaged(bookmark)]),
+    ]);
+}
+
 // Draws the city from planned groups. `preview` ({movingId, showMoving}) draws a still
 // copy for a building drag: the zoom, the category zones and the saved background stay.
 function drawCity(groups, preview = null) {
-    const ground = document.createDocumentFragment();
-    const zones = document.createDocumentFragment();
-    const map = document.createDocumentFragment();
-    const labels = document.createDocumentFragment();
+    if (preview) drawnSignature = null;
+    buildingIndex = new SpatialIndex();
+    setObstructedBuildings();
+    const layers = Object.fromEntries(
+        ["ground", "zones", "map", "labels"].map((key) => [key, document.createDocumentFragment()]),
+    );
+    const nextGroups = new Map();
 
     const tiles = [];
     groups.forEach((group, index) => {
+        const key = groupRenderKey(group);
+        const cached = !preview && renderedGroups.get(group.category.id);
+        if (cached && cached.key === key) {
+            for (const name of Object.keys(layers)) layers[name].append(...cached[name]);
+            for (const node of cached.map) {
+                const rect = buildingWorldRects.get(node);
+                if (rect) buildingIndex.insert(rect, node);
+            }
+            nextGroups.set(group.category.id, cached);
+            return;
+        }
+        const { ground, zones, map, labels } = Object.fromEntries(
+            Object.keys(layers).map((name) => [name, document.createDocumentFragment()]),
+        );
         const { category: savedCategory, items, area, cells } = group;
         const category = { ...savedCategory, color: savedCategory.color ?? colors[index % colors.length] };
         const color = category.color;
@@ -684,7 +774,15 @@ function drawCity(groups, preview = null) {
         }
         for (const prop of decorationsFor(group)) map.append(createDecoration(prop, category.id));
         if (group.picket) map.append(createPicket(group.picket, category));
+        const entry = { key };
+        for (const [name, fragment] of Object.entries({ ground, zones, map, labels })) {
+            entry[name] = [...fragment.childNodes];
+            layers[name].append(fragment);
+        }
+        nextGroups.set(group.category.id, entry);
     });
+    if (!preview) renderedGroups = nextGroups;
+    const { ground, zones, map, labels } = layers;
     const roads = planRoads(groups.map((group) => group.area));
     for (const road of roads) {
         ground.append(groundTile(road.x, road.y, road.tile));
@@ -728,7 +826,27 @@ async function render() {
         mapState = { snapshot, fingerprint: layoutFingerprint(snapshot.categories, snapshot.bookmarks) };
         hideTooltip();
         lastGroups = groups;
-        drawCity(groups);
+        const signature = JSON.stringify(
+            groups
+                .map((group) => ({
+                    id: group.category.id,
+                    category: group.category,
+                    area: group.area,
+                    picket: group.picket,
+                    items: group.items
+                        .map((bookmark) => ({
+                            ...bookmark,
+                            damaged: isDamaged(bookmark),
+                            cell: group.cells.get(bookmark.id),
+                        }))
+                        .sort((a, b) => String(a.id).localeCompare(String(b.id))),
+                }))
+                .sort((a, b) => String(a.id).localeCompare(String(b.id))),
+        );
+        if (signature !== drawnSignature) {
+            drawCity(groups);
+            drawnSignature = signature;
+        }
         if (selectedCategory && !groups.some((group) => group.category.id === selectedCategory))
             selectedCategory = null;
         renderCategories(groups);
@@ -805,6 +923,18 @@ async function persistPendingColor() {
 }
 
 tooltip.addEventListener("mouseleave", scheduleHide);
+document.addEventListener("click", (event) => {
+    if (selectedCategory === null || event.defaultPrevented) return;
+    const target = event.target;
+    // Category controls retain their own selection/switching behavior.
+    if (target.closest(".category-row")) return;
+    const building = target.closest(".building");
+    if (building?.dataset.category === selectedCategory) return;
+    if (String(activeBookmark?.category) === selectedCategory && target.closest("#bookmark-tooltip, #bookmark-editor"))
+        return;
+    selectedCategory = null;
+    applyFilter();
+});
 document.addEventListener("mousemove", (event) => {
     if (!activeLink || tooltip.hidden || $("bookmark-editor").open) return;
     if (activeLink.contains(event.target) || tooltip.contains(event.target)) return;
@@ -948,7 +1078,7 @@ $("edit-bookmark").addEventListener("click", async () => {
         const left = tooltip.style.left,
             top = tooltip.style.top;
         tooltip.hidden = true;
-        for (const building of $("buildings").children) building.classList.remove("popup-obstructed");
+        setObstructedBuildings();
         $("bookmark-editor").style.left = left;
         $("bookmark-editor").style.top = top;
         $("bookmark-editor").showModal();

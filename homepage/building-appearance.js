@@ -1,6 +1,23 @@
 // Cache the solid building silhouette; translucent shadows are not hover targets.
 const appearances = new Map();
 const visualBounds = new WeakMap();
+let shapeSheet;
+let shapeSequence = 0;
+
+function shareHitShape(hitShape) {
+    if (!shapeSheet) {
+        const style = document.createElement("style");
+        style.dataset.buildingHitShapes = "true";
+        document.head.append(style);
+        shapeSheet = style.sheet;
+    }
+    const className = `building-hit-shape-${++shapeSequence}`;
+    shapeSheet.insertRule(
+        `.${className} { clip-path: ${hitShape}; pointer-events: auto; }`,
+        shapeSheet.cssRules.length,
+    );
+    return className;
+}
 
 export function buildingVisualBounds(image) {
     return visualBounds.get(image) ?? { left: 0, right: 1, top: 0, bottom: 1 };
@@ -26,14 +43,12 @@ async function readAppearance(image) {
         let last = -1;
         for (let x = 0; x < canvas.width; x++) {
             const i = (y * canvas.width + x) * 4;
-            // Include visible shadow pixels for spacing, but not for hit testing.
-            if (data[i + 3] >= 8) {
-                minX = Math.min(minX, x);
-                maxX = Math.max(maxX, x + 1);
-                minY = Math.min(minY, y);
-                maxY = Math.max(maxY, y + 1);
-            }
             if (data[i + 3] < 128) continue;
+            // Use the same solid silhouette for popup spacing and hit testing.
+            minX = Math.min(minX, x);
+            maxX = Math.max(maxX, x + 1);
+            minY = Math.min(minY, y);
+            maxY = Math.max(maxY, y + 1);
             if (first === -1) first = x;
             last = x;
         }
@@ -43,7 +58,7 @@ async function readAppearance(image) {
     }
     if (!left.length) throw new Error("건물 윤곽을 찾을 수 없습니다.");
     return {
-        hitShape: `polygon(${[...left, ...right.reverse()].join(",")})`,
+        className: shareHitShape(`polygon(${[...left, ...right.reverse()].join(",")})`),
         bounds: {
             left: minX / canvas.width,
             right: maxX / canvas.width,
@@ -60,10 +75,9 @@ export async function prepareBuildingAppearance(image, hitArea) {
         appearances.set(image.src, appearance);
     }
     try {
-        const { hitShape, bounds } = await appearance;
+        const { className, bounds } = await appearance;
         visualBounds.set(image, bounds);
-        hitArea.style.clipPath = hitShape;
-        hitArea.style.pointerEvents = "auto";
+        hitArea.classList.add(className);
     } catch (error) {
         appearances.delete(image.src);
         throw error;

@@ -410,8 +410,14 @@ function placeBuildings(group, spread) {
  * @param {{pinned?: Iterable<string>, compactAll?: boolean}} [options]
  */
 export function planCity(savedCategories, savedBookmarks, { pinned = [], compactAll = false } = {}) {
+    const byCategory = new Map();
+    for (const bookmark of savedBookmarks) {
+        const id = String(bookmark.category);
+        if (!byCategory.has(id)) byCategory.set(id, []);
+        byCategory.get(id).push(bookmark);
+    }
     const groups = savedCategories.map((category) => {
-        const items = savedBookmarks.filter((bookmark) => String(bookmark.category) === String(category.id));
+        const items = byCategory.get(String(category.id)) ?? [];
         return { category, items, count: items.length, area: null, dx: 0, dy: 0, extra: new Map(), keepCells: true };
     });
 

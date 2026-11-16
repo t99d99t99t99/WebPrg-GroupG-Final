@@ -412,7 +412,7 @@ a:hover {
     transition: transform var(--hover-duration) ease-out;
 }
 .building.popup-obstructed .building-hit-area {
-    /* biome-ignore lint/complexity/noImportantStyles: override the prepared hit area's inline pointer-events while crossing to the popup. */
+    /* biome-ignore lint/complexity/noImportantStyles: override the shared hit shape's pointer-events while crossing to the popup. */
     pointer-events: none !important;
 }
 .building-wall-tint,
@@ -643,6 +643,14 @@ a:hover {
     padding-right: var(--space-1);
     padding-block: calc((var(--category-list-item-height) - var(--compact-input-height)) / 2);
     margin-bottom: var(--space-2);
+    border-radius: var(--radius-control);
+    transition:
+        background-color var(--hover-duration) ease-out,
+        box-shadow var(--hover-duration) ease-out;
+}
+.category-row:has(.building-hovered) {
+    background-color: color-mix(in srgb, var(--color-primary) 12%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 24%, transparent);
 }
 .category-row:has(.category-edit-form) {
     align-items: flex-start;
@@ -694,7 +702,8 @@ body.category-dragging * {
     font-size: var(--category-font-size);
     line-height: var(--line-height-sm);
 }
-.category-filter[aria-pressed="true"] {
+.category-filter[aria-pressed="true"],
+.category-filter.building-hovered {
     font-weight: var(--font-weight-bold);
     color: var(--color-primary);
 }
