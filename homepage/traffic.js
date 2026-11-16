@@ -15,6 +15,10 @@ const LIGHT_SIDE = 0.46; // traffic lights stand on the outer half of the sidewa
 const LIGHTS_SHARE = 0.3; // share of crosswalks that get traffic lights
 const LIGHT_ALONG = 0.22; // just behind the crosswalk stripes (0.25–0.35 towards the junction)
 
+// Half the length and width of a car's ground footprint, in cells, for depth sorting.
+const CAR_HALF_LENGTH = 0.3;
+const CAR_HALF_WIDTH = 0.14;
+
 const PEDESTRIAN = {
     speed: 0.3, // cells per second
     frameRate: 3, // walk frames per second, matched to the speed so feet do not slide
@@ -283,15 +287,52 @@ export function createTraffic(container) {
     // z-index, and #traffic comes after #buildings in the page, so equal values draw the traffic on top.
     const depth = ({ x, y }) => 1000 + Math.floor(x + y - 1);
 
-    // Equal z-index values fall back to page order, so keep the traffic layer's children sorted
-    // front-to-back by ground position (x + y). Only touches the DOM when the order changes.
+    // Ground footprint (grid box) of a mover. A car is long along its direction of travel, so a
+    // person beside its front half is still behind it although the person's point is further
+    // forward than the car's centre. People and lights are nearly points.
+    function footprint({ kind, direction, position }) {
+        let [ex, ey] = [0.05, 0.05];
+        if (kind === CAR) {
+            const [ux, uy] = DIRECTIONS[direction];
+            ex = Math.abs(ux) * CAR_HALF_LENGTH + Math.abs(uy) * CAR_HALF_WIDTH;
+            ey = Math.abs(uy) * CAR_HALF_LENGTH + Math.abs(ux) * CAR_HALF_WIDTH;
+        }
+        return { minX: position.x - ex, maxX: position.x + ex, minY: position.y - ey, maxY: position.y + ey };
+    }
+    // Negative when a is drawn before (behind) b. Boxes separated along x or y are ordered by that
+    // axis; overlapping boxes fall back to their centres.
+    function compareDepth(a, b) {
+        const [fa, fb] = [footprint(a), footprint(b)];
+        if (fa.maxX <= fb.minX || fa.maxY <= fb.minY) return -1;
+        if (fb.maxX <= fa.minX || fb.maxY <= fa.minY) return 1;
+        return a.position.x + a.position.y - (b.position.x + b.position.y);
+    }
+
+    // Order the movers back to front and keep both the z-index and the page order (which decides
+    // equal z-index values) in that order. z-index steps by whole cells for the buildings, so a
+    // mover just behind a nearby one may land a step above it: it takes the front one's step.
+    // Only touches the DOM when the order changes.
     function sortByDepth() {
-        const ordered = [...lights, ...pedestrians, ...cars]
-            .sort((a, b) => a.position.x + a.position.y - (b.position.x + b.position.y))
-            .map((item) => item.image);
-        const current = [...container.children].filter((element) => ordered.includes(element));
-        if (current.some((element, index) => element !== ordered[index])) {
-            for (const element of ordered) container.append(element);
+        const movers = [...lights, ...pedestrians, ...cars];
+        // Insertion sort: a handful of movers, and the box order needs a pairwise comparison.
+        const ordered = [];
+        for (const mover of movers) {
+            let at = ordered.length;
+            while (at > 0 && compareDepth(mover, ordered[at - 1]) < 0) at--;
+            ordered.splice(at, 0, mover);
+        }
+        const z = ordered.map((mover) => depth(mover.position));
+        for (let i = ordered.length - 2; i >= 0; i--) {
+            const [back, front] = [ordered[i].position, ordered[i + 1].position];
+            if (z[i] > z[i + 1] && Math.hypot(back.x - front.x, back.y - front.y) < 1.5) z[i] = z[i + 1];
+        }
+        ordered.forEach((mover, i) => {
+            mover.image.style.zIndex = String(z[i]);
+        });
+        const images = ordered.map((mover) => mover.image);
+        const current = [...container.children].filter((element) => images.includes(element));
+        if (current.some((element, index) => element !== images[index])) {
+            for (const element of images) container.append(element);
         }
     }
 
