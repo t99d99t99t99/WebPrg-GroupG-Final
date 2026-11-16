@@ -70,7 +70,7 @@ function fitCanvas() {
         getComputedStyle(document.documentElement).getPropertyValue("--design-canvas-width"),
     );
     const scale = innerWidth / designCanvasWidth;
-    const canvasHeight = Math.max(600, innerHeight / scale);
+    const canvasHeight = Math.max(1, innerHeight / scale);
     document.documentElement.style.setProperty("--homepage-scale", String(scale));
     $("canvas").style.transform = `scale(${scale})`;
     $("canvas").style.height = `${canvasHeight}px`;

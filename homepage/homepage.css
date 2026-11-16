@@ -578,8 +578,11 @@ a:hover {
     position: absolute;
     right: var(--homepage-corner-inset);
     top: calc(var(--homepage-corner-inset) + var(--control-height-md) + var(--space-4));
+    bottom: var(--homepage-corner-inset);
     width: var(--category-panel-width);
-    height: var(--category-panel-height);
+    height: auto;
+    max-height: var(--category-panel-height);
+    min-height: 0;
     padding: var(--card-padding);
     overflow-y: auto;
     overflow-x: clip;
