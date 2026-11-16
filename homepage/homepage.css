@@ -876,8 +876,20 @@ a:hover {
     justify-content: space-between;
     gap: var(--space-3);
 }
+/* Site icon before the name, on the round plate of the Figma hover card. */
+.tooltip-site-icon {
+    flex-shrink: 0;
+    box-sizing: border-box;
+    width: var(--icon-size-large);
+    height: var(--icon-size-large);
+    padding: var(--space-1);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-muted);
+    object-fit: contain;
+}
 .tooltip-heading h2 {
     display: -webkit-box;
+    flex: 1;
     min-width: 0;
     margin: 0;
     font-size: var(--font-size-lg);

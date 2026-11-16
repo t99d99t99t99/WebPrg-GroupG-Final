@@ -10,7 +10,7 @@ import {
 } from "../db/db.js";
 import { categorySelect } from "../shared/category-select.js";
 import { createColorPicker } from "../shared/color-picker.js";
-import { isSiteIconUrl, siteIconUrlForPage } from "../shared/site-icons.js";
+import { bookmarkIconUrl } from "../shared/site-icons.js";
 import { bookmarkNameError, webUrl } from "../shared/validation.js";
 import { cellBounds, planBackground } from "./background.js";
 import { applyPreparedWallMask, prepareBuildingAppearance } from "./building-appearance.js";
@@ -91,6 +91,27 @@ function safeUrl(raw) {
     }
 }
 
+// Hover card icon: the same address as the building's map icon (already loaded, so it shows
+// at once). It is swapped in only after it loads, so no broken image shows; when it cannot
+// load, the extension icon is shown.
+const DEFAULT_SITE_ICON = "../assets/icons/icon32.png";
+let tooltipIconLoad = null;
+function showTooltipIcon(bookmark) {
+    const icon = $("tooltip-icon");
+    const src = bookmarkIconUrl(bookmark) || DEFAULT_SITE_ICON;
+    tooltipIconLoad = null; // an earlier, slower load must not replace this one
+    if (icon.getAttribute("src") === src) return;
+    const loader = new Image();
+    tooltipIconLoad = loader;
+    loader.onload = () => {
+        if (tooltipIconLoad === loader) icon.src = src;
+    };
+    loader.onerror = () => {
+        if (tooltipIconLoad === loader) icon.src = DEFAULT_SITE_ICON;
+    };
+    loader.src = src;
+}
+
 function hideTooltip() {
     tooltip.hidden = true;
     hoverBridge.hidden = true;
@@ -167,6 +188,7 @@ function showTooltip(bookmark, category, link) {
     for (const item of $("buildings").children)
         item.classList.toggle("focused-building", item.dataset.bookmark === bookmark.id);
     const url = safeUrl(bookmark.url);
+    showTooltipIcon(bookmark);
     $("tooltip-name").textContent = bookmark.name;
     $("tooltip-name").title = bookmark.name;
     $("tooltip-category").textContent = category.name;
@@ -300,9 +322,7 @@ function createBuilding(bookmark, category, cell, labels, interactive = true) {
     siteIcon.style.top = `${position.top - 6}px`;
     const fallbackIcon = element("span", "building-icon-fallback", "🌐");
     siteIcon.append(fallbackIcon);
-    const iconUrl = isSiteIconUrl(bookmark.iconUrl)
-        ? bookmark.iconUrl || siteIconUrlForPage(bookmark.url)
-        : siteIconUrlForPage(bookmark.url);
+    const iconUrl = bookmarkIconUrl(bookmark);
     if (iconUrl) {
         const iconImage = element("img", "building-site-icon");
         iconImage.alt = "";

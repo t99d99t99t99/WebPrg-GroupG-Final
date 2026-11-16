@@ -26,7 +26,7 @@
 | `db/storage.js` | Chrome 저장소 및 웹 미리보기 어댑터, 저장 변경 알림, 공통 쓰기 잠금 |
 | `shared/` | 홈페이지 이름·URL 검증, 사이트 아이콘 URL 생성, 키보드로 조작할 수 있는 카테고리 선택 목록 |
 | `shared/building-designs.js` | 건물 5개 계열의 성장 에셋과 좌우 방향별 기본 디자인 10종. 팝업 선택·DB 검증·지도 렌더링이 공유 |
-| `shared/site-icons.js` | Chrome Favicon API 조회 URL 생성과 저장할 아이콘 URL 검증 |
+| `shared/site-icons.js` | Chrome Favicon API 조회 URL 생성, 저장할 아이콘 URL 검증, 지도·호버 카드가 함께 쓰는 북마크 아이콘 주소(`bookmarkIconUrl`) |
 | `shared/color-picker.js`, `shared/color-picker.css` | 홈페이지와 팝업이 함께 쓰는 컬러피커 UI·스타일. 채도/밝기 드래그·방향키, 색조, HEX, 스포이트, Escape·바깥 클릭 닫기. 저장은 호출 화면에서 처리 |
 | `homepage/google-account.js` | 계정 표시 전용 어댑터. 전달받은 이름·HTTPS 사진 URL을 표시하고 사진 부재·실패 시 기본 아바타로 복귀. 인증·권한·저장소 접근 없음 |
 | `homepage/category-manager.js` | 카테고리 목록 패널. 생성·이름 수정·드래그 순서 이동·삭제 확인, 색상 칩으로 컬러피커 열기(연필로 이름을 수정할 때도 함께 열림), 휴지통 버튼으로 삭제 창 열기, 카테고리 강조 선택 |
@@ -144,7 +144,7 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 
 - `memo`: 글자 수 제한 없는 문자열 메모. 기존 데이터에 없으면 빈 메모로 표시합니다. 팝업에서는 최종 저장 버튼을 누를 때만 북마크와 함께 저장합니다.
 - `buildingDesign`: 선택적 디자인 ID (`blue-homes:a` 등). `shared/building-designs.js`의 ID를 `add`/`edit`에서 검증합니다. 선택한 계열과 방향을 성장·파손 단계에서도 유지하며, 필드가 없으면 ID 기반 규칙을 사용합니다. 데이터 호환을 위해 `cafe:a`·`pizza:a`도 허용하며 각각 카페·피자 가게의 외형 단계부터 표시합니다.
-- `iconUrl`: 선택 사항인 웹사이트 아이콘 URL. 저장 팝업은 현재 탭 파비콘 URL을 저장하고, 없으면 Chrome Favicon API 주소를 생성합니다. 기존 북마크는 `webprg-bookmarkmap-icon-backfill-v1` 표시를 두고 홈페이지 최초 실행에서 한 번 보정합니다. Chrome 북마크 API는 파비콘을 제공하지 않으므로 동기화한 URL을 Favicon API로 연결합니다. 탭에서 파비콘이 갱신되거나 페이지가 활성화되면 서비스 워커가 같은 URL의 저장된 북마크를 찾아 실제 파비콘 URL을 저장합니다. 아이콘 정보가 없거나 로딩이 실패하면 홈페이지는 지구본 이모지를 표시합니다.
+- `iconUrl`: 선택 사항인 웹사이트 아이콘 URL. 저장 팝업은 현재 탭 파비콘 URL을 저장하고, 없으면 Chrome Favicon API 주소를 생성합니다. 기존 북마크는 `webprg-bookmarkmap-icon-backfill-v1` 표시를 두고 홈페이지 최초 실행에서 한 번 보정합니다. Chrome 북마크 API는 파비콘을 제공하지 않으므로 동기화한 URL을 Favicon API로 연결합니다. 탭에서 파비콘이 갱신되거나 페이지가 활성화되면 서비스 워커가 같은 URL의 저장된 북마크를 찾아 실제 파비콘 URL을 저장합니다. 아이콘 정보가 없거나 로딩이 실패하면 홈페이지 지도는 지구본 이모지를 표시합니다. 호버 카드는 사이트명 앞에 지도와 같은 아이콘 주소(`shared/site-icons.js`의 `bookmarkIconUrl`)를 표시하며, 불러온 뒤에 바꿔 깨진 이미지를 보이지 않고, 불러오지 못하면 확장 프로그램 아이콘(`assets/icons/icon32.png`)을 표시합니다.
 - `isNew`: 새로 저장한 건물의 NEW 표시. 건물을 호버·포커스하면 false로 저장합니다. 새 탭을 떠날 때(다른 탭으로 전환), 그 화면을 보기 시작한 시각보다 먼저 저장된 북마크도 false로 저장합니다. 따라서 새로 연 탭에서는 NEW가 보이고, 한 번 본 뒤 다시 들어오면 사라집니다. 기존 데이터에는 표시하지 않습니다.
 - `preview`: 예전 페이지 미리보기용 로컬 JPEG data URL. 미리보기 기능을 없애 현재 화면은 이 필드를 표시하거나 수집하지 않으며, 기존 데이터에 남아 있어도 그대로 둡니다.
 
