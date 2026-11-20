@@ -5,7 +5,7 @@
     min-height: 248px;
     padding: var(--space-3);
     border: var(--border-width) solid #383838;
-    border-radius: var(--radius-panel);
+    border-radius: var(--radius-box);
     background: #292929;
     color: #f5f5f5;
     box-shadow: var(--shadow-panel);
@@ -52,7 +52,7 @@
     height: var(--space-4);
     margin: 0;
     appearance: none;
-    border-radius: var(--radius-selection);
+    border-radius: var(--radius-selector);
     background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
     accent-color: #f6f6f6;
 }

@@ -22,10 +22,10 @@ button:disabled {
     width: 100%;
     min-height: var(--control-height);
     padding: 0 var(--space-4);
-    border: var(--border-width-strong) solid var(--color-border);
-    border-radius: var(--radius-control);
-    background: var(--color-surface);
-    color: var(--color-text);
+    border: var(--border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-field);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
     font-size: var(--font-size-base);
     line-height: var(--line-height-sm);
     box-shadow: var(--shadow-control);
@@ -50,7 +50,7 @@ button:disabled {
     font-size: var(--font-size-xs);
     line-height: var(--line-height-xs);
     margin: var(--space-1) 0 0;
-    min-height: var(--field-message-height);
+    min-height: var(--space-5);
 }
 .form-actions {
     display: flex;
@@ -62,9 +62,9 @@ button:disabled {
     min-width: var(--button-min-width);
     min-height: var(--popup-control-height);
     padding: var(--button-padding-block) var(--button-padding-inline);
-    border: var(--border-width-strong) solid var(--color-border);
-    border-radius: var(--radius-control);
-    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-field);
+    background: var(--color-base-100);
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-medium);
     line-height: var(--line-height-compact);
@@ -72,7 +72,7 @@ button:disabled {
 }
 .action-primary {
     background: var(--color-primary);
-    border-color: var(--color-primary);
+    border: var(--border) solid var(--color-primary);
     color: var(--color-primary-content);
 }
 .action:hover {
@@ -92,7 +92,7 @@ button:disabled {
     background: transparent;
 }
 .icon-button:hover {
-    background: var(--color-surface-muted);
+    background: var(--color-base-200);
 }
 .icon-button img {
     display: block;
@@ -112,7 +112,7 @@ button:disabled {
     background-repeat: no-repeat;
 }
 .category-select-trigger.has-selection {
-    color: var(--color-text);
+    color: var(--color-base-content);
 }
 .category-options {
     position: absolute;
@@ -123,9 +123,9 @@ button:disabled {
     padding: var(--space-1);
     max-height: var(--select-options-max-height);
     overflow-y: auto;
-    border: var(--border-width-strong) solid var(--color-border);
-    border-radius: var(--radius-control);
-    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-field);
+    background: var(--color-base-100);
     box-shadow: var(--shadow-card);
 }
 .category-options button {
@@ -146,7 +146,7 @@ button:disabled {
 }
 .category-options button:hover,
 .category-options button:focus {
-    background: var(--color-surface-muted);
+    background: var(--color-base-200);
 }
 .category-options [aria-selected="true"] {
     background: var(--color-secondary-selected);
@@ -203,16 +203,16 @@ a:hover {
     width: 150px;
     min-height: var(--popup-control-height);
     padding: var(--space-2) var(--space-4);
-    border: var(--border-width-strong) solid var(--color-border);
-    border-radius: var(--radius-control);
-    background: var(--color-surface);
-    color: var(--color-text);
+    border: var(--border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-field);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
     font-size: var(--font-size-xs);
     line-height: var(--line-height-sm);
     box-shadow: var(--shadow-dialog);
 }
 .bookmark-sync-button:hover:not(:disabled) {
-    background: var(--color-surface-muted);
+    background: var(--color-base-200);
 }
 .apps-button {
     width: var(--icon-button-size-default);
@@ -222,7 +222,7 @@ a:hover {
 .apps-dots {
     width: var(--icon-size-large);
     height: var(--icon-size-large);
-    background: radial-gradient(circle, var(--color-text) 2px, transparent 2.5px) 0 0 / 8px 8px;
+    background: radial-gradient(circle, var(--color-base-content) 2px, transparent 2.5px) 0 0 / 8px 8px;
 }
 
 /* City map */
@@ -516,10 +516,10 @@ a:hover {
     width: 54px;
     height: 26px;
     padding: 3px 0;
-    border: var(--border-width-strong) solid var(--color-text);
+    border: var(--border) solid var(--color-base-content);
     border-radius: var(--radius-pill);
-    background: var(--color-surface);
-    color: var(--color-text);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
     font-size: 11px;
     font-weight: var(--font-weight-semibold);
     text-align: center;
@@ -551,7 +551,7 @@ a:hover {
     padding: var(--space-1);
     border: 1px solid #8cb8a9;
     border-radius: var(--radius-box);
-    background: var(--color-surface);
+    background: var(--color-base-100);
     color: #35514e;
     font-size: var(--font-size-md);
     line-height: 1;
@@ -583,13 +583,13 @@ a:hover {
     height: auto;
     max-height: var(--category-panel-height);
     min-height: 0;
-    padding: var(--card-padding);
+    padding: var(--space-6);
     overflow-y: auto;
     overflow-x: clip;
     scrollbar-gutter: auto;
-    border: var(--border-width-strong) solid var(--color-divider);
-    border-radius: var(--radius-panel);
-    background: var(--color-surface);
+    border: var(--window-border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-box);
+    background: var(--color-base-100);
     box-shadow: var(--shadow-panel);
     z-index: 2000;
     display: flex;
@@ -607,19 +607,15 @@ a:hover {
 .google-heading {
     margin: 0;
     font-size: var(--font-size-display);
-    font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-bold);
     line-height: var(--line-height-lg);
 }
 #add-category {
-    border: var(--border-width-strong) solid color-mix(in srgb, var(--color-text) 42%, transparent);
-    transition: border-color 0.15s;
+    border: 0;
     transform: translateX(calc(var(--space-1) + var(--border-width-emphasis)));
     padding: 0;
+    color: var(--color-base-content);
     line-height: 1;
-}
-#add-category:hover,
-#add-category:focus-visible {
-    border-color: var(--color-text);
 }
 .category-list {
     width: var(--category-list-item-width);
@@ -634,6 +630,7 @@ a:hover {
     overflow-y: auto;
     flex: 1;
     min-height: 160px;
+    font-family: var(--font-family-category);
 }
 .category-row {
     position: relative;
@@ -646,7 +643,7 @@ a:hover {
     padding-right: var(--space-1);
     padding-block: calc((var(--category-list-item-height) - var(--compact-input-height)) / 2);
     margin-bottom: var(--space-2);
-    border-radius: var(--radius-control);
+    border-radius: var(--radius-field);
     transition:
         background-color var(--hover-duration) ease-out,
         box-shadow var(--hover-duration) ease-out;
@@ -669,7 +666,7 @@ a:hover {
     z-index: 10;
     background: var(--color-surface-raised);
     box-shadow: var(--shadow-card);
-    border-radius: var(--radius-control);
+    border-radius: var(--radius-field);
     transition: none;
 }
 body.category-dragging,
@@ -699,8 +696,9 @@ body.category-dragging * {
     min-width: 0;
     min-height: var(--compact-input-height);
     padding: 0 var(--compact-input-padding-inline);
-    border: var(--border-width-emphasis) solid transparent;
-    background: transparent;
+    border: var(--border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-selector);
+    background: var(--color-base-100);
     text-align: left;
     font-size: var(--category-font-size);
     line-height: var(--line-height-sm);
@@ -743,9 +741,10 @@ body.category-dragging * {
     width: 100%;
     min-height: var(--compact-input-height);
     height: var(--compact-input-height);
-    border-width: var(--border-width-emphasis);
+    border-width: var(--border-width);
+    border-color: var(--color-neutral-500);
     padding-inline: var(--compact-input-padding-inline);
-    border-radius: var(--radius-control);
+    border-radius: var(--radius-field);
     font-size: var(--category-font-size);
     line-height: var(--line-height-sm);
 }
@@ -761,20 +760,21 @@ body.category-dragging * {
     min-height: var(--compact-input-height);
     padding: 0 var(--space-2);
     background: transparent;
-    font-size: var(--font-size-base);
-    line-height: var(--line-height-sm);
+    color: var(--color-base-content);
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-xs);
     flex-shrink: 0;
     white-space: nowrap;
 }
 .category-edit-form button:last-of-type {
-    color: var(--color-error);
+    color: var(--color-neutral-500);
 }
 .category-edit-form .field-error {
     position: static;
     grid-column: 1 / -1;
     margin: 0;
     max-width: none;
-    background: var(--color-surface);
+    background: var(--color-base-100);
 }
 .category-edit-form .field-error:empty {
     display: none;
@@ -786,6 +786,8 @@ body.category-dragging * {
     width: calc(100% + var(--space-2));
     margin-left: calc(-1 * var(--space-1));
     margin-bottom: var(--space-10);
+    padding-bottom: var(--space-4);
+    border-bottom: var(--border-width) solid var(--color-neutral-500);
     flex-shrink: 0;
 }
 #google-services:not([hidden]) + .panel-heading {
@@ -811,14 +813,14 @@ body.category-dragging * {
     min-height: var(--space-20);
     min-width: 0;
     padding: var(--space-1);
-    border-radius: var(--radius-panel);
+    border-radius: var(--radius-box);
     text-decoration: none;
     font-size: var(--font-size-base);
     line-height: var(--line-height-sm);
 }
 .google-grid a:hover,
 .google-grid a:focus-visible {
-    background: var(--color-surface-muted);
+    background: var(--color-base-200);
 }
 .google-grid :where(a > span:last-child) {
     max-width: 100%;
@@ -837,7 +839,7 @@ body.category-dragging * {
     position: relative;
     border-radius: 50%;
     overflow: hidden;
-    background: var(--color-surface-muted);
+    background: var(--color-base-200);
 }
 #google-account-photo {
     width: 100%;
@@ -891,9 +893,9 @@ body.category-dragging * {
     padding: var(--space-4);
     overflow: visible;
     overscroll-behavior: contain;
-    border: var(--border-width-strong) solid var(--color-border);
-    border-radius: var(--radius-panel);
-    background: var(--color-surface);
+    border: var(--window-border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-box);
+    background: var(--color-base-100);
     box-shadow: var(--shadow-tooltip);
     scale: var(--homepage-scale);
     transform-origin: top left;
@@ -917,7 +919,7 @@ body.category-dragging * {
     height: var(--icon-size-large);
     padding: var(--space-1);
     border-radius: var(--radius-pill);
-    background: var(--color-surface-muted);
+    background: var(--color-base-200);
     object-fit: contain;
 }
 .tooltip-heading h2 {
@@ -960,6 +962,8 @@ body.category-dragging * {
     align-items: center;
     gap: var(--space-2);
     margin-top: 0;
+    padding-top: var(--space-3);
+    border-top: var(--border-width) solid var(--color-neutral-500);
     font-size: var(--font-size-base);
     font-weight: var(--font-weight-medium);
     line-height: var(--line-height-sm);
@@ -969,11 +973,11 @@ body.category-dragging * {
     width: 100%;
     min-height: var(--popup-textarea-height);
     margin-top: calc(-1 * var(--space-2));
-    padding: var(--space-3) var(--control-padding-inline);
-    border: var(--border-width-strong) solid var(--color-border);
-    border-radius: var(--radius-panel);
-    background: var(--color-surface);
-    color: var(--color-text);
+    padding: var(--space-3) var(--space-4);
+    border: var(--border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-box);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
     font-size: var(--font-size-base);
     line-height: var(--line-height-sm);
     resize: none;
@@ -998,13 +1002,13 @@ body.category-dragging * {
     background: transparent;
     min-height: var(--line-height-sm);
     padding: var(--button-padding-block) var(--button-padding-inline);
-    border-radius: var(--radius-control);
-    color: var(--color-text);
+    border-radius: var(--radius-field);
+    color: var(--color-base-content);
     font-size: var(--font-size-xs);
     line-height: var(--line-height-compact);
 }
 .tooltip-bottom button:hover {
-    background: var(--color-surface-muted);
+    background: var(--color-base-200);
 }
 #copy-link {
     color: var(--color-link);
@@ -1017,12 +1021,12 @@ body.category-dragging * {
 .app-dialog {
     position: fixed;
     margin: auto;
-    max-width: calc(100vw - var(--modal-viewport-inset) - var(--modal-viewport-inset));
-    padding: var(--modal-padding);
-    border: var(--border-width) solid var(--color-border);
-    border-radius: var(--radius-panel);
-    background: var(--color-surface);
-    color: var(--color-text);
+    max-width: calc(100vw - var(--space-6) - var(--space-6));
+    padding: var(--space-8);
+    border: var(--window-border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-box);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
     box-shadow: var(--shadow-panel);
     scale: var(--homepage-scale);
 }
@@ -1060,7 +1064,7 @@ body.category-dragging * {
     display: flex;
     height: 100%;
     flex-direction: column;
-    gap: var(--form-group-gap);
+    gap: var(--space-6);
     padding: var(--space-4) var(--action-footer-padding-inline) 0;
 }
 .bookmark-editor .dialog-heading {
@@ -1068,7 +1072,7 @@ body.category-dragging * {
 }
 .form-group {
     display: grid;
-    gap: var(--control-content-gap);
+    gap: var(--space-2);
 }
 .form-group .field-label,
 .form-group .field-error {
@@ -1079,8 +1083,8 @@ body.category-dragging * {
     min-height: var(--action-footer-height);
     margin: auto calc(-1 * var(--action-footer-padding-inline)) 0;
     padding: var(--action-footer-padding-block) var(--action-footer-padding-inline);
-    gap: var(--popup-action-gap);
-    border-top: var(--border-width) solid var(--color-divider);
+    gap: var(--space-6);
+    border-top: var(--border-width) solid var(--color-neutral-500);
 }
 .bookmark-editor .field {
     min-height: var(--popup-control-height);
@@ -1095,7 +1099,6 @@ body.category-dragging * {
     height: var(--confirmation-dialog-height);
     padding: var(--confirmation-dialog-padding-block-start) var(--confirmation-dialog-padding-inline)
         var(--confirmation-dialog-padding-block-end);
-    border: 0;
     overflow: hidden;
     text-align: center;
     box-shadow: var(--shadow-dialog);
@@ -1131,14 +1134,14 @@ body.category-dragging * {
     height: var(--popup-control-height);
     min-height: var(--popup-control-height);
     margin-top: 0;
-    gap: var(--popup-action-gap);
+    gap: var(--space-6);
 }
 .category-delete .action {
     width: var(--popup-action-width);
     min-width: var(--popup-action-width);
     min-height: var(--popup-control-height);
     flex: 0 0 var(--popup-action-width);
-    font-size: var(--popup-font-size);
+    font-size: var(--font-size-base);
 }
 
 .category-panel::-webkit-scrollbar-thumb,
@@ -1168,7 +1171,7 @@ body.category-dragging * {
     max-width: calc(100vw - var(--space-8));
     margin: 0 auto;
     padding: var(--space-3) var(--space-5);
-    border-radius: var(--radius-control);
+    border-radius: var(--radius-field);
     background: var(--color-primary);
     color: var(--color-primary-content);
     box-shadow: var(--shadow-card);
@@ -1181,9 +1184,9 @@ body.category-dragging * {
 .app-toast.toast-subtle {
     bottom: var(--space-6);
     padding: var(--space-2) var(--space-4);
-    border: var(--border-width) solid var(--color-divider);
-    border-radius: var(--radius-control);
-    background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+    border: var(--border-width) solid var(--color-base-200);
+    border-radius: var(--radius-field);
+    background: color-mix(in srgb, var(--color-base-100) 94%, transparent);
     color: var(--color-text-muted);
     box-shadow: var(--shadow-control);
     font-size: var(--font-size-xs);

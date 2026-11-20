@@ -3,7 +3,7 @@
     min-width: var(--popup-width);
     height: var(--popup-height);
     overflow: hidden;
-    background: var(--color-canvas);
+    background: var(--color-base-100);
 }
 
 .popup-shell,
@@ -17,9 +17,9 @@
     flex-direction: column;
     margin: 0;
     overflow: hidden;
-    border: var(--border-width-strong) solid var(--color-primary-border);
+    border: var(--window-border-width) solid var(--color-neutral-500);
     border-radius: 0;
-    background: var(--color-canvas);
+    background: var(--color-base-100);
     box-shadow: none;
 }
 .popup-content {
@@ -48,16 +48,16 @@
     height: var(--popup-header-icon-size);
     flex: 0 0 var(--popup-header-icon-size);
     place-items: center;
-    border-radius: var(--radius-selection);
-    background: var(--color-primary-border);
+    border-radius: var(--radius-selector);
+    background: var(--color-base-300);
     font-size: var(--font-size-lg);
     line-height: var(--line-height-md);
 }
 
 .popup-heading h1 {
     margin: 0;
-    color: var(--color-text);
-    font-size: var(--popup-title-size);
+    color: var(--color-base-content);
+    font-size: var(--font-size-lg);
     font-weight: var(--font-weight-semibold);
     line-height: var(--line-height-md);
 }
@@ -65,16 +65,16 @@
 .popup-divider {
     width: 100%;
     height: var(--border-width);
-    margin-top: var(--popup-divider-gap);
+    margin-top: var(--space-3);
     flex: 0 0 var(--border-width);
-    background: var(--color-divider);
+    background: var(--color-neutral-500);
 }
 
 .form-section {
     display: grid;
     width: 100%;
-    margin-top: var(--popup-section-gap);
-    gap: var(--control-content-gap);
+    margin-top: var(--space-4);
+    gap: var(--space-2);
 }
 .page-name-section {
     min-height: var(--popup-page-field-height);
@@ -85,7 +85,7 @@
     gap: var(--space-1);
 }
 .category-section {
-    margin-top: var(--popup-section-gap);
+    margin-top: var(--space-4);
     gap: var(--popup-field-gap);
 }
 .memo-section {
@@ -100,8 +100,8 @@
 .field-label,
 .new-category-fields label {
     display: block;
-    color: var(--color-text);
-    font-size: var(--popup-label-size);
+    color: var(--color-base-content);
+    font-size: var(--font-size-base);
     font-weight: var(--font-weight-semibold);
     line-height: var(--line-height-sm);
 }
@@ -110,11 +110,11 @@
 .new-category-fields input,
 .memo-section textarea {
     width: 100%;
-    border: var(--border-width-strong) solid var(--color-primary-border);
-    border-radius: var(--radius-control);
-    background: var(--color-canvas);
-    color: var(--color-text);
-    font-size: var(--popup-font-size);
+    border: var(--border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-field);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
+    font-size: var(--font-size-base);
     line-height: var(--line-height-sm);
     box-shadow: none;
 }
@@ -132,7 +132,7 @@
 .page-name-section input::placeholder,
 .new-category-fields input::placeholder,
 .memo-section textarea::placeholder {
-    color: var(--color-text);
+    color: var(--color-base-content);
     opacity: 1;
 }
 
@@ -144,10 +144,10 @@
 }
 
 .field-error {
-    min-height: var(--field-message-height);
+    min-height: var(--space-5);
     margin: 0;
     color: var(--color-error);
-    font-size: var(--popup-label-size);
+    font-size: var(--font-size-base);
     line-height: var(--line-height-xs);
 }
 
@@ -191,9 +191,9 @@
     max-height: calc(4 * (var(--space-8) + var(--space-1)) + 2 * var(--space-1));
     overflow-y: auto;
     padding: var(--space-1);
-    border: var(--border-width-strong) solid var(--color-primary-border);
-    border-radius: var(--radius-panel);
-    background: var(--color-canvas);
+    border: var(--border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-box);
+    background: var(--color-base-100);
     box-shadow: var(--shadow-depth-1);
 }
 
@@ -207,10 +207,10 @@
     min-height: calc(var(--space-8) + var(--space-1));
     padding-inline: var(--space-3);
     border: 0;
-    border-radius: var(--radius-control);
+    border-radius: var(--radius-field);
     background: transparent;
-    color: var(--color-text);
-    font-size: var(--popup-font-size);
+    color: var(--color-base-content);
+    font-size: var(--font-size-base);
     line-height: var(--line-height-sm);
     text-align: left;
     cursor: pointer;
@@ -225,11 +225,11 @@
 
 .category-options button:hover,
 .category-options button:focus-visible {
-    background: var(--color-surface-muted);
+    background: var(--color-base-200);
 }
 
 .category-options button[aria-selected="true"] {
-    background: var(--color-surface-muted);
+    background: var(--color-base-200);
 }
 
 .text-button {
@@ -240,7 +240,7 @@
     border: 0;
     background: transparent;
     color: var(--color-neutral-500);
-    font-size: var(--popup-label-size);
+    font-size: var(--font-size-base);
     font-weight: var(--font-weight-medium);
     line-height: var(--line-height-sm);
     text-align: center;
@@ -261,7 +261,7 @@
 }
 #categoryColor {
     position: absolute;
-    left: calc(var(--border-width-strong) + var(--popup-field-padding-inline));
+    left: calc(var(--border) + var(--popup-field-padding-inline));
     top: 50%;
     transform: translateY(-50%);
     padding: 0;
@@ -273,10 +273,10 @@
 .building-selector {
     position: relative;
     overflow: hidden;
-    border-radius: var(--radius-control);
+    border-radius: var(--radius-field);
     height: var(--popup-design-strip-height);
     padding: calc((var(--popup-design-strip-height) - var(--popup-design-height)) / 2) var(--space-8);
-    background: var(--color-primary-border);
+    background: var(--color-base-300);
 }
 .building-designs {
     display: flex;
@@ -294,7 +294,7 @@
     padding: 0;
     overflow: hidden;
     border: 0;
-    border-radius: var(--radius-control);
+    border-radius: var(--radius-field);
     background: transparent;
     cursor: pointer;
 }
@@ -347,10 +347,10 @@
     padding: 0;
     display: grid;
     place-items: center;
-    border: var(--border-width) solid var(--color-border);
-    border-radius: var(--radius-panel);
-    background: var(--color-surface);
-    color: var(--color-text);
+    border: var(--border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-box);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
     box-shadow: var(--shadow-depth-1);
     cursor: pointer;
 }
@@ -378,10 +378,10 @@
 }
 
 .memo-section textarea {
-    border-radius: var(--radius-panel);
+    border-radius: var(--radius-box);
     display: block;
     min-height: var(--popup-textarea-height);
-    padding: var(--space-3) var(--control-padding-inline);
+    padding: var(--space-3) var(--space-4);
     resize: none;
 }
 
@@ -392,9 +392,9 @@
     justify-content: center;
     align-items: center;
     padding: var(--action-footer-padding-block) var(--action-footer-padding-inline);
-    border-top: var(--border-width-strong) solid var(--color-divider);
-    background: var(--color-surface);
-    gap: var(--popup-action-gap);
+    border-top: var(--border-width) solid var(--color-neutral-500);
+    background: var(--color-base-100);
+    gap: var(--space-6);
 }
 
 .cancel-button,
@@ -403,8 +403,8 @@
     min-height: var(--popup-control-height);
     flex: 0 0 var(--popup-action-width);
     padding: var(--button-padding-block) var(--button-padding-inline);
-    border-radius: var(--radius-control);
-    font-size: var(--popup-font-size);
+    border-radius: var(--radius-field);
+    font-size: var(--font-size-base);
     font-weight: var(--font-weight-semibold);
     line-height: var(--line-height-sm);
     box-shadow: var(--shadow-depth-1);
@@ -412,20 +412,20 @@
 }
 
 .cancel-button {
-    border: var(--border-width-strong) solid var(--color-primary-border);
-    background: var(--color-canvas);
-    color: var(--color-text);
+    border: var(--border-width) solid var(--color-neutral-500);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
     font-weight: var(--font-weight-medium);
 }
 
 .save-button {
-    border: var(--border-width-strong) solid var(--color-primary);
+    border: var(--border) solid var(--color-primary);
     background: var(--color-primary);
     color: var(--color-primary-content);
 }
 
 .cancel-button:hover {
-    background: var(--color-surface-muted);
+    background: var(--color-base-200);
 }
 
 .save-button:hover {
@@ -438,10 +438,10 @@
 }
 
 .status-message {
-    min-height: var(--field-message-height);
+    min-height: var(--space-5);
     margin: var(--space-1) 0 0;
     color: var(--color-text-muted);
-    font-size: var(--popup-label-size);
+    font-size: var(--font-size-base);
     line-height: var(--line-height-xs);
     text-align: center;
 }
@@ -460,7 +460,7 @@
 .popup-content::-webkit-scrollbar-track {
     margin-block: var(--space-2);
     border-radius: var(--scrollbar-radius);
-    background: var(--color-divider);
+    background: var(--color-base-200);
 }
 .popup-content::-webkit-scrollbar-thumb {
     background: var(--color-text-muted);
