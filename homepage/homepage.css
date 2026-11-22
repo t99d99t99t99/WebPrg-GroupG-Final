@@ -297,7 +297,7 @@ a:hover {
     display: block;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 0.22s;
+    transition: opacity var(--duration-hover) ease-out;
 }
 .zone polygon {
     fill-opacity: 0.45;
@@ -314,7 +314,7 @@ a:hover {
     --hover-grow: 1.05;
     --hover-rise: 3px;
     --hover-lift: translateY(calc(-1 * var(--hover-rise))) scale(var(--hover-grow));
-    --hover-duration: 0.25s;
+    --hover-duration: var(--duration-hover);
 }
 /* While a building's details are open (or a category is selected) one veil covers the whole map
    and fades and blurs what lies under it; emphasized buildings rise above it. One element changes
@@ -333,14 +333,14 @@ a:hover {
     background: color-mix(in srgb, var(--color-base-100) calc((1 - var(--focus-fade-opacity)) * 100%), transparent);
     backdrop-filter: blur(var(--focus-fade-blur));
     transition:
-        opacity var(--hover-duration) ease,
-        visibility 0s linear var(--hover-duration);
+        opacity var(--duration-popup-out) ease-in,
+        visibility 0s linear var(--duration-popup-out);
 }
 .detail-focus #focus-veil {
     opacity: 1;
     visibility: visible;
     transition:
-        opacity var(--hover-duration) ease,
+        opacity var(--duration-popup-in) ease-out,
         visibility 0s;
 }
 
@@ -651,8 +651,8 @@ a:hover {
     margin-bottom: var(--space-2);
     border-radius: var(--radius-field);
     transition:
-        background-color var(--hover-duration) ease-out,
-        box-shadow var(--hover-duration) ease-out;
+        background-color var(--duration-hover) ease-out,
+        box-shadow var(--duration-hover) ease-out;
 }
 /* Same emphasis whether the pointer is on the row itself or on one of its buildings on the map. */
 .category-row:has(.building-hovered),
@@ -1041,6 +1041,28 @@ body.category-dragging * {
 .app-dialog::backdrop {
     background: var(--color-backdrop);
 }
+/* Dialogs and their backdrop fade like the popups in style.css, a little slower. overlay and
+   display stay until the fade-out ends so close() can fade too. */
+.app-dialog,
+.app-dialog::backdrop {
+    opacity: 0;
+    transition:
+        opacity var(--duration-dialog-out) ease-in,
+        overlay var(--duration-dialog-out) allow-discrete,
+        display var(--duration-dialog-out) allow-discrete;
+}
+.app-dialog[open],
+.app-dialog[open]::backdrop {
+    opacity: 1;
+    transition-duration: var(--duration-dialog-in);
+    transition-timing-function: ease-out;
+}
+@starting-style {
+    .app-dialog[open],
+    .app-dialog[open]::backdrop {
+        opacity: 0;
+    }
+}
 .dialog-heading {
     display: flex;
     align-items: center;
@@ -1200,15 +1222,6 @@ body.category-dragging * {
     font-size: var(--font-size-xs);
     line-height: var(--line-height-xs);
     font-weight: var(--font-weight-regular);
-    animation: toast-soft-in 180ms ease-out;
-}
-@keyframes toast-soft-in {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1223,11 +1236,10 @@ body.category-dragging * {
     .building-wall-light,
     .decoration,
     .category-picket,
-    #focus-veil {
+    #focus-veil,
+    .app-dialog,
+    .app-dialog::backdrop {
         transition: none;
-    }
-    .app-toast.toast-subtle {
-        animation: none;
     }
 }
 

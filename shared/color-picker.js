@@ -33,7 +33,7 @@ export function createColorPicker(
         if (text !== undefined) element.textContent = text;
         return element;
     }
-    host.classList.add("category-color-picker");
+    host.classList.add("category-color-picker", "fade-popup");
     host.setAttribute("role", "dialog");
     host.hidden = true;
     const field = node("button", "picker-saturation");

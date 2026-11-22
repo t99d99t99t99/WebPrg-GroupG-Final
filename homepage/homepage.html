@@ -32,7 +32,7 @@
             </main>
 
             <aside class="category-panel" aria-labelledby="category-title">
-                <section id="google-services" hidden>
+                <section id="google-services" class="fade-popup" hidden>
                     <h2 class="google-heading">Google Service</h2>
                     <div class="google-grid">
                         <a id="google-account-link" href="https://myaccount.google.com/" aria-label="Google 계정">
@@ -63,7 +63,7 @@
     </div>
 
     <div id="bookmark-hover-bridge" aria-hidden="true" hidden></div>
-    <section id="bookmark-tooltip" class="bookmark-tooltip" aria-label="북마크 설명" hidden>
+    <section id="bookmark-tooltip" class="bookmark-tooltip fade-popup" aria-label="북마크 설명" hidden>
         <div class="tooltip-heading"><img id="tooltip-icon" class="tooltip-site-icon" src="../assets/icons/icon32.png" width="16" height="16" alt=""><h2 id="tooltip-name">북마크</h2><span id="tooltip-category"></span></div>
         <p id="preview-domain" class="tooltip-domain"></p>
         <label class="memo-heading" for="tooltip-memo">메모</label>
@@ -92,7 +92,7 @@
         <p id="bookmark-delete-status" class="field-error" role="status"></p>
         <div class="form-actions"><button id="cancel-bookmark-delete" class="action" type="button">취소</button><button id="confirm-bookmark-delete" class="action action-primary" type="button">삭제</button></div>
     </dialog>
-    <p id="toast" class="app-toast alert alert-success" role="status" aria-live="polite" hidden></p>
+    <p id="toast" class="app-toast alert alert-success fade-popup" role="status" aria-live="polite" hidden></p>
     <script type="module" src="homepage.js"></script>
 </body>
 </html>
