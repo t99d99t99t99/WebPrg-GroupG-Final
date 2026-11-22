@@ -96,6 +96,76 @@ function isFree(area, others) {
     return others.every((other) => !blocks(area, other));
 }
 
+// Road rings of two areas meet when the areas are at most one cell apart on both axes
+// (corners included); three or more cells leave separate streets.
+function sharesRoad(a, b) {
+    const [gx, gy] = gaps(a, b);
+    return gx <= 1 && gy <= 1;
+}
+
+// True when every area can be reached from every other along the roads (no island).
+function roadsConnected(groups) {
+    if (groups.length < 2) return true;
+    const reached = new Set([groups[0]]);
+    const queue = [groups[0]];
+    while (queue.length) {
+        const group = queue.pop();
+        for (const other of groups) {
+            if (reached.has(other) || !sharesRoad(group.area, other.area)) continue;
+            reached.add(other);
+            queue.push(other);
+        }
+    }
+    return reached.size === groups.length;
+}
+
+// Lands reachable along the roads from `start`.
+function roadComponent(groups, start) {
+    const reached = new Set([start]);
+    const queue = [start];
+    while (queue.length) {
+        const group = queue.pop();
+        for (const other of groups) {
+            if (reached.has(other) || !sharesRoad(group.area, other.area)) continue;
+            reached.add(other);
+            queue.push(other);
+        }
+    }
+    return reached;
+}
+
+// When pulling in still leaves an island (blocked by the double-road rule), move island lands one
+// at a time to the nearest free spot that shares a road with the main network. Pinned lands stay.
+function reconnect(groups, pinned) {
+    for (let rounds = 0; rounds < groups.length * 2 && !roadsConnected(groups); rounds++) {
+        const middle = groups.reduce((best, group) =>
+            screenDistance(...centerOf(group.area), 0, 0) < screenDistance(...centerOf(best.area), 0, 0) ? group : best,
+        );
+        const main = roadComponent(groups, middle);
+        const islands = groups.filter((group) => !main.has(group) && !pinned.has(String(group.category.id)));
+        if (!islands.length) return;
+        let best = null;
+        for (const group of islands) {
+            const others = groups.filter((item) => item !== group).map((item) => item.area);
+            const { w, h } = group.area;
+            const [cx, cy] = centerOf(group.area);
+            for (const target of main) {
+                const t = target.area;
+                for (let y = t.y - h - 1; y <= t.y + t.h + 1; y++) {
+                    for (let x = t.x - w - 1; x <= t.x + t.w + 1; x++) {
+                        const area = { x, y, w, h };
+                        if (!sharesRoad(area, t) || !isFree(area, others)) continue;
+                        const cost = screenDistance(x + w / 2, y + h / 2, cx, cy);
+                        if (!best || cost < best.cost) best = { group, area, cost };
+                    }
+                }
+            }
+        }
+        if (!best) return;
+        moveTo(best.group, best.area);
+    }
+}
+
 // Closest free position for a w*h area to the point (nearX, nearY).
 function findSpot(w, h, obstacles, nearX, nearY) {
     let minX = Math.floor(nearX) - w;
@@ -402,7 +472,8 @@ function placeBuildings(group, spread) {
 /**
  * Plans the whole city from saved data.
  * Returns the groups to draw and `changed`, the areas and cells that differ from storage.
- * Areas are pulled toward the middle only when one shrank, so a saved plan stays as it is.
+ * Areas are pulled toward the middle only when one shrank or the roads fell apart into islands,
+ * so a saved plan stays as it is.
  * A building move (building-move.js) passes `compactAll` to also close gaps the move opened,
  * and `pinned` (category ids) for the lands the building left and went into, so they stay put.
  * @param {object[]} savedCategories
@@ -455,7 +526,10 @@ export function planCity(savedCategories, savedBookmarks, { pinned = [], compact
         placed.push(group);
     }
 
-    if (shrank || compactAll) compact(placed, new Set(pinnedIds));
+    // Deleting a land can cut the road network, leaving the lands beyond it as an island:
+    // pull everything together then too.
+    if (shrank || compactAll || !roadsConnected(placed)) compact(placed, new Set(pinnedIds));
+    reconnect(placed, new Set(pinnedIds));
     // A shrunk area can leave two cells to a neighbour it used to share a road with.
     fixDoubleRoads(placed, pinnedIds);
 
