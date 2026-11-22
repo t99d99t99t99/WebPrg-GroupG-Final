@@ -1063,21 +1063,6 @@ body.category-dragging * {
         opacity: 0;
     }
 }
-.dialog-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: var(--space-6);
-}
-.dialog-heading h2 {
-    margin: 0;
-    font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-bold);
-    line-height: var(--line-height-lg);
-}
-.dialog-heading .icon-button {
-    font-size: var(--font-size-xl);
-}
 .bookmark-editor {
     width: var(--popup-width);
     height: var(--edit-modal-height);
@@ -1094,11 +1079,55 @@ body.category-dragging * {
     display: flex;
     height: 100%;
     flex-direction: column;
-    gap: var(--space-6);
-    padding: var(--space-4) var(--action-footer-padding-inline) 0;
 }
-.bookmark-editor .dialog-heading {
-    margin-bottom: 0;
+/* Same header and field rhythm as the save popup (Figma USER-MAIN-EDIT). */
+.editor-content {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--popup-padding-block-start) var(--popup-padding-inline) 0;
+    overflow-y: auto;
+}
+.editor-heading {
+    display: flex;
+    min-width: 0;
+    height: var(--popup-header-height);
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--popup-header-gap);
+}
+.editor-logo {
+    display: grid;
+    width: var(--popup-header-icon-size);
+    height: var(--popup-header-icon-size);
+    flex: 0 0 var(--popup-header-icon-size);
+    place-items: center;
+    border-radius: var(--radius-selector);
+    background: var(--color-base-300);
+    font-size: var(--font-size-lg);
+    line-height: var(--line-height-md);
+}
+.editor-heading h2 {
+    margin: 0;
+    color: var(--color-base-content);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-md);
+}
+.editor-divider {
+    flex: 0 0 var(--border-width);
+    margin-top: calc(var(--space-3) - var(--space-4));
+    background: var(--color-neutral-500);
+}
+.editor-content .field-error:empty {
+    display: none;
+}
+/* While the editor is open the rest of the map fades to 45% with a 1px blur (the veil, see #focus-veil). */
+#world.editor-focus {
+    --focus-fade-opacity: 0.45;
+    --focus-fade-blur: 1px;
 }
 .form-group {
     display: grid;
@@ -1109,9 +1138,8 @@ body.category-dragging * {
     margin: 0;
 }
 .bookmark-editor .form-actions {
-    width: calc(100% + var(--action-footer-padding-inline) + var(--action-footer-padding-inline));
     min-height: var(--action-footer-height);
-    margin: auto calc(-1 * var(--action-footer-padding-inline)) 0;
+    margin-top: auto;
     padding: var(--action-footer-padding-block) var(--action-footer-padding-inline);
     gap: var(--space-6);
     border-top: var(--border-width) solid var(--color-neutral-500);

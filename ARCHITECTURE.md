@@ -36,6 +36,7 @@
 | `shared/` | 홈페이지 이름·URL 검증, 사이트 아이콘 URL 생성, 키보드로 조작할 수 있는 카테고리 선택 목록 |
 | `shared/building-designs.js` | 건물 5개 계열의 성장 에셋과 좌우 방향별 기본 디자인 10종. 팝업 선택·DB 검증·지도 렌더링이 공유 |
 | `shared/site-icons.js` | Chrome Favicon API 조회 URL 생성, 저장할 아이콘 URL 검증, 지도·호버 카드가 함께 쓰는 북마크 아이콘 주소(`bookmarkIconUrl`) |
+| `shared/building-picker.js`, `shared/building-picker.css` | 홈페이지 북마크 수정 창의 건물 디자인 선택 띠(좌우 화살표, 3개씩 표시, 카테고리 색 벽면 미리보기). 팝업은 아직 같은 모양의 자체 코드를 씀 |
 | `shared/color-picker.js`, `shared/color-picker.css` | 홈페이지와 팝업이 함께 쓰는 컬러피커 UI·스타일. 채도/밝기 드래그·방향키, 색조, HEX, 스포이트, Escape·바깥 클릭 닫기. 저장은 호출 화면에서 처리 |
 | `homepage/google-account.js` | 계정 표시 전용 어댑터. 전달받은 이름·HTTPS 사진 URL을 표시하고 사진 부재·실패 시 기본 아바타로 복귀. 인증·권한·저장소 접근 없음 |
 | `homepage/category-manager.js` | 카테고리 목록 패널. 생성·이름 수정·드래그 순서 이동·삭제 확인, 색상 칩으로 컬러피커 열기(연필로 이름을 수정할 때도 함께 열림), 휴지통 버튼으로 삭제 창 열기, 카테고리 강조 선택 |
@@ -61,7 +62,7 @@
 
 | 화면 | manifest 항목 | 불러오는 순서 |
 |---|---|---|
-| 새 탭 | `chrome_url_overrides.newtab` | `homepage/homepage.html` → `daisyui.generated.css`, `style.css`, `homepage.css`, `shared/color-picker.css`, `homepage.js`(module) |
+| 새 탭 | `chrome_url_overrides.newtab` | `homepage/homepage.html` → `daisyui.generated.css`, `style.css`, `homepage.css`, `shared/color-picker.css`, `shared/building-picker.css`, `homepage.js`(module) |
 | 팝업 | `action.default_popup` | `popup/popup.html` → `daisyui.generated.css`, `style.css`, `popup.css`, `shared/color-picker.css`, `popup.js`(module) |
 
 ## 호출 관계
@@ -94,7 +95,8 @@ popup/popup.js / homepage/category-manager.js ──> db/category.js (기본 카
 popup/popup.js ──> homepage/category-colors.js (기존 카테고리 색상·새 카테고리 초기 색상)
 popup/popup.js ──> homepage/building-appearance.js (미리보기 벽면 마스크)
 popup/popup.js / homepage/homepage.js ──> shared/color-picker.js
-popup/popup.js / db/bookmark.js / homepage/building-rules.js ──> shared/building-designs.js
+popup/popup.js / db/bookmark.js / homepage/building-rules.js / shared/building-picker.js ──> shared/building-designs.js
+homepage/homepage.js ──> shared/building-picker.js ──> homepage/building-appearance.js / homepage/category-colors.js (벽면 마스크·색)
 homepage/category-manager.js ──> db/db.js
 homepage/homepage.js ──> shared/
 homepage/category-manager.js / db/db.js / db/bookmark.js / db/category.js ──> shared/validation.js
@@ -113,7 +115,7 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 - 팝업은 `Bookmark`, `Category` 클래스와 `add` API로 현재 페이지를 저장합니다. 팝업은 374×600 크기의 각진 컨테이너이며 입력 영역만 세로 스크롤하고 하단 74px 영역의 작업 버튼은 고정합니다. 현재 탭 제목을 초기 페이지 이름으로 표시하며, 이름은 빈 값만 거부하고 이름·메모 모두 언어·기호·글자 수 제한 없이 저장합니다. 홈페이지 이름 수정과 메모도 같은 제한을 적용합니다. 긴 이름은 입력란·지도 라벨에서 말줄임하고 상세 카드에서 줄바꿈합니다.
 - 새 카테고리 입력은 “일반”으로 시작하며 한글·영문·숫자·공백 10자 이내, 빈 값·이름 중복 금지 규칙을 UI와 DB에서 검사합니다. 기존 카테고리 목록은 `shared/category-select.js`로 색상 칩과 이름을 함께 표시하고 4개 항목 높이에서 스크롤합니다. 새 카테고리는 임의의 팔레트 색상으로 시작하며 색상 선택기·HEX 입력으로 바꿉니다. 불투명도는 100%로 표시합니다. 선택한 색상은 기존 `color` 필드에 저장합니다.
 - 건물 선택은 5개 계열의 좌우 방향별 기본 디자인 10종이며 기본값은 도심 주택 왼쪽입니다. 선택 상태는 회색 반투명 배경으로 강조하며 양 끝의 진행 불가 화살표는 숨깁니다. 미리보기는 홈페이지와 같은 벽면 마스크, 색상 블렌딩 및 `wallColorAdjustments`를 사용하고 카테고리 선택·색상·HEX 변경 즉시 갱신합니다. 선택값은 북마크의 `buildingDesign` 필드에 저장하며, 지도는 선택한 계열·방향과 카테고리 색상을 적용합니다. 선택값이 없으면 ID 기반으로 결정합니다.
-- 상세 카드의 메모 입력과 북마크 수정은 `BookmarkDB.edit`를 사용합니다. 수정 창은 변경된 이름·URL만 검증합니다. 북마크 삭제는 상세 카드의 삭제 버튼에서 확인 창을 거쳐 `BookmarkDB.remove`를 사용합니다. 카테고리 삭제는 `deleteCategory`가 카테고리와 포함된 북마크를 함께 삭제합니다. 순서는 카테고리 배열 순서로 저장합니다.
+- 상세 카드의 메모 입력과 북마크 수정은 `BookmarkDB.edit`를 사용합니다. 수정 창은 변경된 이름·URL만 검증하고, 건물 디자인은 처음 표시한 디자인(저장값 또는 지도가 ID로 정한 계열·방향)에서 바뀐 경우에만 `buildingDesign`으로 저장합니다. 수정 창이 열린 동안 지도는 45%·blur 1px로 흐려지고(`#world.editor-focus`가 흐림 막 값을 바꿈) 수정 중인 건물은 선명하게 남습니다. 북마크 삭제는 상세 카드의 삭제 버튼에서 확인 창을 거쳐 `BookmarkDB.remove`를 사용합니다. 카테고리 삭제는 `deleteCategory`가 카테고리와 포함된 북마크를 함께 삭제합니다. 순서는 카테고리 배열 순서로 저장합니다.
 - DB는 초기화가 끝난 뒤 저장소를 읽습니다. 조회 시 최신 데이터를 다시 읽어 다른 탭의 저장을 반영합니다.
 - 두 저장 키가 모두 없는 최초 환경에서만 시연 데이터를 넣습니다. 기존 배열은 빈 배열이어도 덮어쓰지 않습니다. Web Locks로 여러 탭의 초기화를 직렬화합니다.
 - 지도는 저장 변경 알림, 화면 재진입(다른 탭에서 돌아옴), 새 탭 로드 시 데이터를 갱신합니다. 메모·NEW·미리보기 필드만 바뀐 저장은 다시 그리지 않습니다. 팝업과 홈페이지는 저장소와 객체 형식을 공유합니다.
