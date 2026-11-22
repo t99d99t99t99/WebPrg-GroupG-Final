@@ -101,7 +101,8 @@ function measureAnchor(image) {
     const canvas = document.createElement("canvas");
     canvas.width = w;
     canvas.height = h;
-    const context = canvas.getContext("2d");
+    // Read back on the CPU: a GPU canvas makes getImageData slow.
+    const context = canvas.getContext("2d", { willReadFrequently: true });
     context.drawImage(image, 0, 0);
     const { data } = context.getImageData(0, 0, w, h);
     let [left, right, bottom] = [w, -1, -1];
@@ -122,10 +123,10 @@ function anchorVehicle(image) {
     image.addEventListener("load", () => {
         const src = image.getAttribute("src");
         if (!anchors.has(src)) anchors.set(src, measureAnchor(image));
-        const { x, y } = anchors.get(src);
-        image.style.transform = `translate(${-x}px, ${-y}px)`;
     });
 }
+// Pedestrian feet (row 30 of the 24x32 sprite) sit on the point.
+const PEDESTRIAN_ANCHOR = { x: 12, y: 30 };
 
 export function createTraffic(container) {
     let roads = new Map();
@@ -277,8 +278,9 @@ export function createTraffic(container) {
     function place(mover, src, z) {
         const { left, top } = project(mover.position.x, mover.position.y);
         if (mover.image.getAttribute("src") !== src) mover.image.src = src;
-        mover.image.style.left = `${left}px`;
-        mover.image.style.top = `${top - (mover.altitude ?? 0)}px`;
+        // Moved by transform only, so a frame of traffic does not make the browser lay out the map again.
+        const anchor = mover.kind === PEDESTRIAN ? PEDESTRIAN_ANCHOR : (anchors.get(src) ?? { x: 0, y: 0 });
+        mover.image.style.transform = `translate(${left - anchor.x}px, ${top - (mover.altitude ?? 0) - anchor.y}px)`;
         mover.image.style.zIndex = String(z);
     }
 
@@ -459,11 +461,11 @@ export function createTraffic(container) {
                 y: from.y + (to.y - from.y) * helicopter.progress,
             };
             const frame = Math.floor(helicopter.frame) + 1;
-            // Flies above every building but under the focused building (1999) and name labels (2000).
+            // Flies above every building, but under the focus veil (1300) so it fades with the map.
             place(
                 helicopter,
                 `${ASSETS}/Vehicles/veh_helicopter_${helicopter.color}_${helicopter.direction}_f${frame}.png`,
-                1900,
+                1250,
             );
             if (helicopter.progress >= 1) {
                 helicopter.image.remove();
