@@ -297,7 +297,7 @@ a:hover {
     display: block;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 0.22s;
+    transition: opacity var(--duration-hover) ease-out;
 }
 .zone polygon {
     fill-opacity: 0.45;
@@ -314,22 +314,34 @@ a:hover {
     --hover-grow: 1.05;
     --hover-rise: 3px;
     --hover-lift: translateY(calc(-1 * var(--hover-rise))) scale(var(--hover-grow));
-    --hover-duration: 0.25s;
+    --hover-duration: var(--duration-hover);
 }
-/* Fade in and out smoothly instead of switching at once. */
-#ground,
-#zones,
-.building,
-.decoration,
-.category-picket {
+/* While a building's details are open (or a category is selected) one veil covers the whole map
+   and fades and blurs what lies under it; emphasized buildings rise above it. One element changes
+   instead of every tile, prop and building, which kept hovering smooth on large maps.
+   Depth: map items 1000 + x + y < veil 1300 < emphasized items (depth + 400) < focused 1999. */
+#focus-veil {
+    position: absolute;
+    left: -50000px;
+    top: -50000px;
+    width: 100000px;
+    height: 100000px;
+    z-index: 1300;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    background: color-mix(in srgb, var(--color-base-100) calc((1 - var(--focus-fade-opacity)) * 100%), transparent);
+    backdrop-filter: blur(var(--focus-fade-blur));
     transition:
-        opacity var(--hover-duration) ease,
-        filter var(--hover-duration) ease;
+        opacity var(--duration-popup-out) ease-in,
+        visibility 0s linear var(--duration-popup-out);
 }
-.detail-focus #ground,
-.detail-focus #zones {
-    opacity: var(--focus-fade-opacity);
-    filter: blur(var(--focus-fade-blur));
+.detail-focus #focus-veil {
+    opacity: 1;
+    visibility: visible;
+    transition:
+        opacity var(--duration-popup-in) ease-out,
+        visibility 0s;
 }
 
 /* City life on the roads (homepage/traffic.js). Drawn at native pixel size; never takes the pointer. */
@@ -337,16 +349,16 @@ a:hover {
 .traffic-car,
 .traffic-helicopter {
     position: absolute;
+    /* traffic.js moves them with transform only (no layout work per frame). */
+    left: 0;
+    top: 0;
+    will-change: transform;
     max-width: none;
     pointer-events: none;
     image-rendering: pixelated;
     /* Fade in/out with a transition, not an animation: traffic.js re-inserts elements to keep depth
        order, which would restart an animation (flicker) but does not replay a transition. */
     transition: opacity 0.6s ease;
-}
-/* Pedestrian feet (row 30 of the 24x32 sprite) sit on the point. Vehicles are anchored in traffic.js. */
-.traffic-pedestrian {
-    transform: translate(-12px, -30px);
 }
 /* Traffic lights: the centre of the pole's base (x 5, y 38 of the sprite; the shadow runs below it) sits on the point. */
 .traffic-light {
@@ -355,11 +367,6 @@ a:hover {
     pointer-events: none;
     image-rendering: pixelated;
     transform: translate(-5px, -38px);
-}
-/* Fade with the rest of the map while a building's details are open. Per element, to keep depth order. */
-.detail-focus #traffic > * {
-    opacity: var(--focus-fade-opacity);
-    filter: blur(var(--focus-fade-blur));
 }
 .traffic-car.leaving {
     opacity: 0;
@@ -482,13 +489,12 @@ a:hover {
     border-top: 0;
     background: #8a5a2e;
 }
-.detail-focus .building:not(.emphasized-building),
-.detail-focus .category-picket,
-.detail-focus .decoration {
-    opacity: var(--focus-fade-opacity);
-    filter: blur(var(--focus-fade-blur));
+.detail-focus .building.emphasized-building {
+    /* biome-ignore lint/complexity/noImportantStyles: lift above the focus veil, over the per-cell inline depth. */
+    z-index: calc(var(--depth) + 400) !important;
 }
-.building.focused-building {
+.building.focused-building,
+.detail-focus .building.focused-building.emphasized-building {
     /* biome-ignore lint/complexity/noImportantStyles: selected building must be above per-cell inline depth. */
     z-index: 1999 !important;
 }
@@ -645,10 +651,12 @@ a:hover {
     margin-bottom: var(--space-2);
     border-radius: var(--radius-field);
     transition:
-        background-color var(--hover-duration) ease-out,
-        box-shadow var(--hover-duration) ease-out;
+        background-color var(--duration-hover) ease-out,
+        box-shadow var(--duration-hover) ease-out;
 }
-.category-row:has(.building-hovered) {
+/* Same emphasis whether the pointer is on the row itself or on one of its buildings on the map. */
+.category-row:has(.building-hovered),
+.category-row:has(.category-filter):hover {
     background-color: color-mix(in srgb, var(--color-primary) 12%, transparent);
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 24%, transparent);
 }
@@ -670,7 +678,6 @@ a:hover {
     transition: none;
 }
 body.category-dragging,
-/* biome-ignore lint/style/noDescendingSpecificity: global drag cursor does not override map opacity styles. */
 body.category-dragging * {
     cursor: grabbing;
     user-select: none;
@@ -704,7 +711,8 @@ body.category-dragging * {
     line-height: var(--line-height-sm);
 }
 .category-filter[aria-pressed="true"],
-.category-filter.building-hovered {
+.category-filter.building-hovered,
+.category-row:hover .category-filter {
     font-weight: var(--font-weight-bold);
     color: var(--color-primary);
 }
@@ -1033,6 +1041,28 @@ body.category-dragging * {
 .app-dialog::backdrop {
     background: var(--color-backdrop);
 }
+/* Dialogs and their backdrop fade like the popups in style.css, a little slower. overlay and
+   display stay until the fade-out ends so close() can fade too. */
+.app-dialog,
+.app-dialog::backdrop {
+    opacity: 0;
+    transition:
+        opacity var(--duration-dialog-out) ease-in,
+        overlay var(--duration-dialog-out) allow-discrete,
+        display var(--duration-dialog-out) allow-discrete;
+}
+.app-dialog[open],
+.app-dialog[open]::backdrop {
+    opacity: 1;
+    transition-duration: var(--duration-dialog-in);
+    transition-timing-function: ease-out;
+}
+@starting-style {
+    .app-dialog[open],
+    .app-dialog[open]::backdrop {
+        opacity: 0;
+    }
+}
 .dialog-heading {
     display: flex;
     align-items: center;
@@ -1192,15 +1222,6 @@ body.category-dragging * {
     font-size: var(--font-size-xs);
     line-height: var(--line-height-xs);
     font-weight: var(--font-weight-regular);
-    animation: toast-soft-in 180ms ease-out;
-}
-@keyframes toast-soft-in {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1214,11 +1235,11 @@ body.category-dragging * {
     .building-wall-tint,
     .building-wall-light,
     .decoration,
-    .category-picket {
+    .category-picket,
+    #focus-veil,
+    .app-dialog,
+    .app-dialog::backdrop {
         transition: none;
-    }
-    .app-toast.toast-subtle {
-        animation: none;
     }
 }
 

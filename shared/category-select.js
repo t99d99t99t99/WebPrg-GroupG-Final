@@ -10,7 +10,7 @@ export function categorySelect(
     trigger.setAttribute("aria-haspopup", "listbox");
     trigger.setAttribute("aria-expanded", "false");
     const list = document.createElement("div");
-    list.className = "category-options";
+    list.className = "category-options fade-popup";
     list.id = `categories-${crypto.randomUUID()}`;
     list.setAttribute("role", "listbox");
     list.setAttribute("aria-label", label);

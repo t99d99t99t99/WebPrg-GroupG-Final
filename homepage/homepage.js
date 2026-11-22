@@ -5,9 +5,11 @@ import {
     dismissNewBefore,
     importChromeBookmarks,
     moveBookmark,
+    settings,
     subscribe,
     updateCity,
 } from "../db/db.js";
+import { DEFAULT_SETTINGS } from "../db/settings.js";
 import { categorySelect } from "../shared/category-select.js";
 import { createColorPicker } from "../shared/color-picker.js";
 import { bookmarkIconUrl } from "../shared/site-icons.js";
@@ -47,6 +49,8 @@ let draftColorChange = null;
 let buildingIndex = new SpatialIndex();
 let obstructedBuildings = new Set();
 let drawnSignature = null;
+// "지도 장식 밀도" from the saved settings, read on every render.
+let decorationDensity = DEFAULT_SETTINGS.decorationDensity;
 let emphasizedBuildings = new Set();
 let renderedGroups = new Map();
 const buildingWorldRects = new WeakMap();
@@ -399,6 +403,8 @@ function createBuilding(bookmark, category, cell, labels, interactive = true) {
     wrapper.style.left = `${position.left}px`;
     wrapper.style.top = `${position.top}px`;
     wrapper.style.zIndex = String(1000 + cell.x + cell.y);
+    // Same depth as a CSS variable, so an emphasized building can rise above the focus veil in order.
+    wrapper.style.setProperty("--depth", String(1000 + cell.x + cell.y));
     const link = element("a", "building-link");
     const url = safeUrl(bookmark.url);
     if (url) link.href = url.href;
@@ -718,6 +724,7 @@ function createPicket(cell, category) {
 
 function groupRenderKey(group) {
     return JSON.stringify([
+        decorationDensity,
         group.category,
         group.area,
         group.picket,
@@ -772,7 +779,7 @@ function drawCity(groups, preview = null) {
                 for (const prop of yardFor(bookmark.id, cells.get(bookmark.id)))
                     map.append(createDecoration(prop, category.id));
         }
-        for (const prop of decorationsFor(group)) map.append(createDecoration(prop, category.id));
+        for (const prop of decorationsFor(group, decorationDensity)) map.append(createDecoration(prop, category.id));
         if (group.picket) map.append(createPicket(group.picket, category));
         const entry = { key };
         for (const [name, fragment] of Object.entries({ ground, zones, map, labels })) {
@@ -816,8 +823,9 @@ async function render() {
     }
     const version = ++renderVersion;
     try {
-        const { groups, total } = await arrangeCity();
+        const [{ groups, total }, mapSettings] = await Promise.all([arrangeCity(), settings.get()]);
         if (version !== renderVersion) return;
+        decorationDensity = mapSettings.decorationDensity;
         if (buildingDrag.isDragging()) {
             renderWaiting = true;
             return;
@@ -826,7 +834,8 @@ async function render() {
         mapState = { snapshot, fingerprint: layoutFingerprint(snapshot.categories, snapshot.bookmarks) };
         hideTooltip();
         lastGroups = groups;
-        const signature = JSON.stringify(
+        const signature = JSON.stringify([
+            decorationDensity,
             groups
                 .map((group) => ({
                     id: group.category.id,
@@ -842,7 +851,7 @@ async function render() {
                         .sort((a, b) => String(a.id).localeCompare(String(b.id))),
                 }))
                 .sort((a, b) => String(a.id).localeCompare(String(b.id))),
-        );
+        ]);
         if (signature !== drawnSignature) {
             drawCity(groups);
             drawnSignature = signature;
