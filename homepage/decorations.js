@@ -33,6 +33,10 @@ const PLANTS = [
 const TREE_SHARE = 0.25; // cells with a tree and a plant or two in front of it
 const FURNITURE_SHARE = 0.15; // cells with one piece of street furniture and a plant or two
 const YARD_SHARE = 0.7; // houses with a front fence and a mailbox
+// Share of a land's empty cells that get decorations, by the "지도 장식 밀도" setting. "high" decorates
+// every cell. Each cell has its own fixed roll, so a higher density keeps the decorations of a lower one
+// and only adds more.
+const DENSITY_SHARE = { low: 0.35, normal: 0.65, high: 1 };
 // Fence sprites run along the x axis ("\" on screen); mirrored they run along the y axis. Their base line sits
 // lower in the image than a standing prop's feet.
 const FENCES = ["fence_wood_a", "fence_wood_b"];
@@ -48,15 +52,19 @@ const prop = (name, x, y, extra = {}) => ({ x, y, src: `${PROPS}/prop_${name}.pn
 
 /**
  * @param {{category: {id: string}, area: {x:number,y:number,w:number,h:number}, cells: Map, picket: {x:number,y:number}|null}} group
+ * @param {"low"|"normal"|"high"} [density]
  * @returns {{x: number, y: number, src: string, flip?: boolean, anchor?: number}[]} grid points where each prop stands
  */
-export function decorationsFor({ category, area, cells, picket }) {
+export function decorationsFor({ category, area, cells, picket }, density = "high") {
+    const share = DENSITY_SHARE[density] ?? 1;
     const taken = new Set([...cells.values()].map((cell) => `${cell.x},${cell.y}`));
     if (picket) taken.add(`${picket.x},${picket.y}`);
     const props = [];
     for (let y = area.y; y < area.y + area.h; y++) {
         for (let x = area.x; x < area.x + area.w; x++) {
             if (taken.has(`${x},${y}`)) continue;
+            // A separate roll from the one choosing what grows here, so the choices stay the same.
+            if (hashText(`density:${category.id}:${x - area.x},${y - area.y}`) / 4294967296 >= share) continue;
             const roll = roller(`${category.id}:${x - area.x},${y - area.y}`);
             const at = (from, to) => from + roll() * (to - from);
             const cell = [];
