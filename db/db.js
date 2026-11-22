@@ -3,11 +3,13 @@ import { siteIconUrlForPage } from "../shared/site-icons.js";
 import { webUrl } from "../shared/validation.js";
 import { BookmarkDB } from "./bookmark.js";
 import { CategoryDB, GENERAL_CATEGORY_NAME, generalCategoryLast, isGeneralCategory } from "./category.js";
+import { SettingsDB } from "./settings.js";
 import { storage, subscribeStorage, withWriteLock } from "./storage.js";
 
 const BOOKMARK_DB_KEY = "webprg-bookmarkmap-bookmarks";
 const CATEGORY_DB_KEY = "webprg-bookmarkmap-categories";
 const ICON_BACKFILL_KEY = "webprg-bookmarkmap-icon-backfill-v1";
+const SETTINGS_DB_KEY = "webprg-bookmarkmap-settings";
 
 export async function backfillMissingBookmarkIcons(once = false) {
     await ready;
@@ -86,6 +88,7 @@ export const ready = globalThis.navigator?.locks
 
 export const bookmarks = new BookmarkDB(BOOKMARK_DB_KEY, ready, CATEGORY_DB_KEY);
 export const categories = new CategoryDB(CATEGORY_DB_KEY, ready);
+export const settings = new SettingsDB(SETTINGS_DB_KEY, ready);
 
 export async function importChromeBookmarks(tree) {
     await ready;
@@ -189,7 +192,12 @@ export async function saveCategoryColors(colors) {
 
 export function subscribe(listener) {
     return subscribeStorage((changes) => {
-        if (Object.keys(changes).length === 0 || BOOKMARK_DB_KEY in changes || CATEGORY_DB_KEY in changes)
+        if (
+            Object.keys(changes).length === 0 ||
+            BOOKMARK_DB_KEY in changes ||
+            CATEGORY_DB_KEY in changes ||
+            SETTINGS_DB_KEY in changes
+        )
             listener(changes);
     });
 }
