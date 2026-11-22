@@ -148,4 +148,22 @@ export class BookmarkDB {
             return bookmark.clickCount;
         });
     }
+
+    // Puts the given bookmarks in this order, in the array slots they already take (the category
+    // panel lists a category's buildings in array order). Other bookmarks and all fields stay as they are.
+    async reorder(ids) {
+        await this.ready;
+        return withWriteLock(async () => {
+            const saved = await this.get();
+            const wanted = [...new Set(ids.map(String))];
+            const slots = saved.flatMap((item, index) => (wanted.includes(String(item.id)) ? [index] : []));
+            const ordered = wanted.map((id) => saved.find((item) => String(item.id) === id)).filter(Boolean);
+            if (ordered.length !== slots.length) throw new Error("북마크 목록이 바뀌었습니다. 다시 시도해 주세요.");
+            const next = [...saved];
+            slots.forEach((slot, index) => {
+                next[slot] = ordered[index];
+            });
+            await storage.set({ [this.key]: next });
+        });
+    }
 }

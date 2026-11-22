@@ -43,6 +43,10 @@ let toastTimer;
 let renderVersion = 0;
 let lastCityTiles = [];
 let selectedCategory = null;
+// A building row in the category panel that opened the detail card, and the bookmark whose card
+// a click on such a row pinned (stays open until unpinned; see selectBuilding).
+let panelAnchor = null;
+let pinnedBookmark = null;
 let pickerCategory = null;
 let colorSaveTimer;
 let pendingColorChange = null;
@@ -138,11 +142,20 @@ function hideTooltip() {
     activeLink = null;
     setObstructedBuildings();
     for (const item of $("buildings").querySelectorAll(".focused-building")) item.classList.remove("focused-building");
+    panelAnchor = null;
+    pinnedBookmark = null;
+    syncPanelRows();
     syncMapEmphasis();
 }
 
 function scheduleHide(event) {
     if ($("bookmark-editor").open) return;
+    // A pinned card closes only when the pointer leaves the card itself (other rules: selectBuilding).
+    if (pinnedBookmark !== null) {
+        if (event.type === "mouseleave" && event.currentTarget === tooltip && !tooltip.contains(event.relatedTarget))
+            hideTooltip();
+        return;
+    }
     const next = event.relatedTarget;
     if (next && (tooltip.contains(next) || hoverBridge.contains(next) || activeLink?.contains(next))) return;
     if (event.type === "mouseleave" && inHoverCorridor(event.clientX, event.clientY)) return;
@@ -351,8 +364,31 @@ function applyFilter() {
             "aria-pressed",
             String(row.dataset.category === selectedCategory),
         );
+        // The selected category lists its buildings under its row.
+        const buildings = row.querySelector(".building-list");
+        if (buildings) buildings.hidden = row.dataset.category !== selectedCategory;
     }
+    syncPanelRows();
     highlightCategory(selectedCategory);
+}
+
+function syncPanelRows() {
+    for (const button of document.querySelectorAll(".category-panel .building-row-select"))
+        button.setAttribute("aria-pressed", String(button.dataset.bookmark === String(pinnedBookmark)));
+}
+
+// Shows a building's detail card from its row in the category panel, as hovering the building does.
+function showFromPanel(id, row) {
+    const link = $("buildings").querySelector(`.building[data-bookmark="${CSS.escape(String(id))}"] .building-link`);
+    for (const group of lastGroups) {
+        const bookmark = group.items.find((item) => String(item.id) === String(id));
+        if (!bookmark || !link) continue;
+        panelAnchor = row;
+        highlightCategory(group.category.id);
+        showTooltip(bookmark, group.category, link);
+        return true;
+    }
+    return false;
 }
 
 function paintCategory(categoryId, color) {
@@ -480,6 +516,7 @@ function createBuilding(bookmark, category, cell, labels, interactive = true) {
     }
     buildingDrag.attach(link, wrapper, bookmark);
     link.addEventListener("mouseenter", (event) => {
+        if (pinnedBookmark !== null) return;
         if (activeLink && activeLink !== link && inHoverCorridor(event.clientX, event.clientY)) return;
         highlightCategory(category.id);
         showTooltip(bookmark, category, link);
@@ -489,7 +526,9 @@ function createBuilding(bookmark, category, cell, labels, interactive = true) {
         highlightCategory(selectedCategory);
         scheduleHide(event);
     });
-    link.addEventListener("focus", () => showTooltip(bookmark, category, link));
+    link.addEventListener("focus", () => {
+        if (pinnedBookmark === null) showTooltip(bookmark, category, link);
+    });
     link.addEventListener("blur", scheduleHide);
     link.addEventListener("click", (event) => {
         if (!url) {
@@ -687,8 +726,29 @@ const renderCategories = categoryManager({
     highlightCategory: (id) => highlightCategory(id ?? selectedCategory),
     toast,
     toggleCategory(id) {
+        if (pinnedBookmark !== null) hideTooltip();
         selectedCategory = selectedCategory === id ? null : id;
         applyFilter();
+    },
+    // Hovering a building row previews it like hovering the building; nothing changes while a card is pinned.
+    hoverBuilding(id, row) {
+        if (pinnedBookmark !== null) return;
+        if (id !== null) showFromPanel(id, row);
+        else if (panelAnchor === row) {
+            highlightCategory(selectedCategory);
+            hideTooltip();
+        }
+    },
+    // Clicking a row pins its card; clicking the same row again unpins. Another row, a category name, the
+    // empty map, or leaving the card after entering it also unpins (scheduleHide, document click).
+    selectBuilding(id, row) {
+        if (String(pinnedBookmark) === String(id)) {
+            hideTooltip();
+            return;
+        }
+        if (!showFromPanel(id, row)) return;
+        pinnedBookmark = id;
+        syncPanelRows();
     },
 });
 
@@ -893,7 +953,10 @@ function positionColorPicker(picker, trigger) {
         anchor = trigger.getBoundingClientRect();
     const scaleX = bounds.width / canvas.offsetWidth,
         scaleY = bounds.height / canvas.offsetHeight;
-    picker.style.left = `${Math.max(8, (anchor.left - bounds.left) / scaleX - picker.offsetWidth - 10)}px`;
+    // Figma USER-MAIN-CATEGORY-002: 16px (component/category-panel-overlay-gap) left of the category panel,
+    // top level with the color chip; recomputed from both boxes each time it opens.
+    const panel = trigger.closest(".category-panel")?.getBoundingClientRect() ?? anchor;
+    picker.style.left = `${Math.max(8, (panel.left - bounds.left) / scaleX - picker.offsetWidth - 16)}px`;
     picker.style.top = `${Math.max(8, (anchor.top - bounds.top) / scaleY)}px`;
 }
 
@@ -934,6 +997,12 @@ async function persistPendingColor() {
 
 tooltip.addEventListener("mouseleave", scheduleHide);
 document.addEventListener("click", (event) => {
+    // A click outside the pinned card and the panel's rows unpins it (rows and category names handle their own).
+    if (
+        pinnedBookmark !== null &&
+        !event.target.closest("#bookmark-tooltip, #bookmark-editor, .building-row, .category-filter")
+    )
+        hideTooltip();
     if (selectedCategory === null || event.defaultPrevented) return;
     const target = event.target;
     // Category controls retain their own selection/switching behavior.
@@ -947,6 +1016,7 @@ document.addEventListener("click", (event) => {
 });
 document.addEventListener("mousemove", (event) => {
     if (!activeLink || tooltip.hidden || $("bookmark-editor").open) return;
+    if (pinnedBookmark !== null || panelAnchor?.contains(event.target)) return;
     if (activeLink.contains(event.target) || tooltip.contains(event.target)) return;
     if (inHoverCorridor(event.clientX, event.clientY)) return;
     hideTooltip();

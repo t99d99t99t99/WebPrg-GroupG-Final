@@ -19,7 +19,7 @@
 | `assets/icons/` | 확장 프로그램 아이콘 PNG 4종(16·32px 단독 집, 48·128px 건물 모음)과 `source/`의 수정 가능한 SVG 원본. `manifest.json`에서 크기별로 연결하며 새 탭 파비콘은 16px 아이콘을 사용 |
 | `db/` | 저장소 계층. `chrome.storage.local`을 직접 다루는 유일한 곳. 기존 북마크의 아이콘 주소 1회 보정도 담당 |
 | `popup/` | 툴바 아이콘을 누르면 뜨는 팝업. 현재 탭을 카테고리에 저장 |
-| `homepage/` | 새 탭 지도. 카테고리별 자동 도시 배치, 설명 카드, 사이트 방문, 링크 복사, 카테고리 관리 패널, Google 서비스 바로가기 패널, 크롬 북마크 동기화 버튼 |
+| `homepage/` | 새 탭 지도. 카테고리별 자동 도시 배치, 설명 카드, 사이트 방문, 링크 복사, 카테고리 목록 패널(건물명 검색·건물 목록 펼침), Google 서비스 바로가기 패널, 크롬 북마크 동기화 버튼 |
 | `homepage/layout.js` | 도시 배치 계산(순수 함수). 그리드 위 구역·건물 칸·피켓 칸 결정, 구역 둘레 도로 타일(교차로에 붙은 직선 도로는 횡단보도 타일), 아이소메트릭 좌표 변환 |
 | `homepage/decorations.js` | 구역 빈칸의 나무·꽃·풀·바위·거리 소품(가로등·쓰레기통·우체통) 장식과 집 앞마당(울타리·우체통) 계산(순수 함수). 픽셀이 고르지 않게 보이지 않도록 원본 크기로만 그림. 카테고리와 구역 안 칸 위치로 고정해 고름 |
 | `homepage/traffic.js` | 장식용 도시 움직임. 매 렌더의 도로 칸을 받아 사람(인도로 걷다 가끔 멈춤, 교차로의 옆길은 횡단보도로 건넘, 막다른 길에서는 같은 인도로 돌아섬)과 차(오른쪽 차선, 같은 차선의 앞차와 간격 유지·교차로에서 서로 막히면 한쪽 우선, 교차로 앞 횡단보도에서 가끔 정지, 일정 시간 뒤 다른 차로 교체, 큰 차일수록 드묾)를 1~2개씩 움직이고, 가끔 헬리콥터가 지도를 가로지름. 횡단보도(planRoads의 pelican 타일) 중 칸 위치로 정한 30% 정도에 길 양쪽 인도로 신호등 한 쌍을 세움(서로 길 건너편을 보도록 방향별 그림 선택). 움직임 줄이기 설정이면 멈춤. 건물 상세가 열리면 지도와 함께 흐려짐(헬리콥터도 z-index 1250으로 막 아래). 위치는 매 프레임 `transform`으로만 바꿔 지도 배치를 다시 계산하지 않게 함. 앞뒤 순서는 바닥 위치(x+y)로 건물 칸 중심과 비교하고, `#traffic`을 `#buildings` 뒤에 두며 매 프레임 자식 순서를 바닥 위치순으로 맞춰 z-index가 같을 때도 어긋나지 않게 함. 저장소·포인터 이벤트 없음 |
@@ -39,8 +39,9 @@
 | `shared/building-picker.js`, `shared/building-picker.css` | 홈페이지 북마크 수정 창의 건물 디자인 선택 띠(좌우 화살표, 3개씩 표시, 카테고리 색 벽면 미리보기). 팝업은 아직 같은 모양의 자체 코드를 씀 |
 | `shared/color-picker.js`, `shared/color-picker.css` | 홈페이지와 팝업이 함께 쓰는 컬러피커 UI·스타일. 채도/밝기 드래그·방향키, 색조, HEX, 스포이트, Escape·바깥 클릭 닫기. 저장은 호출 화면에서 처리 |
 | `homepage/google-account.js` | 계정 표시 전용 어댑터. 전달받은 이름·HTTPS 사진 URL을 표시하고 사진 부재·실패 시 기본 아바타로 복귀. 인증·권한·저장소 접근 없음 |
-| `homepage/category-manager.js` | 카테고리 목록 패널. 생성·이름 수정·드래그 순서 이동·삭제 확인, 색상 칩이나 연필로 이름 수정 칸과 컬러피커를 함께 열기(카테고리 일반의 색상 칩은 컬러피커만), 수정 중 확인·취소, 휴지통 버튼으로 삭제 창 열기, 카테고리 강조 선택 |
-| `homepage/category-reorder.js` | 행의 포인터 드래그·자동 스크롤·정착 애니메이션·취소와 저장 콜백 처리 |
+| `homepage/category-manager.js` | 카테고리 목록 패널. 건물명 검색(앞 글자 음절 일치 순), 선택한 카테고리 아래 건물 목록(호버·클릭은 `homepage.js`의 `hoverBuilding`·`selectBuilding`으로 지도 강조·상세 카드 고정), 생성·이름 수정·드래그 순서 이동·삭제 확인, 색상 칩이나 연필로 이름 수정 칸과 컬러피커를 함께 열기(카테고리 일반의 색상 칩은 컬러피커만), 수정 중 확인·취소, 휴지통 버튼으로 삭제 창 열기, 카테고리 강조 선택 |
+| `homepage/category-reorder.js` | 행의 포인터 드래그·자동 스크롤·정착 애니메이션·취소와 저장 콜백 처리. 다른 행의 카테고리 줄 가운데에 놓으면 병합 콜백 |
+| `homepage/building-reorder.js` | 카테고리 아래 건물 목록의 순서 변경(행·≡ 버튼 드래그, ≡에서 위·아래 방향키). 저장은 콜백으로 `BookmarkDB.reorder` |
 | `debug/` | 개발자용 정적 디버그 도구 모음. 앱 저장소나 Chrome API를 사용하지 않음 |
 | `debug/index.html` | 디버그 도구 진입 페이지 |
 | `debug/debug.css` | 디버그 도구 목록과 건물 색상 테스트의 공통 레이아웃·테마 스타일 |
@@ -80,7 +81,7 @@ homepage/homepage.js ──> db/db.js (moveBookmark: 건물 이동 저장)
 homepage/homepage.js ──> homepage/category-colors.js
 homepage/homepage.js ──> homepage/building-rules.js / homepage/building-appearance.js
 homepage/homepage.js ──> homepage/category-manager.js / homepage/google-account.js
-homepage/category-manager.js ──> homepage/category-reorder.js
+homepage/category-manager.js ──> homepage/category-reorder.js / homepage/building-reorder.js
 homepage/homepage.js ──> homepage/traffic.js ──> homepage/layout.js (project, planRoads 결과의 칸·타일 이름)
 homepage/homepage.js ─┐
                       ├─> db/db.js ──> db/bookmark.js / db/category.js ──> db/storage.js
@@ -115,7 +116,7 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 - 팝업은 `Bookmark`, `Category` 클래스와 `add` API로 현재 페이지를 저장합니다. 팝업은 374×600 크기의 각진 컨테이너이며 입력 영역만 세로 스크롤하고 하단 74px 영역의 작업 버튼은 고정합니다. 현재 탭 제목을 초기 페이지 이름으로 표시하며, 이름은 빈 값만 거부하고 이름·메모 모두 언어·기호·글자 수 제한 없이 저장합니다. 홈페이지 이름 수정과 메모도 같은 제한을 적용합니다. 긴 이름은 입력란·지도 라벨에서 말줄임하고 상세 카드에서 줄바꿈합니다.
 - 새 카테고리 입력은 “일반”으로 시작하며 한글·영문·숫자·공백 10자 이내, 빈 값·이름 중복 금지 규칙을 UI와 DB에서 검사합니다. 기존 카테고리 목록은 `shared/category-select.js`로 색상 칩과 이름을 함께 표시하고 4개 항목 높이에서 스크롤합니다. 새 카테고리는 임의의 팔레트 색상으로 시작하며 색상 선택기·HEX 입력으로 바꿉니다. 불투명도는 100%로 표시합니다. 선택한 색상은 기존 `color` 필드에 저장합니다.
 - 건물 선택은 5개 계열의 좌우 방향별 기본 디자인 10종이며 기본값은 도심 주택 왼쪽입니다. 선택 상태는 회색 반투명 배경으로 강조하며 양 끝의 진행 불가 화살표는 숨깁니다. 미리보기는 홈페이지와 같은 벽면 마스크, 색상 블렌딩 및 `wallColorAdjustments`를 사용하고 카테고리 선택·색상·HEX 변경 즉시 갱신합니다. 선택값은 북마크의 `buildingDesign` 필드에 저장하며, 지도는 선택한 계열·방향과 카테고리 색상을 적용합니다. 선택값이 없으면 ID 기반으로 결정합니다.
-- 상세 카드의 메모 입력과 북마크 수정은 `BookmarkDB.edit`를 사용합니다. 수정 창은 변경된 이름·URL만 검증하고, 건물 디자인은 처음 표시한 디자인(저장값 또는 지도가 ID로 정한 계열·방향)에서 바뀐 경우에만 `buildingDesign`으로 저장합니다. 수정 창이 열린 동안 지도는 45%·blur 1px로 흐려지고(`#world.editor-focus`가 흐림 막 값을 바꿈) 수정 중인 건물은 선명하게 남습니다. 북마크 삭제는 상세 카드의 삭제 버튼에서 확인 창을 거쳐 `BookmarkDB.remove`를 사용합니다. 카테고리 삭제는 `deleteCategory`가 카테고리와 포함된 북마크를 함께 삭제합니다. 순서는 카테고리 배열 순서로 저장합니다.
+- 상세 카드의 메모 입력과 북마크 수정은 `BookmarkDB.edit`를 사용합니다. 수정 창은 변경된 이름·URL만 검증하고, 건물 디자인은 처음 표시한 디자인(저장값 또는 지도가 ID로 정한 계열·방향)에서 바뀐 경우에만 `buildingDesign`으로 저장합니다. 수정 창이 열린 동안 지도는 45%·blur 1px로 흐려지고(`#world.editor-focus`가 흐림 막 값을 바꿈) 수정 중인 건물은 선명하게 남습니다. 북마크 삭제는 상세 카드의 삭제 버튼에서 확인 창을 거쳐 `BookmarkDB.remove`를 사용합니다. 카테고리 삭제는 `deleteCategory`가 카테고리와 포함된 북마크를 함께 삭제합니다. 카테고리 병합은 `mergeCategory(from, to)`가 옮기는 북마크의 `category`를 바꾸고 `cell`을 지워 새 영역에 다시 배치하게 한 뒤 원래 카테고리를 지웁니다(카테고리 일반은 거부). 카테고리 아래 건물 목록은 북마크 배열 순서이며, `BookmarkDB.reorder(ids)`는 그 북마크들이 차지한 배열 자리 안에서만 순서를 바꿉니다(필드 변경 없음). 순서는 카테고리 배열 순서로 저장합니다.
 - DB는 초기화가 끝난 뒤 저장소를 읽습니다. 조회 시 최신 데이터를 다시 읽어 다른 탭의 저장을 반영합니다.
 - 두 저장 키가 모두 없는 최초 환경에서만 시연 데이터를 넣습니다. 기존 배열은 빈 배열이어도 덮어쓰지 않습니다. Web Locks로 여러 탭의 초기화를 직렬화합니다.
 - 지도는 저장 변경 알림, 화면 재진입(다른 탭에서 돌아옴), 새 탭 로드 시 데이터를 갱신합니다. 메모·NEW·미리보기 필드만 바뀐 저장은 다시 그리지 않습니다. 팝업과 홈페이지는 저장소와 객체 형식을 공유합니다.

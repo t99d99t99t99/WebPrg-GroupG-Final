@@ -578,18 +578,24 @@ a:hover {
     font-size: 16px;
 }
 
-/* Category panel */
+/* Category panel (Figma "Main / Category Panel", USER-MAIN-CATEGORY-001·007, USER-MAIN-BUILD·EMP).
+   Figma measures from the outer edge (its 1.5px border sits inside), so paddings subtract the border.
+   The panel is as tall as its content, at most 956px; past that only the list scrolls. */
 .category-panel {
     --category-font-size: var(--font-size-md);
+    --panel-inset-block: calc(26px - var(--window-border-width));
+    --panel-inset-inline: calc(var(--space-6) - var(--window-border-width));
     position: absolute;
     right: var(--homepage-corner-inset);
     top: calc(var(--homepage-corner-inset) + var(--control-height-md) + var(--space-4));
-    bottom: var(--homepage-corner-inset);
     width: var(--category-panel-width);
     height: auto;
-    max-height: var(--category-panel-height);
+    max-height: min(
+        var(--category-panel-height),
+        calc(100% - 2 * var(--homepage-corner-inset) - var(--control-height-md) - var(--space-4))
+    );
     min-height: 0;
-    padding: var(--space-6);
+    padding: var(--panel-inset-block) var(--panel-inset-inline);
     overflow-y: auto;
     overflow-x: clip;
     scrollbar-gutter: auto;
@@ -618,51 +624,129 @@ a:hover {
 }
 #add-category {
     border: 0;
-    transform: translateX(calc(var(--space-1) + var(--border-width-emphasis)));
+    transform: none;
     padding: 0;
     color: var(--color-base-content);
     line-height: 1;
 }
+/* Category rows (and search results) take the panel's width minus 8px on each side. */
 .category-list {
     width: var(--category-list-item-width);
-    margin-left: calc(-1 * var(--space-4));
+    margin-left: calc(var(--space-2) - var(--panel-inset-inline) - var(--window-border-width));
     margin-right: 0;
-    padding-right: 0;
+    margin-top: var(--space-5);
+    padding: 0;
     overflow-x: hidden;
+    overflow-y: auto;
     scrollbar-gutter: auto;
     scrollbar-width: thin;
-    margin-top: var(--space-2);
-    padding-block: 0;
-    overflow-y: auto;
-    flex: 1;
-    min-height: 160px;
+    flex: 0 1 auto;
+    min-height: 0;
     font-family: var(--font-family-category);
 }
+/* Building name search (Figma "Main / Search Bar"): 284×32, fixed above the scrolling list. */
+.building-search {
+    position: relative;
+    display: block;
+    flex-shrink: 0;
+    margin-top: calc(57px - var(--space-10) - var(--border-width-emphasis));
+}
+.building-search-icon {
+    position: absolute;
+    left: 11px;
+    top: 7px;
+    display: block;
+    pointer-events: none;
+}
+.building-search input {
+    display: block;
+    width: 100%;
+    height: var(--compact-input-height);
+    padding: 0 var(--space-3) 0 36px;
+    border: var(--border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-field);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
+    font-family: var(--font-family-category);
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-lg);
+}
+.building-search input::placeholder {
+    color: var(--color-neutral-500);
+    opacity: 1;
+}
+.building-search input:focus-visible {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+.building-search input::-webkit-search-cancel-button {
+    display: none;
+}
+#category-status:empty {
+    display: none;
+}
+.building-results-empty {
+    margin: 0 var(--space-4);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-sm);
+}
+/* Category row (Figma "Main / Category List Item"): 316×48, 16px left and 8px right, 8px gaps. */
 .category-row {
     position: relative;
+    isolation: isolate;
     display: flex;
-    align-items: flex-start;
+    flex-wrap: wrap;
+    align-items: center;
     gap: var(--space-2);
     width: var(--category-list-item-width);
     min-height: var(--category-list-item-height);
-    padding-left: var(--space-4);
-    padding-right: var(--space-1);
-    padding-block: calc((var(--category-list-item-height) - var(--compact-input-height)) / 2);
+    padding: calc((var(--category-list-item-height) - var(--compact-input-height)) / 2) var(--space-2)
+        calc((var(--category-list-item-height) - var(--compact-input-height)) / 2) var(--space-4);
     margin-bottom: var(--space-2);
     border-radius: var(--radius-field);
     transition:
         background-color var(--duration-hover) ease-out,
         box-shadow var(--duration-hover) ease-out;
 }
+.category-row:last-child {
+    margin-bottom: 0;
+}
+/* Row highlights cover only the category line, not its open building list below. */
+.category-row::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: -1;
+    height: var(--category-list-item-height);
+    border-radius: var(--radius-field);
+    pointer-events: none;
+    transition:
+        background-color var(--duration-hover) ease-out,
+        box-shadow var(--duration-hover) ease-out;
+}
 /* Same emphasis whether the pointer is on the row itself or on one of its buildings on the map. */
-.category-row:has(.building-hovered),
-.category-row:has(.category-filter):hover {
+.category-row:has(.building-hovered)::before,
+.category-row:has(.category-filter):hover:not(:has(.building-list:hover))::before {
     background-color: color-mix(in srgb, var(--color-primary) 12%, transparent);
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 24%, transparent);
 }
+/* Selected category: its color at 15% (USER-MAIN-CATEGORY-007); not while one of its buildings is selected (EMP). */
+.category-row:has(> .category-filter[aria-pressed="true"])::before {
+    background-color: color-mix(in srgb, var(--zone-color) 15%, transparent);
+    box-shadow: none;
+}
+.category-row:has(.building-row-select[aria-pressed="true"])::before {
+    background-color: transparent;
+}
+/* A dragged category over the middle of this row merges into it on drop. */
+.category-row.category-merge-target::before {
+    background-color: color-mix(in srgb, var(--zone-color) 15%, transparent);
+    box-shadow: inset 0 0 0 var(--border-width-emphasis) var(--zone-color);
+}
 .category-row:has(.category-edit-form) {
     align-items: flex-start;
-    gap: var(--space-2);
 }
 .category-row[data-sortable] {
     touch-action: none;
@@ -670,31 +754,48 @@ a:hover {
 .category-row.category-sorting {
     transition: transform 160ms ease;
 }
+/* A dragged category (with its open building list) takes the category hover color, made opaque so the rows
+   it passes over don't show through. */
 .category-row.category-lifted {
     z-index: 10;
-    background: var(--color-surface-raised);
-    box-shadow: var(--shadow-card);
+    background: color-mix(in srgb, var(--color-primary) 12%, var(--color-base-100));
+    box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 24%, transparent),
+        var(--shadow-card);
     border-radius: var(--radius-field);
     transition: none;
 }
+.category-row.category-lifted::before {
+    background-color: transparent;
+    box-shadow: none;
+}
 body.category-dragging,
-body.category-dragging * {
+body.category-dragging *,
+body.building-sorting-active,
+body.building-sorting-active * {
     cursor: grabbing;
     user-select: none;
 }
 @media (prefers-reduced-motion: reduce) {
-    .category-row.category-sorting {
+    .category-row.category-sorting,
+    .building-row.building-sorting {
         transition: none;
     }
 }
+/* Category icon: three stacked tiles in the category color (Figma ".Building Blocks/Category Color"). */
 .category-color {
+    display: block;
     flex-shrink: 0;
-    width: 12px;
+    width: 24px;
     height: 32px;
     padding: 0;
     border: 0;
-    border-radius: var(--radius-pill);
-    background: var(--zone-color);
+    background: transparent;
+    color: var(--zone-color);
+    cursor: pointer;
+}
+.category-row .category-color svg {
+    display: block;
 }
 .category-filter {
     display: flex;
@@ -702,17 +803,16 @@ body.category-dragging * {
     flex: 1;
     min-width: 0;
     min-height: var(--compact-input-height);
-    padding: 0 var(--compact-input-padding-inline);
-    border: var(--border-width) solid var(--color-neutral-500);
-    border-radius: var(--radius-selector);
-    background: var(--color-base-100);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-base-content);
     text-align: left;
     font-size: var(--category-font-size);
     line-height: var(--line-height-sm);
 }
-.category-filter[aria-pressed="true"],
 .category-filter.building-hovered,
-.category-row:hover .category-filter {
+.category-row:hover:not(:has(.building-list:hover)) .category-filter {
     font-weight: var(--font-weight-bold);
     color: var(--color-primary);
 }
@@ -723,58 +823,214 @@ body.category-dragging * {
     white-space: nowrap;
 }
 .category-row .icon-button {
-    margin-left: auto;
     flex-shrink: 0;
 }
-/* Trash icon from the Figma category panel keeps its own 13×14 shape. */
-.category-delete-button img {
-    width: 13px;
-    height: 14px;
+.category-row .icon-button img {
+    width: var(--icon-size-default);
+    height: var(--icon-size-default);
 }
+.category-row .category-delete-button img {
+    width: var(--icon-size-compact);
+    height: var(--icon-size-compact);
+}
+/* The general category shows edit and delete too, but they do nothing. */
+.category-row .icon-button:disabled {
+    opacity: 1;
+    cursor: default;
+}
+.category-row .icon-button:disabled:hover {
+    background: transparent;
+}
+/* The selected category's buildings (Figma USER-MAIN-BUILD): rows 280×44 from x 28, a 2px line in the category
+   color at 45% just left of them (always in front), up to 10 rows before the list scrolls. */
+.building-list {
+    position: relative;
+    flex: 0 0 calc(100% - var(--space-3));
+    /* A long site name shortens with "…" instead of widening the list past the panel. */
+    min-width: 0;
+    margin: var(--space-2) 0 -6px var(--space-3);
+}
+.building-list[hidden] {
+    display: none;
+}
+.building-list::before {
+    content: "";
+    position: absolute;
+    left: -1px;
+    top: 0;
+    bottom: 0;
+    z-index: 2;
+    width: var(--border-width-emphasis);
+    background: color-mix(in srgb, var(--zone-color) 45%, transparent);
+    pointer-events: none;
+}
+.building-items {
+    max-height: calc(44px * 10);
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+.building-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+    padding: 0 var(--space-2) 0 0;
+    border-radius: var(--radius-field);
+    background: transparent;
+    color: var(--color-base-content);
+    touch-action: none;
+    transition: background-color var(--duration-hover) ease-out;
+}
+.building-row:hover,
+.building-row:has(.building-row-select:focus-visible),
+.building-row:has(.building-row-select[aria-pressed="true"]) {
+    background-color: color-mix(in srgb, var(--zone-color) 15%, transparent);
+}
+.building-row.building-sorting {
+    transition: transform 160ms ease;
+}
+.building-row.building-lifted {
+    z-index: 3;
+    background: color-mix(in srgb, var(--zone-color) 15%, var(--color-base-100));
+    box-shadow: var(--shadow-card);
+    transition: none;
+}
+.building-row-select {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0 0 0 var(--space-4);
+    border: 0;
+    border-radius: var(--radius-field);
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    font-family: var(--font-family-category);
+    font-size: var(--category-font-size);
+    line-height: var(--line-height-sm);
+    cursor: pointer;
+}
+.building-row-select:focus-visible {
+    outline: none;
+}
+/* Building icon (Figma "Main / Building Icon"): 25px circle with a 1px border, the site icon inside. */
+.building-row-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 25px;
+    width: 25px;
+    height: 25px;
+    padding: 4px;
+    border: var(--border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-field);
+}
+.building-row .building-row-icon img {
+    display: block;
+    width: 15px;
+    height: 15px;
+    object-fit: contain;
+}
+.building-row-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/* ≡ button (Figma "Main / Reorder Button"): 32×32 with a 20px icon. */
+.building-row-handle {
+    display: grid;
+    place-items: center;
+    flex: 0 0 var(--icon-button-size-compact);
+    width: var(--icon-button-size-compact);
+    height: var(--icon-button-size-compact);
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    cursor: grab;
+}
+.building-row .building-row-handle img {
+    display: block;
+    width: var(--icon-size-default);
+    height: var(--icon-size-default);
+}
+/* Search results: the same building rows (no ≡), each with the line of its category. */
+.building-results .building-row {
+    width: calc(100% - 20px - var(--space-2));
+    margin-left: 20px;
+}
+.building-results .building-row::before {
+    content: "";
+    position: absolute;
+    left: -1px;
+    top: 0;
+    bottom: 0;
+    width: var(--border-width-emphasis);
+    background: color-mix(in srgb, var(--zone-color) 45%, transparent);
+}
+#add-category img {
+    width: var(--icon-size-default);
+    height: var(--icon-size-default);
+}
+/* Edit and new rows (Figma State=Edit/ADD/Error): a 159px field with a 1.5px border, then 확인·취소 (or
+   생성·취소) as 32px text buttons at the row's right end. */
 .category-edit-form {
     flex: 1;
     min-width: 0;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: 159px minmax(0, 1fr) var(--space-8) var(--space-8);
     align-items: center;
-    gap: var(--space-2);
+    column-gap: var(--space-2);
+    row-gap: var(--space-1);
 }
 .category-edit-input {
-    flex: 1;
-    width: auto;
+    grid-column: 1;
     min-width: 0;
-    margin-right: 0;
 }
 .category-edit-form input {
     width: 100%;
     min-height: var(--compact-input-height);
     height: var(--compact-input-height);
-    border-width: var(--border-width);
-    border-color: var(--color-neutral-500);
+    border: var(--window-border-width) solid var(--color-neutral-500);
     padding-inline: var(--compact-input-padding-inline);
     border-radius: var(--radius-field);
+    background: var(--color-base-100);
     font-size: var(--category-font-size);
     line-height: var(--line-height-sm);
 }
 .category-edit-form input:focus-visible {
     outline: none;
-    border: var(--border-width-emphasis) solid var(--color-primary);
+    border-color: var(--color-primary);
 }
+.category-edit-form input[aria-invalid="true"],
 .category-edit-form input[aria-invalid="true"]:focus-visible {
     border-color: var(--color-error);
 }
 .category-edit-form button {
-    border: 0;
+    width: var(--space-8);
     min-height: var(--compact-input-height);
-    padding: 0 var(--space-2);
+    padding: 0;
+    border: 0;
     background: transparent;
     color: var(--color-base-content);
     font-size: var(--font-size-xs);
     line-height: var(--line-height-xs);
-    flex-shrink: 0;
     white-space: nowrap;
 }
-.category-edit-form button:last-of-type {
+.category-edit-form button[type="submit"] {
+    grid-column: 3;
+}
+.category-edit-form button[type="button"] {
+    grid-column: 4;
+    color: var(--color-text-muted);
+}
+.category-row[data-category="new"] .category-edit-form button[type="button"] {
     color: var(--color-neutral-500);
 }
 .category-edit-form .field-error {
@@ -788,21 +1044,27 @@ body.category-dragging * {
     display: none;
 }
 
-/* Google services */
+/* Google services (Figma "Main / Google Service" in the panel): 292 wide from (20, 21), a 1px divider 24px
+   below it, and the category list 24px below the divider. */
 #google-services {
     height: auto;
     width: calc(100% + var(--space-2));
-    margin-left: calc(-1 * var(--space-1));
-    margin-bottom: var(--space-10);
-    padding-bottom: var(--space-4);
-    border-bottom: var(--border-width) solid var(--color-neutral-500);
+    margin: -5px 0 var(--space-6) calc(-1 * var(--space-1));
+    padding-bottom: 0;
+    border-bottom: 0;
     flex-shrink: 0;
 }
-#google-services:not([hidden]) + .panel-heading {
-    margin-top: var(--space-1);
+#google-services::after {
+    content: "";
+    display: block;
+    height: var(--border-width);
+    margin: var(--space-6) 5px 0 var(--space-1);
+    background: var(--color-neutral-500);
 }
-#google-services:not([hidden]) ~ .category-list {
-    margin-top: var(--space-3);
+#google-services .google-heading {
+    display: flex;
+    align-items: center;
+    min-height: calc(var(--space-10) + var(--border-width-emphasis));
 }
 .google-grid {
     display: grid;
@@ -810,7 +1072,7 @@ body.category-dragging * {
     column-gap: var(--space-2);
     row-gap: var(--space-6);
     width: 100%;
-    margin-top: var(--space-8);
+    margin-top: var(--space-6);
 }
 .google-grid a {
     display: flex;

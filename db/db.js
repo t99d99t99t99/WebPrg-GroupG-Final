@@ -251,6 +251,28 @@ export async function deleteCategory(id) {
         });
     });
 }
+// Merges a category into another (a category dropped on another in the panel): its bookmarks move to the
+// target, which places them anew (their cells belonged to the old area), and the category is removed.
+export async function mergeCategory(fromId, toId) {
+    await ready;
+    return withWriteLock(async () => {
+        const data = await storage.get({ [BOOKMARK_DB_KEY]: [], [CATEGORY_DB_KEY]: [] });
+        const from = data[CATEGORY_DB_KEY].find((category) => category.id === fromId);
+        const to = data[CATEGORY_DB_KEY].find((category) => category.id === toId);
+        if (!from || !to || fromId === toId) throw new Error("카테고리가 바뀌었습니다. 다시 시도해 주세요.");
+        if (isGeneralCategory(from) || isGeneralCategory(to)) throw new Error("카테고리 일반은 병합할 수 없습니다.");
+        const bookmarks = data[BOOKMARK_DB_KEY].map((item) => {
+            if (item.category !== fromId) return item;
+            const { cell: _cell, ...rest } = item;
+            return { ...rest, category: toId };
+        });
+        await storage.set({
+            [CATEGORY_DB_KEY]: data[CATEGORY_DB_KEY].filter((item) => item.id !== fromId),
+            [BOOKMARK_DB_KEY]: bookmarks,
+        });
+        return { from, to };
+    });
+}
 // A page re-entry acknowledges only bookmarks saved before that entry.
 export async function dismissNewBefore(time) {
     await ready;
