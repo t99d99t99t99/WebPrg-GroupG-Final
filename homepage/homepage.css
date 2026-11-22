@@ -316,20 +316,32 @@ a:hover {
     --hover-lift: translateY(calc(-1 * var(--hover-rise))) scale(var(--hover-grow));
     --hover-duration: 0.25s;
 }
-/* Fade in and out smoothly instead of switching at once. */
-#ground,
-#zones,
-.building,
-.decoration,
-.category-picket {
+/* While a building's details are open (or a category is selected) one veil covers the whole map
+   and fades and blurs what lies under it; emphasized buildings rise above it. One element changes
+   instead of every tile, prop and building, which kept hovering smooth on large maps.
+   Depth: map items 1000 + x + y < veil 1300 < emphasized items (depth + 400) < focused 1999. */
+#focus-veil {
+    position: absolute;
+    left: -50000px;
+    top: -50000px;
+    width: 100000px;
+    height: 100000px;
+    z-index: 1300;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    background: color-mix(in srgb, var(--color-base-100) calc((1 - var(--focus-fade-opacity)) * 100%), transparent);
+    backdrop-filter: blur(var(--focus-fade-blur));
     transition:
         opacity var(--hover-duration) ease,
-        filter var(--hover-duration) ease;
+        visibility 0s linear var(--hover-duration);
 }
-.detail-focus #ground,
-.detail-focus #zones {
-    opacity: var(--focus-fade-opacity);
-    filter: blur(var(--focus-fade-blur));
+.detail-focus #focus-veil {
+    opacity: 1;
+    visibility: visible;
+    transition:
+        opacity var(--hover-duration) ease,
+        visibility 0s;
 }
 
 /* City life on the roads (homepage/traffic.js). Drawn at native pixel size; never takes the pointer. */
@@ -337,16 +349,16 @@ a:hover {
 .traffic-car,
 .traffic-helicopter {
     position: absolute;
+    /* traffic.js moves them with transform only (no layout work per frame). */
+    left: 0;
+    top: 0;
+    will-change: transform;
     max-width: none;
     pointer-events: none;
     image-rendering: pixelated;
     /* Fade in/out with a transition, not an animation: traffic.js re-inserts elements to keep depth
        order, which would restart an animation (flicker) but does not replay a transition. */
     transition: opacity 0.6s ease;
-}
-/* Pedestrian feet (row 30 of the 24x32 sprite) sit on the point. Vehicles are anchored in traffic.js. */
-.traffic-pedestrian {
-    transform: translate(-12px, -30px);
 }
 /* Traffic lights: the centre of the pole's base (x 5, y 38 of the sprite; the shadow runs below it) sits on the point. */
 .traffic-light {
@@ -355,11 +367,6 @@ a:hover {
     pointer-events: none;
     image-rendering: pixelated;
     transform: translate(-5px, -38px);
-}
-/* Fade with the rest of the map while a building's details are open. Per element, to keep depth order. */
-.detail-focus #traffic > * {
-    opacity: var(--focus-fade-opacity);
-    filter: blur(var(--focus-fade-blur));
 }
 .traffic-car.leaving {
     opacity: 0;
@@ -482,13 +489,12 @@ a:hover {
     border-top: 0;
     background: #8a5a2e;
 }
-.detail-focus .building:not(.emphasized-building),
-.detail-focus .category-picket,
-.detail-focus .decoration {
-    opacity: var(--focus-fade-opacity);
-    filter: blur(var(--focus-fade-blur));
+.detail-focus .building.emphasized-building {
+    /* biome-ignore lint/complexity/noImportantStyles: lift above the focus veil, over the per-cell inline depth. */
+    z-index: calc(var(--depth) + 400) !important;
 }
-.building.focused-building {
+.building.focused-building,
+.detail-focus .building.focused-building.emphasized-building {
     /* biome-ignore lint/complexity/noImportantStyles: selected building must be above per-cell inline depth. */
     z-index: 1999 !important;
 }
@@ -672,7 +678,6 @@ a:hover {
     transition: none;
 }
 body.category-dragging,
-/* biome-ignore lint/style/noDescendingSpecificity: global drag cursor does not override map opacity styles. */
 body.category-dragging * {
     cursor: grabbing;
     user-select: none;
@@ -1217,7 +1222,8 @@ body.category-dragging * {
     .building-wall-tint,
     .building-wall-light,
     .decoration,
-    .category-picket {
+    .category-picket,
+    #focus-veil {
         transition: none;
     }
     .app-toast.toast-subtle {

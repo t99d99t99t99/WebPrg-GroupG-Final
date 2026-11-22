@@ -403,6 +403,8 @@ function createBuilding(bookmark, category, cell, labels, interactive = true) {
     wrapper.style.left = `${position.left}px`;
     wrapper.style.top = `${position.top}px`;
     wrapper.style.zIndex = String(1000 + cell.x + cell.y);
+    // Same depth as a CSS variable, so an emphasized building can rise above the focus veil in order.
+    wrapper.style.setProperty("--depth", String(1000 + cell.x + cell.y));
     const link = element("a", "building-link");
     const url = safeUrl(bookmark.url);
     if (url) link.href = url.href;
