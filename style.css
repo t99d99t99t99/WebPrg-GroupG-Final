@@ -77,6 +77,8 @@
     --spec-swatch-gap: 14px;
     --spec-content-padding: 14px;
     --settings-action-gap: 26px;
+    --color-picker-trigger-gap: 2.5px;
+    --category-panel-overlay-gap: var(--space-4);
     --control-height-md: 44px;
     --compact-input-height: 32px;
     --compact-input-padding-inline: 10px;
