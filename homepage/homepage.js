@@ -10,6 +10,7 @@ import {
     updateCity,
 } from "../db/db.js";
 import { DEFAULT_SETTINGS } from "../db/settings.js";
+import { buildingPicker } from "../shared/building-picker.js";
 import { categorySelect } from "../shared/category-select.js";
 import { createColorPicker } from "../shared/color-picker.js";
 import { bookmarkIconUrl } from "../shared/site-icons.js";
@@ -1062,13 +1063,24 @@ $("apps-button").addEventListener("click", () => {
     section.hidden = !section.hidden;
     $("apps-button").setAttribute("aria-expanded", String(!section.hidden));
 });
-const editSelect = categorySelect($("edit-category"));
 let editingBookmark;
+let editCategories = [];
+let initialDesign = null;
+const editDesign = buildingPicker({
+    host: $("edit-designs"),
+    previous: $("edit-previous-design"),
+    next: $("edit-next-design"),
+});
+// The design strip shows the walls in the color of the chosen category.
+const paintEditDesign = (id) => {
+    const color = editCategories.find((category) => category.id === id)?.color;
+    if (color) editDesign.setColor(color);
+};
+const editSelect = categorySelect($("edit-category"), { onChange: paintEditDesign });
 function closeEditor() {
     $("bookmark-editor").close();
     hideTooltip();
 }
-$("close-editor").addEventListener("click", closeEditor);
 $("cancel-editor").addEventListener("click", closeEditor);
 $("edit-bookmark").addEventListener("click", async () => {
     const id = activeBookmark?.id;
@@ -1079,7 +1091,13 @@ $("edit-bookmark").addEventListener("click", async () => {
             hideTooltip();
             return;
         }
-        editSelect.setItems(await categories.get(), editingBookmark.category);
+        editCategories = assignCategoryColors(await categories.get()).categories;
+        editSelect.setItems(editCategories, editingBookmark.category);
+        // Start from the design the map draws now; bookmarks saved without one get it from their id.
+        const { family, variant } = buildingTexture(0, editingBookmark.id, false, editingBookmark.buildingDesign);
+        editDesign.select(editingBookmark.buildingDesign, { family, variant });
+        initialDesign = editDesign.value;
+        paintEditDesign(editingBookmark.category);
         $("edit-name").value = editingBookmark.name;
         $("edit-url").value = editingBookmark.url;
         for (const field of ["edit-name", "edit-url"]) $(field).removeAttribute("aria-invalid");
@@ -1090,6 +1108,8 @@ $("edit-bookmark").addEventListener("click", async () => {
         setObstructedBuildings();
         $("bookmark-editor").style.left = left;
         $("bookmark-editor").style.top = top;
+        // The rest of the map fades further than for the detail card; the building stays sharp.
+        $("world").classList.add("editor-focus");
         $("bookmark-editor").showModal();
         const editorHeight = $("bookmark-editor").getBoundingClientRect().height;
         $("bookmark-editor").style.top =
@@ -1128,6 +1148,7 @@ $("edit-form").addEventListener("submit", async (event) => {
         const changes = { category: editSelect.value };
         if (nameChanged()) changes.name = $("edit-name").value.trim();
         if (urlChanged()) changes.url = $("edit-url").value.trim();
+        if (editDesign.value !== initialDesign) changes.buildingDesign = editDesign.value;
         const result = await bookmarks.edit(editingBookmark.id, changes);
         if (!result) throw new Error("삭제된 북마크입니다.");
         closeEditor();
@@ -1139,7 +1160,10 @@ $("edit-form").addEventListener("submit", async (event) => {
         $("save-editor").disabled = false;
     }
 });
-$("bookmark-editor").addEventListener("close", hideTooltip);
+$("bookmark-editor").addEventListener("close", () => {
+    $("world").classList.remove("editor-focus");
+    hideTooltip();
+});
 
 $("sync-bookmarks").addEventListener("click", async () => {
     const button = $("sync-bookmarks");

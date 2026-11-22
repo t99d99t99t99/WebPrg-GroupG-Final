@@ -1,0 +1,97 @@
+/* Building design strip (shared/building-picker.js). Same look as the popup's strip in popup/popup.css. */
+.building-selector {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-field);
+    height: var(--popup-design-strip-height);
+    padding: calc((var(--popup-design-strip-height) - var(--popup-design-height)) / 2) var(--space-8);
+    background: var(--color-base-300);
+}
+.building-designs {
+    display: flex;
+    min-inline-size: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    gap: var(--space-4);
+    overflow: visible;
+}
+.building-design {
+    flex: 0 0 var(--popup-design-width);
+    height: var(--popup-design-height);
+    min-width: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: var(--radius-field);
+    background: transparent;
+    cursor: pointer;
+}
+.building-design[aria-pressed="true"] {
+    background: var(--color-selection-overlay);
+}
+.building-design img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+.building-preview {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    isolation: isolate;
+}
+.preview-wall-tint,
+.preview-wall-light {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    mask-image: var(--wall-mask);
+    mask-size: contain;
+    mask-position: center;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+    -webkit-mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    image-rendering: pixelated;
+}
+.preview-wall-tint {
+    background: var(--wall-color);
+    mix-blend-mode: color;
+}
+.preview-wall-light {
+    background: var(--light-color);
+    mix-blend-mode: var(--light-mode);
+    opacity: var(--light-opacity);
+}
+.design-arrow {
+    position: absolute;
+    top: calc(50% - var(--space-1));
+    transform: translateY(-50%);
+    width: var(--space-6);
+    height: var(--space-6);
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: var(--border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-box);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
+    box-shadow: var(--shadow-depth-1);
+    cursor: pointer;
+}
+.design-arrow img {
+    display: block;
+}
+.design-arrow[hidden] {
+    display: none;
+}
+.design-arrow-previous {
+    left: var(--space-4);
+}
+.design-arrow-next {
+    right: var(--space-4);
+}

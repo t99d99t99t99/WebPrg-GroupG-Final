@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="homepage.css">
     <link rel="stylesheet" href="../shared/color-picker.css">
+    <link rel="stylesheet" href="../shared/building-picker.css">
     <title>새로고침 — 나의 북마크 도시</title>
 </head>
 <body class="bg-base-100 text-base-content">
@@ -72,12 +73,23 @@
     </section>
     <dialog id="bookmark-editor" class="app-dialog bookmark-editor" aria-labelledby="editor-title">
         <form id="edit-form" novalidate>
-            <div class="dialog-heading"><h2 id="editor-title">북마크 수정</h2><button id="close-editor" class="icon-button" type="button" aria-label="북마크 수정 닫기">×</button></div>
-            <div class="form-group"><label class="field-label" for="edit-name">이름</label><input id="edit-name" class="field" aria-describedby="edit-name-error" autocomplete="off"><p id="edit-name-error" class="field-error"></p></div>
-            <div class="form-group"><span class="field-label">카테고리</span><div id="edit-category"></div></div>
-            <div class="form-group"><label class="field-label" for="edit-url">URL</label><input id="edit-url" class="field" type="url" aria-describedby="edit-url-error"><p id="edit-url-error" class="field-error"></p></div>
-            <p id="edit-status" class="field-error" role="status"></p>
-            <div class="form-actions"><button id="cancel-editor" class="action" type="button">취소</button><button id="save-editor" class="action action-primary" type="submit">저장</button></div>
+            <div class="editor-content">
+                <header class="editor-heading"><span class="editor-logo" aria-hidden="true">💾</span><h2 id="editor-title">선택한 북마크를 수정합니다.</h2></header>
+                <div class="editor-divider" aria-hidden="true"></div>
+                <div class="form-group"><label class="field-label" for="edit-name">페이지 이름</label><input id="edit-name" class="field" placeholder="페이지 이름을 입력하세요." aria-describedby="edit-name-error" autocomplete="off"><p id="edit-name-error" class="field-error"></p></div>
+                <div class="form-group"><label class="field-label" for="edit-url">URL</label><input id="edit-url" class="field" type="url" placeholder="https://example.com" aria-describedby="edit-url-error"><p id="edit-url-error" class="field-error"></p></div>
+                <div class="form-group"><span class="field-label">카테고리</span><div id="edit-category"></div></div>
+                <div class="form-group">
+                    <span id="edit-design-label" class="field-label">건물 디자인</span>
+                    <div class="building-selector">
+                        <button id="edit-previous-design" class="design-arrow design-arrow-previous" type="button" aria-label="이전 건물 디자인"><img src="../assets/ui/popup-arrow-left.svg" width="14" height="15" alt=""></button>
+                        <fieldset id="edit-designs" class="building-designs" aria-labelledby="edit-design-label"></fieldset>
+                        <button id="edit-next-design" class="design-arrow design-arrow-next" type="button" aria-label="다음 건물 디자인"><img src="../assets/ui/popup-arrow-right.svg" width="14" height="14" alt=""></button>
+                    </div>
+                </div>
+                <p id="edit-status" class="field-error" role="status"></p>
+            </div>
+            <div class="form-actions"><button id="cancel-editor" class="action" type="button">취소하기</button><button id="save-editor" class="action action-primary" type="submit">수정하기</button></div>
         </form>
     </dialog>
     <dialog id="category-delete" class="app-dialog category-delete" aria-labelledby="delete-title">
