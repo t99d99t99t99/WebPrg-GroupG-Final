@@ -147,6 +147,14 @@
     /* Shared focus treatment */
     --focus-ring-width: 2px;
     --focus-ring-offset: 3px;
+
+    /* Shared motion: hover feedback, small popups (tooltip, menu, picker, toast), dialogs.
+       Entering eases out, leaving eases in and is a little shorter. */
+    --duration-hover: 150ms;
+    --duration-popup-in: 150ms;
+    --duration-popup-out: 100ms;
+    --duration-dialog-in: 200ms;
+    --duration-dialog-out: 150ms;
 }
 
 *,
@@ -179,6 +187,41 @@ textarea {
 
 button {
     color: inherit;
+}
+
+/* Hover colors change smoothly everywhere; :where keeps it below any component's own transition. */
+:where(button, a) {
+    transition-property: color, background-color, border-color, box-shadow, filter;
+    transition-duration: var(--duration-hover);
+    transition-timing-function: ease-out;
+}
+
+/* Popups shown and hidden with the hidden attribute fade in and out. display stays until the
+   fade ends (allow-discrete), and @starting-style gives the first frame to fade in from. */
+.fade-popup {
+    transition:
+        opacity var(--duration-popup-out) ease-in,
+        display var(--duration-popup-out) allow-discrete;
+}
+.fade-popup:not([hidden]) {
+    transition-duration: var(--duration-popup-in);
+    transition-timing-function: ease-out;
+}
+.fade-popup[hidden] {
+    opacity: 0;
+    pointer-events: none;
+}
+@starting-style {
+    .fade-popup:not([hidden]) {
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :where(button, a),
+    .fade-popup {
+        transition: none;
+    }
 }
 
 .category-select-trigger,
