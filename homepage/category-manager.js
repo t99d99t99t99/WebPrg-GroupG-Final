@@ -62,6 +62,16 @@ export function categoryManager({ openColorPicker, highlightCategory, toggleCate
         button.addEventListener("click", onClick);
         return button;
     }
+    // Editing a category opens its name field and its color picker together.
+    function startEdit(category, groups) {
+        editing = category.id;
+        draft = category.name;
+        render(groups);
+        const list = $("category-list");
+        const chip = list.querySelector(`[data-category="${category.id}"] .category-color`);
+        if (chip) openColorPicker(category.id, chip, category.color, null);
+        list.querySelector("input")?.focus();
+    }
     function render(groups) {
         if (sorter.active) {
             deferredRender = true;
@@ -79,7 +89,11 @@ export function categoryManager({ openColorPicker, highlightCategory, toggleCate
             const color = node("button", "category-color");
             color.type = "button";
             color.setAttribute("aria-label", `${category.name || "새 카테고리"} 색상 변경`);
-            color.addEventListener("click", () =>
+            color.addEventListener("click", () => {
+                if (category.id !== "new" && editing !== category.id && !isGeneralCategory(category)) {
+                    startEdit(category, groups);
+                    return;
+                }
                 openColorPicker(
                     category.id,
                     color,
@@ -91,8 +105,8 @@ export function categoryManager({ openColorPicker, highlightCategory, toggleCate
                               row.style.setProperty("--zone-color", value);
                           }
                         : null,
-                ),
-            );
+                );
+            });
             row.append(color);
             if (editing === category.id) {
                 const form = node("form", "category-edit-form"),
@@ -119,15 +133,11 @@ export function categoryManager({ openColorPicker, highlightCategory, toggleCate
                 wrap.append(input);
                 const confirm = node("button", "", category.id === "new" ? "생성" : "확인");
                 confirm.type = "submit";
-                const second = node("button", "", category.id === "new" ? "취소" : "삭제");
-                second.type = "button";
-                second.addEventListener("click", () => {
-                    if (category.id === "new") {
-                        editing = null;
-                        render(groups);
-                        return;
-                    }
-                    askDelete(category, groups);
+                const cancel = node("button", "", "취소");
+                cancel.type = "button";
+                cancel.addEventListener("click", () => {
+                    editing = null;
+                    render(groups);
                 });
                 form.addEventListener("submit", async (event) => {
                     event.preventDefault();
@@ -161,7 +171,7 @@ export function categoryManager({ openColorPicker, highlightCategory, toggleCate
                     });
                     confirm.disabled = false;
                 });
-                form.append(wrap, confirm, second, message);
+                form.append(wrap, confirm, cancel, message);
                 row.append(form);
             } else {
                 const filter = node("button", "category-filter");
@@ -177,15 +187,9 @@ export function categoryManager({ openColorPicker, highlightCategory, toggleCate
                 filter.addEventListener("click", () => toggleCategory(category.id));
                 row.append(filter);
                 if (!isGeneralCategory(category)) {
-                    const edit = iconButton("../assets/ui/edit.svg", `${category.name} 수정`, () => {
-                        editing = category.id;
-                        draft = category.name;
-                        render(groups);
-                        // Editing a category also opens its color picker, as if its color chip was clicked.
-                        const chip = list.querySelector(`[data-category="${category.id}"] .category-color`);
-                        if (chip) openColorPicker(category.id, chip, category.color, null);
-                        list.querySelector("input")?.focus();
-                    });
+                    const edit = iconButton("../assets/ui/edit.svg", `${category.name} 수정`, () =>
+                        startEdit(category, groups),
+                    );
                     const remove = iconButton("../assets/ui/delete.svg", `${category.name} 삭제`, () =>
                         askDelete(category, groups),
                     );
