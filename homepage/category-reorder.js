@@ -1,5 +1,6 @@
 // Pointer sorting keeps the original layout as slots until the drop is committed.
-export function categoryReorder(list, { commit, error, finish }) {
+// Dropping a row on the middle of another row's category line merges it into that category instead.
+export function categoryReorder(list, { commit, merge, error, finish }) {
     let drag = null;
     let frame = 0;
     let suppressClick = false;
@@ -13,19 +14,35 @@ export function categoryReorder(list, { commit, error, finish }) {
         const scroll = d.y < bounds.top + edge ? -6 : d.y > bounds.bottom - edge ? 6 : 0;
         if (scroll) list.scrollTop += scroll;
         const delta = d.y - d.startY + (list.scrollTop - d.scrollTop) * d.scale;
-        const center = d.rects[d.from].top + d.rects[d.from].height / 2 + delta;
+        const center = d.rects[d.from].top + d.header / 2 + delta;
+        d.delta = delta;
+        // Over the middle half of another row's category line (where it is drawn now): merge target.
+        const target = d.rows.find((row, i) => {
+            if (i === d.from) return false;
+            const top = d.rects[i].top + (d.shift.get(row) ?? 0);
+            return center > top + d.header / 4 && center < top + (d.header * 3) / 4;
+        });
+        if (target !== d.merge) {
+            d.merge?.classList.remove("category-merge-target");
+            target?.classList.add("category-merge-target");
+            d.merge = target ?? null;
+        }
+        if (d.merge) {
+            d.row.style.transform = `translateY(${delta / d.scale}px)`;
+            return;
+        }
         let to = 0;
         for (let i = 0; i < d.rows.length; i++) {
             if (i !== d.from && center > d.rects[i].top + d.rects[i].height / 2) to++;
         }
         d.to = to;
-        d.delta = delta;
         const order = d.rows.filter((row) => row !== d.row);
         order.splice(to, 0, d.row);
         let top = d.rects[0].top;
         for (const row of order) {
             const index = d.rows.indexOf(row);
             const shift = top - d.rects[index].top;
+            d.shift.set(row, row === d.row ? 0 : shift);
             row.style.transform = `translateY(${(row === d.row ? delta : shift) / d.scale}px)`;
             top += d.rects[index].height + d.gap;
         }
@@ -39,7 +56,7 @@ export function categoryReorder(list, { commit, error, finish }) {
         cancelAnimationFrame(frame);
         for (const row of d.rows) {
             row.style.transform = "";
-            row.classList.remove("category-sorting", "category-lifted");
+            row.classList.remove("category-sorting", "category-lifted", "category-merge-target");
         }
         document.body.classList.remove("category-dragging");
         drag = null;
@@ -59,8 +76,9 @@ export function categoryReorder(list, { commit, error, finish }) {
             return;
         }
         const before = d.row.getBoundingClientRect().top;
+        const merging = !cancelled && d.merge;
         const order = [...d.rows];
-        if (!cancelled) {
+        if (!cancelled && !merging) {
             order.splice(d.from, 1);
             order.splice(d.to, 0, d.row);
         }
@@ -78,7 +96,8 @@ export function categoryReorder(list, { commit, error, finish }) {
         });
         try {
             await animation.finished;
-            if (!cancelled && d.from !== d.to) {
+            if (merging) await merge(d.row.dataset.category, d.merge.dataset.category);
+            else if (!cancelled && d.from !== d.to) {
                 await commit(
                     [...list.children].map((row) => row.dataset.category),
                     d.original,
@@ -94,7 +113,7 @@ export function categoryReorder(list, { commit, error, finish }) {
     list.addEventListener("pointerdown", (event) => {
         if (drag || event.button !== 0 || !event.isPrimary || list.querySelector("form")) return;
         const row = event.target.closest(".category-row[data-sortable]");
-        if (!row || event.target.closest("button:not(.category-filter), input, form")) return;
+        if (!row || event.target.closest("button:not(.category-filter), input, form, .building-list")) return;
         const rows = [...list.querySelectorAll(".category-row[data-sortable]")];
         const rects = rows.map((item) => item.getBoundingClientRect());
         drag = {
@@ -111,6 +130,12 @@ export function categoryReorder(list, { commit, error, finish }) {
             started: false,
             settling: false,
             gap: rows.length > 1 ? rects[1].top - rects[0].bottom : 0,
+            // Height of a category line (an open row also holds its building list below it).
+            header:
+                (Number.parseFloat(getComputedStyle(list).getPropertyValue("--category-list-item-height")) || 48) *
+                (row.getBoundingClientRect().height / row.offsetHeight),
+            shift: new Map(),
+            merge: null,
             original: [...list.children].map((item) => item.dataset.category),
         };
     });
@@ -122,7 +147,11 @@ export function categoryReorder(list, { commit, error, finish }) {
             if (!drag.started && Math.abs(drag.y - drag.startY) >= 5) {
                 drag.started = true;
                 suppressClick = true;
-                drag.row.setPointerCapture(event.pointerId);
+                try {
+                    drag.row.setPointerCapture(event.pointerId);
+                } catch {
+                    // The pointer is gone already; the drag still follows window events.
+                }
                 for (const row of drag.rows) row.classList.add("category-sorting");
                 drag.row.classList.add("category-lifted");
                 document.body.classList.add("category-dragging");
