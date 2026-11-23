@@ -167,6 +167,8 @@ UI 아이콘(NEW 말풍선 꼬리 포함)의 디자인 원본은 위 Figma 화�
 
 저장 팝업의 **아이콘** 버튼에서 이모지를 검색·선택하거나 **사이트 아이콘 사용**으로 돌아갈 수 있습니다. 선택은 **저장하기**를 누를 때 북마크에 저장됩니다. 이모지 목록은 [Unicode Emoji 17.0](https://unicode.org/Public/17.0.0/emoji/emoji-test.txt), 한국어 이름은 [Unicode CLDR 48](https://github.com/unicode-org/cldr/tree/release-48/common/annotations)에서 가져왔으며 라이선스는 `shared/emoji-LICENSE.txt`에 있습니다. 기본 피부색의 표준 이모지를 제공하며 최근 사용 목록은 팝업을 닫으면 초기화됩니다.
 
+홈페이지의 북마크 수정 창에서도 상단 아이콘 선택 행으로 같은 선택기를 열 수 있습니다. 선택한 이모지는 입력 행에 즉시 표시하고 **수정하기**를 누르면 지도·호버 카드·건물 목록에 반영합니다. **취소하기**로 닫으면 아이콘 변경을 저장하지 않으며, 선택기가 열린 상태의 Esc는 선택기만 닫습니다.
+
 `assets/ui/emoji-*.svg` 11개는 [Figma 팝업·이모지 선택기 명세](https://www.figma.com/design/AJUY7H7Zq3FM2nLZ9s7bKk/?node-id=6723-62151)의 분류·검색·화살표 아이콘입니다.
 
 ### Google 서비스 아이콘 출처

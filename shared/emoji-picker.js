@@ -19,7 +19,7 @@ const FIRST_PEOPLE = Array.from(
 );
 const peopleOrder = new Map(FIRST_PEOPLE.map((emoji, index) => [emoji, index]));
 
-export function createEmojiPicker(host, { onChange = () => {}, onUseSiteIcon = () => {} } = {}) {
+export function createEmojiPicker(host, { onChange = () => {}, onUseSiteIcon = () => {}, position } = {}) {
     function node(tag, className, text) {
         const result = document.createElement(tag);
         result.className = className;
@@ -214,6 +214,11 @@ export function createEmojiPicker(host, { onChange = () => {}, onUseSiteIcon = (
             render();
             host.hidden = false;
             anchor.setAttribute("aria-expanded", "true");
+            if (position) {
+                position(host, anchor);
+                search.focus();
+                return;
+            }
             const bounds = anchor.getBoundingClientRect();
             const margin = Number.parseFloat(getComputedStyle(host).getPropertyValue("--space-2"));
             host.style.left = `${Math.max(margin, Math.min(bounds.left, innerWidth - host.offsetWidth - margin))}px`;

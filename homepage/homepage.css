@@ -1653,3 +1653,56 @@ body.building-dragging .zone svg {
         animation: none;
     }
 }
+
+.editor-icon-field {
+    flex-shrink: 0;
+    display: grid;
+    gap: var(--spec-content-gap);
+}
+.editor-icon-labels,
+.editor-icon-control {
+    display: grid;
+    grid-template-columns: var(--popup-control-height) minmax(0, 1fr);
+    column-gap: 9px;
+}
+.editor-icon-labels .field-label {
+    margin: 0;
+    line-height: var(--line-height-compact);
+}
+.editor-icon-labels .field-label:first-child {
+    text-align: center;
+}
+.editor-icon-control {
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+}
+#edit-icon-preview,
+.editor-icon-prompt {
+    display: flex;
+    align-items: center;
+    height: var(--popup-control-height);
+    border: var(--border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-field);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
+}
+#edit-icon-preview {
+    justify-content: center;
+    font-size: var(--font-size-xl);
+}
+.editor-site-icon {
+    width: var(--icon-size-default);
+    height: var(--icon-size-default);
+    object-fit: contain;
+}
+.editor-icon-prompt {
+    padding-inline: var(--popup-field-padding-inline);
+    font-size: var(--font-size-xs);
+}
+#edit-emoji-picker {
+    position: absolute;
+}
