@@ -776,6 +776,7 @@ const renderCategories = categoryManager({
         selectedCategory = selectedCategory === id ? null : id;
         applyFilter();
     },
+    onSearchChange: hideTooltip,
     // Hovering a building row previews it like hovering the building; nothing changes while a card is pinned.
     hoverBuilding(id, row) {
         if (pinnedBookmark !== null) return;

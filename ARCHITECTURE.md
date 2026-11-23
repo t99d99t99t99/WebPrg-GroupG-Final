@@ -9,6 +9,8 @@
 
 카테고리 선택만 된 상태(`category-focus`)에서는 Figma USER-MAIN-CATEGORY-007에 따라 흐림 막과 확대·상승을 사용하지 않습니다. 선택 건물·아이콘은 100%, 다른 건물·아이콘은 40%, 잔디·도로·장식·교통은 60%, 황무지 배경은 100% 불투명도로 표시합니다. 사이드바는 선택한 카테고리 색의 15% 배경과 45% 펼침 선, 일반 굵기의 글씨를 사용합니다. 해제하면 원래 표시로 복원합니다.
 
+검색은 제목 완전 일치 → 제목 시작 → 단어 시작 → 제목 중간 → 공백을 제외한 제목 일치 → 초성 → 도메인 일치 순으로 표시합니다. 검색어의 모든 단어가 제목 또는 도메인에 포함되어야 하며 단어 순서는 무관합니다. 특수기호는 보존합니다. `bookmark-search.js`가 변경된 이름·URL만 다시 색인하고 데이터 추가·삭제·변경 시 검색 캐시를 비웁니다. 카테고리 이동·아이콘 변경은 기존 색인의 표시 데이터를 갱신합니다. `category-manager.js`는 입력을 프레임 단위로 모으고 IME 조합 중 갱신·Esc 초기화를 보류합니다. 결과는 버튼으로 50개씩 추가하거나 방향키로 다음 묶음을 불러옵니다. 검색 중 불필요한 숨은 카테고리 목록 재생성을 건너뛰며, 검색어가 바뀌면 이전 상세 카드를 닫습니다. 강조 표시는 원문 위치를 보존한 텍스트·mark 노드로 만들고 HTML을 해석하지 않습니다.
+
 카테고리 순서 이동은 `homepage/category-reorder.js`가 Pointer Events로 처리합니다. 행을 끌면 다른 행이 빈 슬롯을 만들고, 놓으면 320ms 정착 애니메이션 후 `category-manager.js`를 통해 기존 `CategoryDB.reorder`로 저장합니다. 일반 카테고리는 고정하며 드래그 중 들어온 목록 갱신은 정착 후 반영합니다.
 
 건물 상세가 열리면 사이드바의 해당 카테고리명과 행 배경·테두리를 강조하고, 닫히면 기존 선택 상태를 유지합니다. 카테고리를 선택한 뒤 카테고리 행이나 해당 건물·상세 카드 외 영역을 클릭하면 선택을 해제합니다.
@@ -46,7 +48,8 @@
 | `shared/emoji-picker.js`, `shared/emoji-picker.css` | 저장 팝업·홈페이지 북마크 수정 창의 대표 아이콘 선택창. 한국어·영어 검색, 최근 사용(선택기 인스턴스 동안 유지)과 사람·자연·음식·활동·여행·사물·기호·깃발 분류, 키보드 이동, 사이트 아이콘 복귀. 저장은 호출 화면에서 처리하며 `position` 콜백으로 배율이 적용된 대화상자 안의 위치를 계산할 수 있음 |
 | `shared/emoji-data.js`, `shared/emoji-LICENSE.txt` | Unicode Emoji 17.0의 기본 피부색 이모지와 CLDR 48 한국어 이름·영어 검색어, 허용 이모지 검증 및 데이터 라이선스 |
 | `homepage/google-account.js` | 계정 표시 전용 어댑터. 전달받은 이름·HTTPS 사진 URL을 표시하고 사진 부재·실패 시 기본 아바타로 복귀. 인증·권한·저장소 접근 없음 |
-| `homepage/category-manager.js` | 카테고리 목록 패널. 건물명 검색(앞 글자 음절 일치 순), 선택한 카테고리 아래 건물 목록(호버·클릭은 `homepage.js`의 `hoverBuilding`·`selectBuilding`으로 지도 강조·상세 카드 고정), 생성·이름 수정·드래그 순서 이동·삭제 확인, 색상 칩이나 연필로 이름 수정 칸과 컬러피커를 함께 열기(카테고리 일반의 색상 칩은 컬러피커만), 수정 중 확인·취소, 휴지통 버튼으로 삭제 창 열기, 카테고리 강조 선택 |
+| `homepage/category-manager.js` | 카테고리 목록 패널. 건물명·도메인 검색(다중 단어·초성·공백/문자 정규화, 일치 강조, 50개씩 추가 표시, 키보드 조작), 선택한 카테고리 아래 건물 목록(호버·클릭은 `homepage.js`의 `hoverBuilding`·`selectBuilding`으로 지도 강조·상세 카드 고정), 생성·이름 수정·드래그 순서 이동·삭제 확인, 색상 칩이나 연필로 이름 수정 칸과 컬러피커를 함께 열기(카테고리 일반의 색상 칩은 컬러피커만), 수정 중 확인·취소, 휴지통 버튼으로 삭제 창 열기, 카테고리 강조 선택 |
+| `homepage/bookmark-search.js` | 홈페이지 검색 전용 순수 모듈. 제목·도메인 색인, NFKC·대소문자·공백 정규화, 한글 초성, 모든 단어 일치 및 제목 우선 순위, 원문 강조 범위, 최근 12개 검색 결과 캐시. 저장소를 수정하지 않음 |
 | `homepage/category-reorder.js` | 행의 포인터 드래그·자동 스크롤·정착 애니메이션·취소와 저장 콜백 처리. 다른 행의 카테고리 줄 가운데에 놓으면 병합 콜백 |
 | `homepage/building-reorder.js` | 카테고리 아래 건물 목록의 순서 변경(행·≡ 버튼 드래그, ≡에서 위·아래 방향키). 저장은 콜백으로 `BookmarkDB.reorder` |
 | `debug/` | 개발자용 정적 디버그 도구 모음. 앱 저장소나 Chrome API를 사용하지 않음 |
@@ -89,7 +92,7 @@ homepage/homepage.js ──> db/db.js (moveBookmark: 건물 이동 저장)
 homepage/homepage.js ──> homepage/category-colors.js
 homepage/homepage.js ──> homepage/building-rules.js / homepage/building-appearance.js
 homepage/homepage.js ──> homepage/category-manager.js / homepage/google-account.js
-homepage/category-manager.js ──> homepage/category-reorder.js / homepage/building-reorder.js
+homepage/category-manager.js ──> homepage/category-reorder.js / homepage/building-reorder.js / homepage/bookmark-search.js
 homepage/homepage.js ──> homepage/settings-panel.js ──> db/db.js (settings, resetAllData) / shared/color-picker.js / homepage/background-image.js
 homepage/homepage.js ──> homepage/traffic.js ──> homepage/layout.js (project, planRoads 결과의 칸·타일 이름)
 homepage/homepage.js ─┐

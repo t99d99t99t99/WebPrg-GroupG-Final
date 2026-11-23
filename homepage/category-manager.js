@@ -2,6 +2,7 @@ import { isGeneralCategory } from "../db/category.js";
 import { bookmarks, categories, deleteCategory, mergeCategory } from "../db/db.js";
 import { bookmarkEmoji, bookmarkIconUrl } from "../shared/site-icons.js";
 import { categoryError } from "../shared/validation.js";
+import { createBookmarkSearch, searchHighlightRanges } from "./bookmark-search.js";
 import { buildingReorder } from "./building-reorder.js";
 import { categoryReorder } from "./category-reorder.js";
 
@@ -35,13 +36,16 @@ function categoryTiles() {
     }
     return svg;
 }
-// How many leading characters (syllables) of the name match the query, ignoring case.
-function prefixScore(name, query) {
-    const a = [...name.normalize("NFC").toLowerCase()];
-    const b = [...query.normalize("NFC").toLowerCase()];
-    let count = 0;
-    while (count < a.length && count < b.length && a[count] === b[count]) count++;
-    return count;
+function highlightText(host, field, tokens) {
+    let offset = 0;
+    for (const [start, end] of searchHighlightRanges(field, tokens)) {
+        host.append(
+            document.createTextNode(field.raw.slice(offset, start)),
+            node("mark", "", field.raw.slice(start, end)),
+        );
+        offset = end;
+    }
+    host.append(document.createTextNode(field.raw.slice(offset)));
 }
 export function categoryManager({
     openColorPicker,
@@ -50,6 +54,7 @@ export function categoryManager({
     toast,
     hoverBuilding,
     selectBuilding,
+    onSearchChange = () => {},
 }) {
     let saved = [],
         editing = null,
@@ -118,7 +123,7 @@ export function categoryManager({
     }
     // A building's row in the panel (Figma "Main / Building List Item"): its icon and name select it, the ≡
     // button (rows under a category only) reorders it. Hovering previews it on the map, clicking pins its card.
-    function buildingRow(bookmark, category, sortable) {
+    function buildingRow(bookmark, category, sortable, match = null) {
         const row = node("div", "building-row");
         row.dataset.bookmark = bookmark.id;
         row.style.setProperty("--zone-color", category.color);
@@ -140,7 +145,19 @@ export function categoryManager({
             icon.src = bookmarkIconUrl(bookmark) || FALLBACK_ICON;
             badge.append(icon);
         }
-        select.append(badge, node("span", "building-row-name", bookmark.name));
+        const name = node("span", "building-row-name");
+        if (match) {
+            row.classList.add("building-search-row");
+            highlightText(name, match.entry.title, currentResult.tokens);
+            const copy = node("span", "building-search-copy");
+            const detail = node("span", "building-search-detail");
+            detail.append(document.createTextNode(`${category.name} · `));
+            highlightText(detail, match.entry.domain, currentResult.tokens);
+            copy.append(name, detail);
+            select.append(badge, copy);
+            select.setAttribute("aria-label", `${bookmark.name} · ${category.name} · ${match.entry.domain.raw}`);
+        } else select.append(badge, name);
+        if (!match) name.textContent = bookmark.name;
         select.addEventListener("click", () => selectBuilding(bookmark.id, row));
         select.addEventListener("focus", () => hoverBuilding(bookmark.id, row));
         select.addEventListener("blur", () => hoverBuilding(null, row));
@@ -160,44 +177,125 @@ export function categoryManager({
         }
         return row;
     }
-    // Search: names whose first characters match the query, the longest match first.
+    const search = createBookmarkSearch();
+    const searchInput = $("building-search");
+    const results = $("building-results");
+    const searchStatus = $("building-search-status");
+    const PAGE_SIZE = 50;
     let query = "";
-    function renderResults(groups) {
-        const results = $("building-results");
-        const searching = query.trim() !== "";
+    let composing = false;
+    let searchFrame = 0;
+    let currentResult = null;
+    let shown = 0;
+    let moreButton;
+    function appendResults() {
+        moreButton?.remove();
+        const page = currentResult.matches.slice(shown, shown + PAGE_SIZE);
+        const fragment = document.createDocumentFragment();
+        for (const match of page) {
+            const { bookmark, category } = match.entry;
+            fragment.append(buildingRow(bookmark, category, false, match));
+        }
+        shown += page.length;
+        results.append(fragment);
+        searchStatus.textContent = `검색 결과 ${currentResult.matches.length}개 · ${shown}개 표시`;
+        if (shown < currentResult.matches.length) {
+            moreButton = node("button", "building-search-more", "검색 결과 더 보기");
+            moreButton.type = "button";
+            moreButton.addEventListener("click", () => {
+                const index = shown;
+                appendResults();
+                results.querySelectorAll(".building-row-select")[index]?.focus();
+            });
+            results.append(moreButton);
+        }
+    }
+    function renderResults(force = false) {
+        const next = search.find(query);
+        if (!force && currentResult === next) return;
+        currentResult = next;
+        const searching = Boolean(next.query);
         results.hidden = !searching;
+        searchStatus.hidden = !searching;
         $("category-list").hidden = searching;
+        if (results.contains(document.activeElement)) searchInput.focus();
+        results.replaceChildren();
+        moreButton = null;
+        shown = 0;
         if (!searching) {
-            results.replaceChildren();
+            searchStatus.textContent = "";
             return;
         }
-        const matches = groups
-            .flatMap((group) =>
-                group.items.map((bookmark) => ({
-                    bookmark,
-                    category: group.category,
-                    score: prefixScore(bookmark.name, query.trim()),
-                })),
-            )
-            .filter((match) => match.score > 0)
-            .sort((a, b) => b.score - a.score || a.bookmark.name.localeCompare(b.bookmark.name, "ko"));
-        results.replaceChildren(
-            ...(matches.length
-                ? matches.map(({ bookmark, category }) => buildingRow(bookmark, category, false))
-                : [node("p", "building-results-empty", "일치하는 건물이 없습니다.")]),
-        );
+        results.scrollTop = 0;
+        if (next.matches.length) appendResults();
+        else {
+            searchStatus.textContent = "검색 결과 0개";
+            results.append(node("p", "building-results-empty", "일치하는 건물이 없습니다."));
+        }
     }
-    $("building-search").addEventListener("input", () => {
-        query = $("building-search").value;
-        renderResults(lastGroups);
+    function flushSearch() {
+        cancelAnimationFrame(searchFrame);
+        searchFrame = 0;
+        query = searchInput.value;
+        onSearchChange();
+        if (!query.trim()) render(lastGroups);
+        renderResults();
+    }
+    function queueSearch() {
+        if (composing) return;
+        cancelAnimationFrame(searchFrame);
+        searchFrame = requestAnimationFrame(flushSearch);
+    }
+    searchInput.addEventListener("compositionstart", () => {
+        composing = true;
+        cancelAnimationFrame(searchFrame);
     });
-    $("building-search").addEventListener("keydown", (event) => {
-        if (event.key !== "Escape" || !$("building-search").value) return;
-        event.stopPropagation();
-        $("building-search").value = "";
-        query = "";
-        renderResults(lastGroups);
+    searchInput.addEventListener("compositionend", () => {
+        composing = false;
+        queueSearch();
     });
+    searchInput.addEventListener("input", (event) => {
+        if (!event.isComposing) queueSearch();
+    });
+    function searchKey(event) {
+        if (composing || event.isComposing || event.keyCode === 229) return;
+        if (event.key === "Escape" && searchInput.value) {
+            event.preventDefault();
+            event.stopPropagation();
+            searchInput.value = "";
+            flushSearch();
+            searchInput.focus();
+            return;
+        }
+        if (!["ArrowDown", "ArrowUp", "Enter"].includes(event.key)) return;
+        if (event.target === searchInput && searchFrame) flushSearch();
+        if (!currentResult?.query) return;
+        if (event.key === "Enter") {
+            if (event.target !== searchInput) return; // Native Enter activates a focused result or more button.
+            event.preventDefault();
+            const first = results.querySelector(".building-row-select");
+            first?.focus();
+            first?.click();
+            return;
+        }
+        if (event.target !== searchInput && !event.target.matches(".building-row-select")) return;
+        event.preventDefault();
+        let buttons = [...results.querySelectorAll(".building-row-select")];
+        const index = buttons.indexOf(document.activeElement);
+        let next = index + (event.key === "ArrowDown" ? 1 : -1);
+        if (index < 0) next = event.key === "ArrowDown" ? 0 : buttons.length - 1;
+        if (next < 0) {
+            searchInput.focus();
+            return;
+        }
+        if (next >= buttons.length && shown < currentResult.matches.length) {
+            appendResults();
+            buttons = [...results.querySelectorAll(".building-row-select")];
+        }
+        buttons[Math.min(next, buttons.length - 1)]?.focus();
+    }
+    searchInput.addEventListener("keydown", searchKey);
+    results.addEventListener("keydown", searchKey);
     // Editing a category opens its name field and its color picker together.
     function startEdit(category, groups) {
         editing = category.id;
@@ -214,6 +312,7 @@ export function categoryManager({
             return;
         }
         saved = groups.map((group) => group.category);
+        if (query.trim() && !editing) return;
         const list = $("category-list"),
             fragment = document.createDocumentFragment();
         const rows = [...groups.map((group) => group.category)];
@@ -416,7 +515,8 @@ export function categoryManager({
     });
     return (groups) => {
         lastGroups = groups;
+        search.update(groups);
         render(groups);
-        renderResults(groups);
+        renderResults(true);
     };
 }
