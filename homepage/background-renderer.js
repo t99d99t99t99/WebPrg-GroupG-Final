@@ -24,19 +24,23 @@ export async function paintBackground(layer, { land, view, width, height }) {
     const version = (versions.get(layer) ?? 0) + 1;
     versions.set(layer, version);
     const { x, y, zoom } = view;
-    const left = -x / zoom,
-        top = -y / zoom;
-    const bounds = cellBounds(left, top, (width - x) / zoom, (height - y) / zoom);
+    // Overscan keeps short camera gestures covered while the cached canvas follows the world.
+    const padding = 256;
+    const left = (-x - padding) / zoom,
+        top = (-y - padding) / zoom;
+    const paintWidth = width + padding * 2,
+        paintHeight = height + padding * 2;
+    const bounds = cellBounds(left, top, (width + padding - x) / zoom, (height + padding - y) / zoom);
     const tiles = planBackground(land, bounds);
     const sources = [...new Set(tiles.map((tile) => tile.src))];
     const loaded = await Promise.all(sources.map(load));
     if (versions.get(layer) !== version || !layer.isConnected) return;
     const sprites = new Map(sources.map((src, i) => [src, loaded[i]]));
     const canvas = document.createElement("canvas");
-    const resolution = Math.min(1, Math.sqrt(4_000_000 / (width * height)));
-    canvas.width = Math.ceil(width * resolution);
-    canvas.height = Math.ceil(height * resolution);
-    canvas.style.cssText = `position:absolute;left:${left}px;top:${top}px;width:${width / zoom}px;height:${height / zoom}px;pointer-events:none`;
+    const resolution = Math.min(1, Math.sqrt(4_000_000 / (paintWidth * paintHeight)));
+    canvas.width = Math.ceil(paintWidth * resolution);
+    canvas.height = Math.ceil(paintHeight * resolution);
+    canvas.style.cssText = `position:absolute;left:${left}px;top:${top}px;width:${paintWidth / zoom}px;height:${paintHeight / zoom}px;pointer-events:none`;
     canvas.setAttribute("aria-hidden", "true");
     const context = canvas.getContext("2d");
     context.imageSmoothingEnabled = false;

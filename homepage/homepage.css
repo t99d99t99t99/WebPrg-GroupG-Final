@@ -222,6 +222,12 @@ a:hover {
 #world.animated {
     transition: transform 0.35s ease;
 }
+#world.camera-controlled {
+    transition: none;
+}
+#city.camera-panning {
+    cursor: grabbing;
+}
 .tile {
     max-width: none;
     position: absolute;
@@ -399,8 +405,9 @@ a:hover {
     display: block;
     transition: transform var(--hover-duration) ease-out;
 }
+:where(#city.camera-panning) .building-hit-area,
 .building.popup-obstructed .building-hit-area {
-    /* biome-ignore lint/complexity/noImportantStyles: override the shared hit shape's pointer-events while crossing to the popup. */
+    /* biome-ignore lint/complexity/noImportantStyles: popup crossing and camera panning override the shared hit shape. */
     pointer-events: none !important;
 }
 .building-wall-tint,

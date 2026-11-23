@@ -26,6 +26,7 @@
 | `homepage/background.js` | 구역·도로 밖을 채우는 미개발 공터 바닥 타일 계산(순수 함수). 칸 좌표로 정한 흙 변형 타일, 화면 범위를 칸 범위로 바꾸는 역변환 |
 | `homepage/background-renderer.js` | 공터 타일을 화면 해상도 기준 캔버스 하나에 그림. 이미지 로딩을 공유하고 뒤늦게 끝난 이전 요청은 버림 |
 | `homepage/spatial-index.js` | 건물의 월드 좌표 사각형을 격자로 색인해 팝업 이동 경로 주변 건물만 검색 |
+| `homepage/map-camera.js` | 탭 안의 줌·시점 이동. 핀치/휠 확대, 트랙패드 스크롤·가운데 버튼 이동, 포인터 중심 줌과 배율 제한, 프레임 단위 변환. 저장소 접근 없음 |
 | `homepage/building-move.js` | 건물 이동 계산(순수 함수). 놓은 자리의 의미(이동·자리 교환·밀어내기·한 줄 끼워 넣기) 결정, 끼워 넣은 줄 너머 땅 밀기, 이동을 적용한 `planCity` 결과 미리 계산, 배치 지문 |
 | `homepage/building-drag.js` | 건물 길게 누르기·끌기·놓기 화면 동작. 반투명 건물과 놓일 칸 표시, 꽉 찬 땅 테두리 게이지와 넓힐 칸, 넓힌 뒤 지도 미리보기, Esc·지도 밖 취소, 끈 뒤 사이트 방문 막기. 안내 문구는 쓰지 않고 표시로만 알립니다 |
 | `homepage/building-rules.js` | 5개 계열의 3단계 에셋 목록, 북마크 ID 기반 계열·a/b·형태 선택, 7일 미방문 파손 판정 |
@@ -80,6 +81,7 @@ homepage/homepage.js ──> homepage/decorations.js (decorationsFor) ──> ho
 homepage/homepage.js ──> db/db.js (settings) ──> db/settings.js ──> db/storage.js
 homepage/homepage.js ──> homepage/background-renderer.js ──> homepage/background.js (planBackground, cellBounds) ──> homepage/layout.js (타일 크기)
 homepage/homepage.js ──> homepage/spatial-index.js (팝업 이동 경로 후보 검색)
+homepage/homepage.js ──> homepage/map-camera.js (카메라 변환, 변경 시 팝업 닫기·배경 갱신)
 homepage/homepage.js ──> homepage/building-drag.js ──> homepage/building-move.js ──> homepage/layout.js (planCity)
 homepage/homepage.js ──> db/db.js (moveBookmark: 건물 이동 저장)
 homepage/homepage.js ──> homepage/category-colors.js
@@ -123,7 +125,7 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 - `db/db.js`가 저장 키와 `bookmarks`, `categories`, `settings` 싱글턴, 초기화 Promise인 `ready`, 변경 알림 `subscribe`(북마크·카테고리·지도 설정 키가 바뀔 때)를 제공합니다.
 - 홈페이지 설정 창 안의 "크롬 북마크 동기화" 버튼은 클릭할 때 `chrome.bookmarks.getTree`로 읽은 트리를 `importChromeBookmarks`에 전달합니다. 북마크바·기타·모바일 등 Chrome 기본 컨테이너 안의 사용자 폴더를 카테고리로 만들고, 하위 폴더의 북마크는 해당 상위 카테고리로 합칩니다. 폴더 밖의 북마크는 "카테고리 일반"으로 가져옵니다. 같은 이름의 카테고리는 재사용하고, 정규화한 URL이 이미 있으면 건너뜁니다. HTTP/HTTPS 주소만 가져오며 이름은 Chrome 원본을 보존합니다. 공통 쓰기 잠금 안에서 최신 데이터와 합쳐 두 배열을 함께 저장합니다. Chrome 원본을 수정하지 않으며, 기존 항목의 변경·삭제를 추적하는 실시간 동기화는 하지 않습니다.
 - 팝업은 `Bookmark`, `Category` 클래스와 `add` API로 현재 페이지를 저장합니다. 팝업은 374×600 크기의 각진 컨테이너이며 입력 영역만 세로 스크롤하고 하단 74px 영역의 작업 버튼은 고정합니다. 현재 탭 제목을 초기 페이지 이름으로 표시하며, 이름은 빈 값만 거부하고 이름·메모 모두 언어·기호·글자 수 제한 없이 저장합니다. 홈페이지 이름 수정과 메모도 같은 제한을 적용합니다. 긴 이름은 입력란·지도 라벨에서 말줄임하고 상세 카드에서 줄바꿈합니다.
-- 새 카테고리 입력은 “일반”으로 시작하며 한글·영문·숫자·공백 10자 이내, 빈 값·이름 중복 금지 규칙을 UI와 DB에서 검사합니다. 기존 카테고리 목록은 `shared/category-select.js`로 색상 칩과 이름을 함께 표시하고 4개 항목 높이에서 스크롤합니다. 새 카테고리는 임의의 팔레트 색상으로 시작하며 색상 선택기·HEX 입력으로 바꿉니다. 불투명도는 100%로 표시합니다. 선택한 색상은 기존 `color` 필드에 저장합니다.
+- 새 카테고리 입력은 “일반”으로 시작하며 모든 언어·특수기호·이모지를 허용합니다. 10자 이내, 빈 값·이름 중복 금지 규칙을 UI와 DB에서 검사합니다. 기존 카테고리 목록은 `shared/category-select.js`로 색상 칩과 이름을 함께 표시하고 4개 항목 높이에서 스크롤합니다. 새 카테고리는 임의의 팔레트 색상으로 시작하며 색상 선택기·HEX 입력으로 바꿉니다. 불투명도는 100%로 표시합니다. 선택한 색상은 기존 `color` 필드에 저장합니다.
 - 건물 선택은 5개 계열의 좌우 방향별 기본 디자인 10종이며 기본값은 도심 주택 왼쪽입니다. 선택 상태는 회색 반투명 배경으로 강조하며 양 끝의 진행 불가 화살표는 숨깁니다. 미리보기는 홈페이지와 같은 벽면 마스크, 색상 블렌딩 및 `wallColorAdjustments`를 사용하고 카테고리 선택·색상·HEX 변경 즉시 갱신합니다. 선택값은 북마크의 `buildingDesign` 필드에 저장하며, 지도는 선택한 계열·방향과 카테고리 색상을 적용합니다. 선택값이 없으면 ID 기반으로 결정합니다.
 - 상세 카드의 메모 입력과 북마크 수정은 `BookmarkDB.edit`를 사용합니다. 수정 창은 변경된 이름·URL만 검증하고, 건물 디자인은 처음 표시한 디자인(저장값 또는 지도가 ID로 정한 계열·방향)에서 바뀐 경우에만 `buildingDesign`으로 저장합니다. 수정 창이 열린 동안 지도는 45%·blur 1px로 흐려지고(`#world.editor-focus`가 흐림 막 값을 바꿈) 수정 중인 건물은 선명하게 남습니다. 북마크 삭제는 상세 카드의 삭제 버튼에서 확인 창을 거쳐 `BookmarkDB.remove`를 사용합니다. 카테고리 삭제는 `deleteCategory`가 카테고리와 포함된 북마크를 함께 삭제합니다. 카테고리 병합은 `mergeCategory(from, to)`가 옮기는 북마크의 `category`를 바꾸고 `cell`을 지워 새 영역에 다시 배치하게 한 뒤 원래 카테고리를 지웁니다(카테고리 일반은 거부). 카테고리 아래 건물 목록은 북마크 배열 순서이며, `BookmarkDB.reorder(ids)`는 그 북마크들이 차지한 배열 자리 안에서만 순서를 바꿉니다(필드 변경 없음). 순서는 카테고리 배열 순서로 저장합니다.
 - DB는 초기화가 끝난 뒤 저장소를 읽습니다. 조회 시 최신 데이터를 다시 읽어 다른 탭의 저장을 반영합니다.

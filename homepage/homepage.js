@@ -27,6 +27,7 @@ import { categoryManager } from "./category-manager.js";
 import { decorationsFor, yardFor } from "./decorations.js";
 import { setGoogleAccount } from "./google-account.js";
 import { planCity, planRoads, project, TILE_HEIGHT, TILE_WIDTH } from "./layout.js";
+import { createMapCamera } from "./map-camera.js";
 import { createSettingsPanel } from "./settings-panel.js";
 import { SpatialIndex } from "./spatial-index.js";
 import { createTraffic } from "./traffic.js";
@@ -91,7 +92,7 @@ function fitCanvas() {
     $("viewport").style.height = `${canvasHeight * scale}px`;
     MAP_AREA.top = Math.min(200, canvasHeight * 0.18);
     MAP_AREA.height = Math.max(250, canvasHeight - MAP_AREA.top - 70);
-    fitCity(lastCityTiles);
+    backgroundView = fitCity(lastCityTiles) ?? backgroundView;
     hideTooltip();
 }
 
@@ -275,7 +276,7 @@ function intersectsHoverCorridor(rect) {
 
 function showTooltip(bookmark, category, link) {
     // No detail card while a building is being dragged (focus can return mid-drag).
-    if (buildingDrag.isDragging()) return;
+    if (buildingDrag.isDragging() || camera.isInteracting()) return;
     if (activeLink && activeLink !== link) activeLink.removeAttribute("aria-describedby");
     activeLink = link;
     activeBookmark = bookmark;
@@ -649,13 +650,13 @@ function fitCity(tiles) {
     const y = MAP_AREA.top + (MAP_AREA.height - height * zoom) / 2 - minTop * zoom;
     const world = $("world");
     const first = !world.style.transform;
-    world.style.transform = `translate(${x}px, ${y}px) scale(${zoom})`;
+    const view = camera.fit({ x, y, zoom });
     if (first) {
         // Animate later zoom changes only, not the first placement on page load.
         void world.offsetWidth;
         world.classList.add("animated");
     }
-    return { x, y, zoom };
+    return view;
 }
 
 // Lot ground under the whole canvas outside categories and roads. Kept apart from
@@ -733,6 +734,24 @@ const buildingDrag = createBuildingDrag({
     },
     commit: commitMove,
     toast,
+});
+
+let cameraBackgroundTimer;
+const camera = createMapCamera({
+    surface: $("city"),
+    canvas: $("canvas"),
+    world: $("world"),
+    canStart: () => !buildingDrag.isDragging() && !document.querySelector(".drag-arming, dialog[open]"),
+    onChange(view) {
+        backgroundView = view;
+        if (activeLink || !tooltip.hidden) hideTooltip();
+        // Keep the cached background during a gesture; rasterise once the camera settles.
+        clearTimeout(cameraBackgroundTimer);
+        cameraBackgroundTimer = setTimeout(() => {
+            const background = document.querySelector("#ground > .background-tiles");
+            if (background) drawBackground(background);
+        }, 120);
+    },
 });
 
 const renderCategories = categoryManager({
