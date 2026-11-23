@@ -13,6 +13,8 @@ import { DEFAULT_SETTINGS } from "../db/settings.js";
 import { buildingPicker } from "../shared/building-picker.js";
 import { categorySelect } from "../shared/category-select.js";
 import { createColorPicker } from "../shared/color-picker.js";
+import { isBookmarkEmoji } from "../shared/emoji-data.js";
+import { createEmojiPicker } from "../shared/emoji-picker.js";
 import { bookmarkEmoji, bookmarkIconUrl } from "../shared/site-icons.js";
 import { bookmarkNameError, webUrl } from "../shared/validation.js";
 import { paintBackground } from "./background-renderer.js";
@@ -1145,6 +1147,69 @@ $("apps-button").addEventListener("click", () => {
 let editingBookmark;
 let editCategories = [];
 let initialDesign = null;
+let editUseEmoji = false;
+let editEmoji = "😊";
+function renderEditIcon() {
+    const preview = $("edit-icon-preview");
+    preview.replaceChildren();
+    if (editUseEmoji) {
+        preview.textContent = editEmoji;
+        return;
+    }
+    preview.textContent = "🌐";
+    const src = bookmarkIconUrl({ ...editingBookmark, useEmoji: false });
+    if (!src) return;
+    const image = element("img", "editor-site-icon");
+    image.alt = "";
+    image.hidden = true;
+    image.addEventListener(
+        "load",
+        () => {
+            if (!image.isConnected) return;
+            preview.replaceChildren(image);
+            image.hidden = false;
+        },
+        { once: true },
+    );
+    image.addEventListener("error", () => image.remove(), { once: true });
+    image.src = src;
+    preview.append(image);
+}
+const editEmojiPicker = createEmojiPicker($("edit-emoji-picker"), {
+    onChange(emoji) {
+        editEmoji = emoji;
+        editUseEmoji = true;
+        renderEditIcon();
+    },
+    onUseSiteIcon() {
+        editUseEmoji = false;
+        renderEditIcon();
+    },
+    position(picker, trigger) {
+        // The dialog is scaled with the homepage; convert viewport bounds to its local coordinates.
+        const editor = $("bookmark-editor");
+        const bounds = editor.getBoundingClientRect();
+        const anchor = trigger.getBoundingClientRect();
+        const scaleX = bounds.width / editor.offsetWidth;
+        const scaleY = bounds.height / editor.offsetHeight;
+        picker.style.left = `${Math.max(
+            0,
+            Math.min((anchor.left - bounds.left) / scaleX - editor.clientLeft, editor.clientWidth - picker.offsetWidth),
+        )}px`;
+        picker.style.top = `${Math.max(
+            0,
+            Math.min(
+                (anchor.bottom - bounds.top) / scaleY - editor.clientTop,
+                editor.clientHeight - picker.offsetHeight,
+            ),
+        )}px`;
+    },
+});
+$("edit-icon").addEventListener("click", () => {
+    if (editEmojiPicker.isOpen) editEmojiPicker.close();
+    else editEmojiPicker.open($("edit-icon"), editUseEmoji ? editEmoji : "");
+});
+document.querySelector(".editor-content").addEventListener("scroll", () => editEmojiPicker.close());
 const editDesign = buildingPicker({
     host: $("edit-designs"),
     previous: $("edit-previous-design"),
@@ -1157,6 +1222,7 @@ const paintEditDesign = (id) => {
 };
 const editSelect = categorySelect($("edit-category"), { onChange: paintEditDesign });
 function closeEditor() {
+    editEmojiPicker.close();
     $("bookmark-editor").close();
     hideTooltip();
 }
@@ -1179,6 +1245,9 @@ $("edit-bookmark").addEventListener("click", async () => {
         paintEditDesign(editingBookmark.category);
         $("edit-name").value = editingBookmark.name;
         $("edit-url").value = editingBookmark.url;
+        editUseEmoji = Boolean(bookmarkEmoji(editingBookmark));
+        editEmoji = isBookmarkEmoji(editingBookmark.emoji) ? editingBookmark.emoji : "😊";
+        renderEditIcon();
         for (const field of ["edit-name", "edit-url"]) $(field).removeAttribute("aria-invalid");
         for (const field of ["edit-name-error", "edit-url-error", "edit-status"]) $(field).textContent = "";
         const left = tooltip.style.left,
@@ -1228,6 +1297,9 @@ $("edit-form").addEventListener("submit", async (event) => {
         if (nameChanged()) changes.name = $("edit-name").value.trim();
         if (urlChanged()) changes.url = $("edit-url").value.trim();
         if (editDesign.value !== initialDesign) changes.buildingDesign = editDesign.value;
+        if (editUseEmoji !== (editingBookmark.useEmoji === true)) changes.useEmoji = editUseEmoji;
+        if (editEmoji !== editingBookmark.emoji && (editUseEmoji || editingBookmark.emoji !== undefined))
+            changes.emoji = editEmoji;
         const result = await bookmarks.edit(editingBookmark.id, changes);
         if (!result) throw new Error("삭제된 북마크입니다.");
         closeEditor();
@@ -1240,8 +1312,15 @@ $("edit-form").addEventListener("submit", async (event) => {
     }
 });
 $("bookmark-editor").addEventListener("close", () => {
+    editEmojiPicker.close();
+    editingBookmark = null;
     $("world").classList.remove("editor-focus");
     hideTooltip();
+});
+$("bookmark-editor").addEventListener("cancel", (event) => {
+    if (!editEmojiPicker.isOpen) return;
+    event.preventDefault();
+    editEmojiPicker.close(true);
 });
 
 $("sync-bookmarks").addEventListener("click", async () => {
