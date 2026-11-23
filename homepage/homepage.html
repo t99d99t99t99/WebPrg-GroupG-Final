@@ -56,8 +56,9 @@
                 <div class="panel-heading"><h1 id="category-title">카테고리 목록</h1><button id="add-category" class="icon-button" type="button" aria-label="카테고리 추가"><img src="../assets/ui/add.svg" alt=""></button></div>
                 <label class="building-search">
                     <img class="building-search-icon" src="../assets/ui/search.svg" width="17" height="17" alt="">
-                    <input id="building-search" type="search" placeholder="건물명을 입력하세요" aria-label="건물명 검색" autocomplete="off" spellcheck="false">
+                    <input id="building-search" type="search" placeholder="건물명을 입력하세요" aria-label="건물명 검색" aria-controls="building-results" aria-describedby="building-search-status" autocomplete="off" spellcheck="false">
                 </label>
+                <p id="building-search-status" class="building-search-status" role="status" aria-live="polite" hidden></p>
                 <div id="category-list" class="category-list"></div>
                 <section id="building-results" class="category-list building-results" aria-label="건물 검색 결과" hidden></section>
                 <p id="category-status" class="field-error" role="status"></p>

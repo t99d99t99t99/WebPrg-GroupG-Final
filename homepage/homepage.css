@@ -707,6 +707,46 @@ a:hover {
     font-size: var(--font-size-sm);
     line-height: var(--line-height-sm);
 }
+.building-search-status {
+    flex-shrink: 0;
+    margin: var(--space-2) 0 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+.building-search-row {
+    height: auto;
+    min-height: var(--category-list-item-height);
+    touch-action: pan-y;
+}
+.building-search-copy {
+    display: grid;
+    gap: var(--space-1);
+    min-width: 0;
+    padding-block: var(--space-2);
+}
+.building-search-detail {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+.building-search-copy mark {
+    border-radius: var(--radius-sm);
+    background: var(--color-secondary-selected);
+    color: var(--color-primary);
+    font-weight: var(--font-weight-bold);
+}
+.building-search-more {
+    display: block;
+    margin: var(--space-2) auto;
+    padding: var(--space-2) var(--space-4);
+    border: var(--border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-field);
+    background: var(--color-base-100);
+    color: var(--color-primary);
+    font-size: var(--font-size-sm);
+}
 /* Category row (Figma "Main / Category List Item"): 316×48, 16px left and 8px right, 8px gaps. */
 .category-row {
     position: relative;
