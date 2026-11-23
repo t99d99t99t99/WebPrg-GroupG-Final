@@ -27,6 +27,7 @@ import { categoryManager } from "./category-manager.js";
 import { decorationsFor, yardFor } from "./decorations.js";
 import { setGoogleAccount } from "./google-account.js";
 import { planCity, planRoads, project, TILE_HEIGHT, TILE_WIDTH } from "./layout.js";
+import { createSettingsPanel } from "./settings-panel.js";
 import { SpatialIndex } from "./spatial-index.js";
 import { createTraffic } from "./traffic.js";
 
@@ -58,6 +59,7 @@ let obstructedBuildings = new Set();
 let drawnSignature = null;
 // "지도 장식 밀도" from the saved settings, read on every render.
 let decorationDensity = DEFAULT_SETTINGS.decorationDensity;
+let openInNewTab = DEFAULT_SETTINGS.openInNewTab;
 let emphasizedBuildings = new Set();
 let renderedGroups = new Map();
 const buildingWorldRects = new WeakMap();
@@ -456,6 +458,8 @@ function createBuilding(bookmark, category, cell, labels, interactive = true) {
     const url = safeUrl(bookmark.url);
     if (url) link.href = url.href;
     else link.tabIndex = 0;
+    link.target = openInNewTab ? "_blank" : "_self";
+    link.rel = "noopener noreferrer";
     link.setAttribute(
         "aria-label",
         `${bookmark.name} · ${category.name}${damaged ? " · 7일 넘게 방문하지 않음" : ""} · 사이트 방문`,
@@ -548,7 +552,7 @@ function createBuilding(bookmark, category, cell, labels, interactive = true) {
         }
 
         const keepDefaultNavigation =
-            event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
+            openInNewTab || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
         if (keepDefaultNavigation) {
             bookmarks.incrementClickCount(bookmark.id).catch((error) => console.error(error));
             return;
@@ -897,6 +901,8 @@ async function render() {
         const [{ groups, total }, mapSettings] = await Promise.all([arrangeCity(), settings.get()]);
         if (version !== renderVersion) return;
         decorationDensity = mapSettings.decorationDensity;
+        openInNewTab = mapSettings.openInNewTab;
+        traffic.setEnabled(mapSettings.cityAnimation);
         if (buildingDrag.isDragging()) {
             renderWaiting = true;
             return;
@@ -936,6 +942,8 @@ async function render() {
             ? ""
             : "저장한 페이지가 아직 없습니다. 확장프로그램에서 첫 페이지를 저장해 보세요.";
         applyFilter();
+        for (const link of $("buildings").querySelectorAll(".building-link"))
+            link.target = openInNewTab ? "_blank" : "_self";
     } catch (error) {
         if (version !== renderVersion) return;
         $("map-status").textContent = "북마크를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.";
@@ -1323,30 +1331,38 @@ $("bookmark-editor").addEventListener("cancel", (event) => {
     editEmojiPicker.close(true);
 });
 
-$("sync-bookmarks").addEventListener("click", async () => {
-    const button = $("sync-bookmarks");
-    if (!globalThis.chrome?.bookmarks?.getTree) {
-        toast("확장 프로그램을 새로고침한 뒤 크롬 새 탭에서 동기화해 주세요.");
-        return;
-    }
-    button.disabled = true;
-    button.textContent = "동기화 중…";
-    button.setAttribute("aria-busy", "true");
-    try {
-        const result = await importChromeBookmarks(await chrome.bookmarks.getTree());
-        await backfillMissingBookmarkIcons();
+createSettingsPanel({
+    onOpen() {
+        hideTooltip();
+        colorPicker.close();
+    },
+    onSaved: render,
+    onError: toast,
+    async onReset() {
+        clearTimeout(colorSaveTimer);
+        pendingColorChange = null;
+        selectedCategory = null;
+        activeBookmark = null;
+        renderedGroups.clear();
+        drawnSignature = null;
+        hideTooltip();
         await render();
-        toast(
-            `북마크 ${result.bookmarks}개, 카테고리 ${result.categories}개를 가져왔습니다. 중복 ${result.duplicates}개, 지원하지 않는 주소 ${result.skipped}개는 건너뛰었습니다.`,
-        );
-    } catch (error) {
-        toast("크롬 북마크를 가져오지 못했습니다. 확장 프로그램 권한을 확인한 뒤 다시 시도해 주세요.");
-        console.error(error);
-    } finally {
-        button.disabled = false;
-        button.textContent = "크롬 북마크 동기화";
-        button.removeAttribute("aria-busy");
-    }
+        toast("모든 데이터를 초기화했습니다.");
+    },
+    async onSync() {
+        if (!globalThis.chrome?.bookmarks?.getTree)
+            throw new Error("확장 프로그램을 새로고침한 뒤 크롬 새 탭에서 동기화해 주세요.");
+        try {
+            const result = await importChromeBookmarks(await chrome.bookmarks.getTree());
+            await backfillMissingBookmarkIcons();
+            await render();
+            return `북마크 ${result.bookmarks}개, 카테고리 ${result.categories}개를 가져왔습니다. 중복 ${result.duplicates}개, 지원하지 않는 주소 ${result.skipped}개는 건너뛰었습니다.`;
+        } catch (error) {
+            throw new Error("크롬 북마크를 가져오지 못했습니다. 확장 프로그램 권한을 확인한 뒤 다시 시도해 주세요.", {
+                cause: error,
+            });
+        }
+    },
 });
 
 setGoogleAccount();

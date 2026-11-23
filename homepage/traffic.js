@@ -135,6 +135,8 @@ export function createTraffic(container) {
     let helicopter = null;
     let lights = [];
     let lastTime = 0;
+    let enabled = true;
+    let frameRequest = null;
 
     const isRoad = (x, y) => roads.has(key(x, y));
     const neighbours = (cell) =>
@@ -420,7 +422,7 @@ export function createTraffic(container) {
     function tick(time) {
         const seconds = Math.min((time - lastTime) / 1000, 0.1);
         lastTime = time;
-        const still = reducedMotion.matches;
+        const still = !enabled || reducedMotion.matches;
 
         for (const person of pedestrians) {
             const walking = !still && advance(person, seconds);
@@ -455,7 +457,7 @@ export function createTraffic(container) {
             const { from, to } = helicopter;
             const distance = Math.hypot(to.x - from.x, to.y - from.y);
             if (!still) helicopter.progress += (HELICOPTER.speed * seconds) / distance;
-            helicopter.frame = (helicopter.frame + seconds * 12) % 2;
+            if (!still) helicopter.frame = (helicopter.frame + seconds * 12) % 2;
             helicopter.position = {
                 x: from.x + (to.x - from.x) * helicopter.progress,
                 y: from.y + (to.y - from.y) * helicopter.progress,
@@ -474,7 +476,7 @@ export function createTraffic(container) {
         }
 
         sortByDepth();
-        requestAnimationFrame(tick);
+        frameRequest = !still ? requestAnimationFrame(tick) : null;
     }
 
     // Movers whose road disappeared start over somewhere on the new roads.
@@ -546,11 +548,17 @@ export function createTraffic(container) {
             helicopter.image.remove();
             helicopter = null;
         }
+        if (!enabled || reducedMotion.matches) tick(performance.now());
     }
 
-    requestAnimationFrame((time) => {
-        lastTime = time;
-        requestAnimationFrame(tick);
-    });
-    return { update };
+    function setEnabled(next) {
+        enabled = next;
+        if (frameRequest !== null) cancelAnimationFrame(frameRequest);
+        frameRequest = null;
+        lastTime = performance.now();
+        tick(lastTime);
+    }
+    reducedMotion.addEventListener("change", () => setEnabled(enabled));
+    setEnabled(true);
+    return { update, setEnabled };
 }
