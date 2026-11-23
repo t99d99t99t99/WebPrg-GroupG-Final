@@ -956,7 +956,8 @@ function positionColorPicker(picker, trigger) {
     // Figma USER-MAIN-CATEGORY-002: 16px (component/category-panel-overlay-gap) left of the category panel,
     // top level with the color chip; recomputed from both boxes each time it opens.
     const panel = trigger.closest(".category-panel")?.getBoundingClientRect() ?? anchor;
-    picker.style.left = `${Math.max(8, (panel.left - bounds.left) / scaleX - picker.offsetWidth - 16)}px`;
+    const gap = Number.parseFloat(getComputedStyle(picker).getPropertyValue("--category-panel-overlay-gap"));
+    picker.style.left = `${Math.max(8, (panel.left - bounds.left) / scaleX - picker.offsetWidth - gap)}px`;
     picker.style.top = `${Math.max(8, (anchor.top - bounds.top) / scaleY)}px`;
 }
 

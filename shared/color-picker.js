@@ -25,7 +25,7 @@ function hsvHex(hue, saturation, value) {
 
 export function createColorPicker(
     host,
-    { onChange = () => {}, onClose = () => {}, onError = () => {}, position, ignoreOutside = () => false } = {},
+    { onChange = () => {}, onClose = () => {}, position, ignoreOutside = () => false } = {},
 ) {
     function node(tag, className, text) {
         const element = document.createElement(tag);
@@ -52,21 +52,13 @@ export function createColorPicker(
     hex.spellcheck = false;
     hex.setAttribute("aria-label", "16진수 색상");
     hexLabel.append(hex);
-    const tools = node("div", "picker-tools");
-    const eyedropper = node("button", "picker-eyedropper", "⌁");
-    eyedropper.type = "button";
-    eyedropper.setAttribute("aria-label", "화면에서 색상 추출");
-    const preview = node("span", "picker-preview");
-    preview.setAttribute("aria-hidden", "true");
-    tools.append(eyedropper, preview, node("span", "", "100 %"));
-    host.replaceChildren(field, hueLabel, hexLabel, tools);
+    host.replaceChildren(field, hueLabel, hexLabel);
     let color = "#a6bce9",
         hue = 220,
         saturation = 0,
         value = 1,
         anchor,
-        dragging = false,
-        session = 0;
+        dragging = false;
 
     function render() {
         hueInput.value = String(Math.round(hue));
@@ -74,7 +66,6 @@ export function createColorPicker(
         field.style.backgroundColor = `hsl(${hue} 100% 50%)`;
         point.style.left = `${saturation * 100}%`;
         point.style.top = `${(1 - value) * 100}%`;
-        host.style.setProperty("--picker-color", color);
     }
     function setColor(next) {
         if (!/^#[\da-f]{6}$/i.test(next)) return;
@@ -105,7 +96,6 @@ export function createColorPicker(
         if (host.hidden) return;
         host.hidden = true;
         dragging = false;
-        session++;
         if (anchor) anchor.setAttribute("aria-expanded", "false");
         onClose();
         if (restoreFocus && anchor?.isConnected) anchor.focus();
@@ -149,24 +139,6 @@ export function createColorPicker(
             onChange(color);
         } else hex.value = color.slice(1).toUpperCase();
     });
-    eyedropper.addEventListener("click", async () => {
-        if (!globalThis.EyeDropper) {
-            onError("이 브라우저에서는 화면 색상 추출을 지원하지 않습니다.");
-            return;
-        }
-        const currentSession = session;
-        try {
-            const { sRGBHex } = await new EyeDropper().open();
-            if (host.hidden || session !== currentSession) return;
-            setColor(sRGBHex);
-            onChange(color);
-        } catch (error) {
-            if (error.name !== "AbortError") {
-                console.error(error);
-                onError("화면 색상을 가져오지 못했습니다.");
-            }
-        }
-    });
     document.addEventListener("pointerdown", (event) => {
         if (
             !host.hidden &&
@@ -191,7 +163,6 @@ export function createColorPicker(
         },
         open(next, trigger) {
             if (anchor && anchor !== trigger) anchor.setAttribute("aria-expanded", "false");
-            session++;
             anchor = trigger;
             setColor(next);
             host.hidden = false;
@@ -199,8 +170,9 @@ export function createColorPicker(
             if (position) position(host, anchor);
             else {
                 const rect = anchor.getBoundingClientRect();
+                const gap = Number.parseFloat(getComputedStyle(host).getPropertyValue("--color-picker-trigger-gap"));
                 host.style.left = `${Math.max(8, Math.min(rect.left, innerWidth - host.offsetWidth - 8))}px`;
-                host.style.top = `${Math.max(8, Math.min(rect.bottom + 8, innerHeight - host.offsetHeight - 8))}px`;
+                host.style.top = `${Math.max(8, Math.min(rect.bottom + gap, innerHeight - host.offsetHeight - 8))}px`;
             }
             field.focus();
         },

@@ -37,7 +37,7 @@
 | `shared/building-designs.js` | 건물 5개 계열의 성장 에셋과 좌우 방향별 기본 디자인 10종. 팝업 선택·DB 검증·지도 렌더링이 공유 |
 | `shared/site-icons.js` | Chrome Favicon API 조회 URL 생성, 저장할 아이콘 URL 검증, 지도·호버 카드가 함께 쓰는 북마크 아이콘 주소(`bookmarkIconUrl`) |
 | `shared/building-picker.js`, `shared/building-picker.css` | 홈페이지 북마크 수정 창의 건물 디자인 선택 띠(좌우 화살표, 3개씩 표시, 카테고리 색 벽면 미리보기). 팝업은 아직 같은 모양의 자체 코드를 씀 |
-| `shared/color-picker.js`, `shared/color-picker.css` | 홈페이지와 팝업이 함께 쓰는 컬러피커 UI·스타일. 채도/밝기 드래그·방향키, 색조, HEX, 스포이트, Escape·바깥 클릭 닫기. 저장은 호출 화면에서 처리 |
+| `shared/color-picker.js`, `shared/color-picker.css` | 홈페이지와 팝업이 함께 쓰는 컬러피커 UI·스타일. 채도/밝기 드래그·방향키, 색조, HEX, Escape·바깥 클릭 닫기. 저장은 호출 화면에서 처리 |
 | `homepage/google-account.js` | 계정 표시 전용 어댑터. 전달받은 이름·HTTPS 사진 URL을 표시하고 사진 부재·실패 시 기본 아바타로 복귀. 인증·권한·저장소 접근 없음 |
 | `homepage/category-manager.js` | 카테고리 목록 패널. 건물명 검색(앞 글자 음절 일치 순), 선택한 카테고리 아래 건물 목록(호버·클릭은 `homepage.js`의 `hoverBuilding`·`selectBuilding`으로 지도 강조·상세 카드 고정), 생성·이름 수정·드래그 순서 이동·삭제 확인, 색상 칩이나 연필로 이름 수정 칸과 컬러피커를 함께 열기(카테고리 일반의 색상 칩은 컬러피커만), 수정 중 확인·취소, 휴지통 버튼으로 삭제 창 열기, 카테고리 강조 선택 |
 | `homepage/category-reorder.js` | 행의 포인터 드래그·자동 스크롤·정착 애니메이션·취소와 저장 콜백 처리. 다른 행의 카테고리 줄 가운데에 놓으면 병합 콜백 |
