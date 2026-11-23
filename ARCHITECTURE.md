@@ -26,6 +26,7 @@
 | `homepage/background.js` | 구역·도로 밖을 채우는 미개발 공터 바닥 타일 계산(순수 함수). 칸 좌표로 정한 흙 변형 타일, 화면 범위를 칸 범위로 바꾸는 역변환 |
 | `homepage/background-renderer.js` | 공터 타일을 화면 해상도 기준 캔버스 하나에 그림. 이미지 로딩을 공유하고 뒤늦게 끝난 이전 요청은 버림 |
 | `homepage/spatial-index.js` | 건물의 월드 좌표 사각형을 격자로 색인해 팝업 이동 경로 주변 건물만 검색 |
+| `homepage/map-camera.js` | 탭 안의 줌·시점 이동. 핀치/휠 확대, 트랙패드 스크롤·가운데 버튼 이동, 포인터 중심 줌과 배율 제한, 프레임 단위 변환. 저장소 접근 없음 |
 | `homepage/building-move.js` | 건물 이동 계산(순수 함수). 놓은 자리의 의미(이동·자리 교환·밀어내기·한 줄 끼워 넣기) 결정, 끼워 넣은 줄 너머 땅 밀기, 이동을 적용한 `planCity` 결과 미리 계산, 배치 지문 |
 | `homepage/building-drag.js` | 건물 길게 누르기·끌기·놓기 화면 동작. 반투명 건물과 놓일 칸 표시, 꽉 찬 땅 테두리 게이지와 넓힐 칸, 넓힌 뒤 지도 미리보기, Esc·지도 밖 취소, 끈 뒤 사이트 방문 막기. 안내 문구는 쓰지 않고 표시로만 알립니다 |
 | `homepage/building-rules.js` | 5개 계열의 3단계 에셋 목록, 북마크 ID 기반 계열·a/b·형태 선택, 7일 미방문 파손 판정 |
@@ -80,6 +81,7 @@ homepage/homepage.js ──> homepage/decorations.js (decorationsFor) ──> ho
 homepage/homepage.js ──> db/db.js (settings) ──> db/settings.js ──> db/storage.js
 homepage/homepage.js ──> homepage/background-renderer.js ──> homepage/background.js (planBackground, cellBounds) ──> homepage/layout.js (타일 크기)
 homepage/homepage.js ──> homepage/spatial-index.js (팝업 이동 경로 후보 검색)
+homepage/homepage.js ──> homepage/map-camera.js (카메라 변환, 변경 시 팝업 닫기·배경 갱신)
 homepage/homepage.js ──> homepage/building-drag.js ──> homepage/building-move.js ──> homepage/layout.js (planCity)
 homepage/homepage.js ──> db/db.js (moveBookmark: 건물 이동 저장)
 homepage/homepage.js ──> homepage/category-colors.js
