@@ -3,17 +3,52 @@ import { storage, withWriteLock } from "./storage.js";
 // Map look settings shown in the settings panel. One object under one key; fields the panel adds
 // later go next to these. Missing or unknown values fall back to the defaults below.
 export const DECORATION_DENSITIES = ["low", "normal", "high"];
-export const DEFAULT_SETTINGS = Object.freeze({ decorationDensity: "normal" });
+export const DEFAULT_EMPTY_SPACE_FILL = Object.freeze({
+    mode: "tile",
+    colorMode: "solid",
+    solidColor: "#d7e9c8",
+    gradientStart: "#d7e9c8",
+    gradientEnd: "#b7d6f2",
+    angle: 90,
+    photoDataUrl: "",
+});
+export const DEFAULT_SETTINGS = Object.freeze({
+    decorationDensity: "normal",
+    cityAnimation: true,
+    openInNewTab: true,
+    emptySpaceFill: DEFAULT_EMPTY_SPACE_FILL,
+});
+
+const hexColor = (value) => typeof value === "string" && /^#[\da-f]{6}$/i.test(value);
+const fillValidators = {
+    mode: (value) => ["none", "color", "photo", "tile"].includes(value),
+    colorMode: (value) => ["solid", "gradient"].includes(value),
+    solidColor: hexColor,
+    gradientStart: hexColor,
+    gradientEnd: hexColor,
+    angle: (value) => Number.isInteger(value) && value >= 0 && value <= 360,
+    photoDataUrl: (value) =>
+        typeof value === "string" &&
+        (value === "" || /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(value)),
+};
 
 const validators = {
     decorationDensity: (value) => DECORATION_DENSITIES.includes(value),
+    cityAnimation: (value) => typeof value === "boolean",
+    openInNewTab: (value) => typeof value === "boolean",
+    emptySpaceFill: (value) =>
+        value &&
+        typeof value === "object" &&
+        !Array.isArray(value) &&
+        Object.entries(value).every(([field, item]) => fillValidators[field]?.(item)) &&
+        Object.keys(fillValidators).every((field) => fillValidators[field](value[field])),
 };
 
 function withDefaults(saved) {
-    const settings = { ...DEFAULT_SETTINGS };
+    const settings = { ...DEFAULT_SETTINGS, emptySpaceFill: { ...DEFAULT_EMPTY_SPACE_FILL } };
     if (saved && typeof saved === "object") {
         for (const [field, valid] of Object.entries(validators))
-            if (valid(saved[field])) settings[field] = saved[field];
+            if (valid(saved[field])) settings[field] = field === "emptySpaceFill" ? { ...saved[field] } : saved[field];
     }
     return settings;
 }

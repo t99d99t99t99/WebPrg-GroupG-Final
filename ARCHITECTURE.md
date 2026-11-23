@@ -19,10 +19,10 @@
 | `assets/icons/` | 확장 프로그램 아이콘 PNG 4종(16·32px 단독 집, 48·128px 건물 모음)과 `source/`의 수정 가능한 SVG 원본. `manifest.json`에서 크기별로 연결하며 새 탭 파비콘은 16px 아이콘을 사용 |
 | `db/` | 저장소 계층. `chrome.storage.local`을 직접 다루는 유일한 곳. 기존 북마크의 아이콘 주소 1회 보정도 담당 |
 | `popup/` | 툴바 아이콘을 누르면 뜨는 팝업. 현재 탭을 카테고리에 저장 |
-| `homepage/` | 새 탭 지도. 카테고리별 자동 도시 배치, 설명 카드, 사이트 방문, 링크 복사, 카테고리 목록 패널(건물명 검색·건물 목록 펼침), Google 서비스 바로가기 패널, 크롬 북마크 동기화 버튼 |
+| `homepage/` | 새 탭 지도. 카테고리별 자동 도시 배치, 설명 카드, 사이트 방문, 링크 복사, 카테고리 목록 패널(건물명 검색·건물 목록 펼침), Google 서비스 바로가기 패널, 설정 창(크롬 북마크 동기화 포함) |
 | `homepage/layout.js` | 도시 배치 계산(순수 함수). 그리드 위 구역·건물 칸·피켓 칸 결정, 구역 둘레 도로 타일(교차로에 붙은 직선 도로는 횡단보도 타일), 아이소메트릭 좌표 변환 |
 | `homepage/decorations.js` | 구역 빈칸의 나무·꽃·풀·바위·거리 소품(가로등·쓰레기통·우체통) 장식과 집 앞마당(울타리·우체통) 계산(순수 함수). 픽셀이 고르지 않게 보이지 않도록 원본 크기로만 그림. 카테고리와 구역 안 칸 위치로 고정해 고름 |
-| `homepage/traffic.js` | 장식용 도시 움직임. 매 렌더의 도로 칸을 받아 사람(인도로 걷다 가끔 멈춤, 교차로의 옆길은 횡단보도로 건넘, 막다른 길에서는 같은 인도로 돌아섬)과 차(오른쪽 차선, 같은 차선의 앞차와 간격 유지·교차로에서 서로 막히면 한쪽 우선, 교차로 앞 횡단보도에서 가끔 정지, 일정 시간 뒤 다른 차로 교체, 큰 차일수록 드묾)를 1~2개씩 움직이고, 가끔 헬리콥터가 지도를 가로지름. 횡단보도(planRoads의 pelican 타일) 중 칸 위치로 정한 30% 정도에 길 양쪽 인도로 신호등 한 쌍을 세움(서로 길 건너편을 보도록 방향별 그림 선택). 움직임 줄이기 설정이면 멈춤. 건물 상세가 열리면 지도와 함께 흐려짐(헬리콥터도 z-index 1250으로 막 아래). 위치는 매 프레임 `transform`으로만 바꿔 지도 배치를 다시 계산하지 않게 함. 앞뒤 순서는 바닥 위치(x+y)로 건물 칸 중심과 비교하고, `#traffic`을 `#buildings` 뒤에 두며 매 프레임 자식 순서를 바닥 위치순으로 맞춰 z-index가 같을 때도 어긋나지 않게 함. 저장소·포인터 이벤트 없음 |
+| `homepage/traffic.js` | 장식용 도시 움직임. 매 렌더의 도로 칸을 받아 사람(인도로 걷다 가끔 멈춤, 교차로의 옆길은 횡단보도로 건넘, 막다른 길에서는 같은 인도로 돌아섬)과 차(오른쪽 차선, 같은 차선의 앞차와 간격 유지·교차로에서 서로 막히면 한쪽 우선, 교차로 앞 횡단보도에서 가끔 정지, 일정 시간 뒤 다른 차로 교체, 큰 차일수록 드묾)를 1~2개씩 움직이고, 가끔 헬리콥터가 지도를 가로지름. 횡단보도(planRoads의 pelican 타일) 중 칸 위치로 정한 30% 정도에 길 양쪽 인도로 신호등 한 쌍을 세움(서로 길 건너편을 보도록 방향별 그림 선택). 도시 애니메이션 설정이 꺼져 있거나 OS의 움직임 줄이기가 켜져 있으면 사람·차·헬리콥터의 이동과 프레임을 정지하고 반복 프레임 요청도 중단함. 다시 켜면 현재 위치에서 재개함. 건물 상세가 열리면 지도와 함께 흐려짐(헬리콥터도 z-index 1250으로 막 아래). 위치는 매 프레임 `transform`으로만 바꿔 지도 배치를 다시 계산하지 않게 함. 앞뒤 순서는 바닥 위치(x+y)로 건물 칸 중심과 비교하고, `#traffic`을 `#buildings` 뒤에 두며 매 프레임 자식 순서를 바닥 위치순으로 맞춰 z-index가 같을 때도 어긋나지 않게 함. 저장소·포인터 이벤트 없음 |
 | `homepage/background.js` | 구역·도로 밖을 채우는 미개발 공터 바닥 타일 계산(순수 함수). 칸 좌표로 정한 흙 변형 타일, 화면 범위를 칸 범위로 바꾸는 역변환 |
 | `homepage/background-renderer.js` | 공터 타일을 화면 해상도 기준 캔버스 하나에 그림. 이미지 로딩을 공유하고 뒤늦게 끝난 이전 요청은 버림 |
 | `homepage/spatial-index.js` | 건물의 월드 좌표 사각형을 격자로 색인해 팝업 이동 경로 주변 건물만 검색 |
@@ -32,7 +32,9 @@
 | `homepage/building-appearance.js` | 그림자를 제외한 호버 윤곽, 건물별 사전 제작 벽면 마스크 연결 |
 | `homepage/category-colors.js` | 카테고리 기본 색 배정, 벽면 명도와 잔디 채도·명도 보정 |
 | `db/storage.js` | Chrome 저장소 및 웹 미리보기 어댑터, 저장 변경 알림, 공통 쓰기 잠금 |
-| `db/settings.js` | 지도 설정 저장소(`SettingsDB`). 설정창 항목을 객체 하나로 저장하고, 없거나 잘못된 값은 기본값으로 읽음. 현재 항목은 지도 장식 밀도 |
+| `db/settings.js` | 지도 설정 저장소(`SettingsDB`). 지도 장식 밀도·도시 애니메이션·새 탭 열기·빈 공간 채우기 값을 검증·저장하며, 없거나 잘못된 값은 기본값으로 읽음 |
+| `homepage/settings-panel.js`, `homepage/settings.css` | 좌측 상단 설정 버튼과 설정 창. 저장·취소용 임시 설정, 장식 밀도, 동작 스위치, 빈 공간 채우기 편집·사진 업로드, 동기화 및 초기화 재확인. 빈 공간 채우기는 설정 창 미리보기와 저장만 하고 지도 배경에는 적용하지 않음 |
+| `homepage/background-image.js` | 업로드 사진 검증 및 자동 압축. 긴 변 2560px·인코딩 결과 1MiB 이내를 목표로 WebP 화질과 해상도를 조절하고, 이미 목표 이내인 사진은 원본을 유지 |
 | `shared/` | 홈페이지 이름·URL 검증, 사이트 아이콘 URL 생성, 키보드로 조작할 수 있는 카테고리 선택 목록 |
 | `shared/building-designs.js` | 건물 5개 계열의 성장 에셋과 좌우 방향별 기본 디자인 10종. 팝업 선택·DB 검증·지도 렌더링이 공유 |
 | `shared/site-icons.js` | Chrome Favicon API 조회 URL 생성, 저장할 아이콘 URL 검증. 지도·호버 카드·카테고리 건물 목록이 함께 쓰는 대표 이모지(`bookmarkEmoji`)와 사이트 아이콘 주소(`bookmarkIconUrl`) 결정 |
@@ -65,7 +67,7 @@
 
 | 화면 | manifest 항목 | 불러오는 순서 |
 |---|---|---|
-| 새 탭 | `chrome_url_overrides.newtab` | `homepage/homepage.html` → `daisyui.generated.css`, `style.css`, `homepage.css`, `shared/color-picker.css`, `shared/building-picker.css`, `shared/emoji-picker.css`, `homepage.js`(module) |
+| 새 탭 | `chrome_url_overrides.newtab` | `homepage/homepage.html` → `daisyui.generated.css`, `style.css`, `homepage.css`, `settings.css`, `shared/color-picker.css`, `shared/building-picker.css`, `shared/emoji-picker.css`, `homepage.js`(module) |
 | 팝업 | `action.default_popup` | `popup/popup.html` → `daisyui.generated.css`, `style.css`, `popup.css`, `shared/color-picker.css`, `shared/emoji-picker.css`, `popup.js`(module) |
 
 ## 호출 관계
@@ -84,6 +86,7 @@ homepage/homepage.js ──> homepage/category-colors.js
 homepage/homepage.js ──> homepage/building-rules.js / homepage/building-appearance.js
 homepage/homepage.js ──> homepage/category-manager.js / homepage/google-account.js
 homepage/category-manager.js ──> homepage/category-reorder.js / homepage/building-reorder.js
+homepage/homepage.js ──> homepage/settings-panel.js ──> db/db.js (settings, resetAllData) / shared/color-picker.js / homepage/background-image.js
 homepage/homepage.js ──> homepage/traffic.js ──> homepage/layout.js (project, planRoads 결과의 칸·타일 이름)
 homepage/homepage.js ─┐
                       ├─> db/db.js ──> db/bookmark.js / db/category.js ──> db/storage.js
@@ -118,7 +121,7 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 `mask-editor.js`는 선택한 정적 PNG를 읽어 픽셀과 불투명도를 편집하고 변경된 마스크를 카드에 미리 보여 줍니다. 원본 보기와 선택 픽셀의 불투명도 복사, 확대·축소를 버튼과 단축키로 제공합니다. 변경된 PNG는 디버그 페이지의 `sessionStorage`에 임시 보관해 같은 탭의 새로고침 후에도 복원하며, 탭 세션이 끝나면 사라집니다. 개별 PNG나 변경된 마스크·전체 마스크 ZIP을 다운로드하고 파일을 직접 교체해야 실제 에셋에 반영됩니다. 앱 데이터 저장 키와 Chrome 저장소는 사용하지 않습니다.
 
 - `db/db.js`가 저장 키와 `bookmarks`, `categories`, `settings` 싱글턴, 초기화 Promise인 `ready`, 변경 알림 `subscribe`(북마크·카테고리·지도 설정 키가 바뀔 때)를 제공합니다.
-- 홈페이지 왼쪽 아래의 "크롬 북마크 동기화"는 클릭할 때 `chrome.bookmarks.getTree`로 읽은 트리를 `importChromeBookmarks`에 전달합니다. 북마크바·기타·모바일 등 Chrome 기본 컨테이너 안의 사용자 폴더를 카테고리로 만들고, 하위 폴더의 북마크는 해당 상위 카테고리로 합칩니다. 폴더 밖의 북마크는 "카테고리 일반"으로 가져옵니다. 같은 이름의 카테고리는 재사용하고, 정규화한 URL이 이미 있으면 건너뜁니다. HTTP/HTTPS 주소만 가져오며 이름은 Chrome 원본을 보존합니다. 공통 쓰기 잠금 안에서 최신 데이터와 합쳐 두 배열을 함께 저장합니다. Chrome 원본을 수정하지 않으며, 기존 항목의 변경·삭제를 추적하는 실시간 동기화는 하지 않습니다.
+- 홈페이지 설정 창 안의 "크롬 북마크 동기화" 버튼은 클릭할 때 `chrome.bookmarks.getTree`로 읽은 트리를 `importChromeBookmarks`에 전달합니다. 북마크바·기타·모바일 등 Chrome 기본 컨테이너 안의 사용자 폴더를 카테고리로 만들고, 하위 폴더의 북마크는 해당 상위 카테고리로 합칩니다. 폴더 밖의 북마크는 "카테고리 일반"으로 가져옵니다. 같은 이름의 카테고리는 재사용하고, 정규화한 URL이 이미 있으면 건너뜁니다. HTTP/HTTPS 주소만 가져오며 이름은 Chrome 원본을 보존합니다. 공통 쓰기 잠금 안에서 최신 데이터와 합쳐 두 배열을 함께 저장합니다. Chrome 원본을 수정하지 않으며, 기존 항목의 변경·삭제를 추적하는 실시간 동기화는 하지 않습니다.
 - 팝업은 `Bookmark`, `Category` 클래스와 `add` API로 현재 페이지를 저장합니다. 팝업은 374×600 크기의 각진 컨테이너이며 입력 영역만 세로 스크롤하고 하단 74px 영역의 작업 버튼은 고정합니다. 현재 탭 제목을 초기 페이지 이름으로 표시하며, 이름은 빈 값만 거부하고 이름·메모 모두 언어·기호·글자 수 제한 없이 저장합니다. 홈페이지 이름 수정과 메모도 같은 제한을 적용합니다. 긴 이름은 입력란·지도 라벨에서 말줄임하고 상세 카드에서 줄바꿈합니다.
 - 새 카테고리 입력은 “일반”으로 시작하며 한글·영문·숫자·공백 10자 이내, 빈 값·이름 중복 금지 규칙을 UI와 DB에서 검사합니다. 기존 카테고리 목록은 `shared/category-select.js`로 색상 칩과 이름을 함께 표시하고 4개 항목 높이에서 스크롤합니다. 새 카테고리는 임의의 팔레트 색상으로 시작하며 색상 선택기·HEX 입력으로 바꿉니다. 불투명도는 100%로 표시합니다. 선택한 색상은 기존 `color` 필드에 저장합니다.
 - 건물 선택은 5개 계열의 좌우 방향별 기본 디자인 10종이며 기본값은 도심 주택 왼쪽입니다. 선택 상태는 회색 반투명 배경으로 강조하며 양 끝의 진행 불가 화살표는 숨깁니다. 미리보기는 홈페이지와 같은 벽면 마스크, 색상 블렌딩 및 `wallColorAdjustments`를 사용하고 카테고리 선택·색상·HEX 변경 즉시 갱신합니다. 선택값은 북마크의 `buildingDesign` 필드에 저장하며, 지도는 선택한 계열·방향과 카테고리 색상을 적용합니다. 선택값이 없으면 ID 기반으로 결정합니다.
@@ -185,9 +188,15 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 - `customColor`: 이전 화면의 사용자 색상 지정 여부. 저장 값은 보존하지만 홈페이지 건물 색상에는 사용하지 않습니다.
 - `buildingFamily`: 이전 버전이 저장한 선택적 계열 ID. 현재 화면의 계열 선택에는 사용하지 않으며, 기존 필드는 데이터 호환을 위해 보존합니다.
 
-**지도 설정:** `{ decorationDensity? }`
+**지도 설정:** `{ decorationDensity?, cityAnimation?, openInNewTab?, emptySpaceFill? }`
 
-- `decorationDensity`: 지도 장식 밀도. `"low"`(적게)·`"normal"`(보통)·`"high"`(많이) 중 하나이고 기본값은 `"normal"`입니다. `settings.get()`은 기본값을 채운 전체 설정을 돌려주고, `settings.edit({ decorationDensity })`는 값을 검사한 뒤 저장합니다(다른 저장 필드는 보존). 설정창의 취소는 열 때 읽은 값을 다시 `edit`으로 저장하면 됩니다. 설정창 항목이 늘면 `db/settings.js`의 기본값과 검사 목록에 필드를 추가합니다.
+- `decorationDensity`: 지도 장식 밀도. `"low"`(적게)·`"normal"`(보통)·`"high"`(많이) 중 하나이고 기본값은 `"normal"`입니다. `settings.get()`은 기본값을 채운 전체 설정을 돌려주고, `settings.edit({ decorationDensity })`는 값을 검사한 뒤 저장합니다(다른 저장 필드는 보존). 설정 창은 열 때 읽은 값의 복사본을 편집하며 저장 시 바뀐 항목만 `edit`으로 전달합니다. 취소·Esc·바깥 클릭은 복사본을 버리고 저장소를 쓰지 않습니다. 설정창 항목이 늘면 `db/settings.js`의 기본값과 검사 목록에 필드를 추가합니다.
+
+- `cityAnimation`: boolean, 기본값 true. `homepage.js`가 설정을 읽어 `traffic.setEnabled`에 전달합니다. false이면 교통 요소만 정지하며 호버·대화상자 페이드는 유지합니다. OS 움직임 줄이기는 이 설정보다 우선합니다.
+- `openInNewTab`: boolean, 기본값 true. 일반 건물 클릭을 새 탭으로 열고 false이면 현재 탭으로 엽니다. Ctrl/⌘·Shift·가운데 클릭 등 브라우저 기본 동작과 방문 횟수 기록은 유지합니다.
+- `emptySpaceFill`: `{ mode, colorMode, solidColor, gradientStart, gradientEnd, angle, photoDataUrl }`. `mode`는 `none`·`color`·`photo`·`tile`이고 기본값은 `tile`, `colorMode`는 `solid`·`gradient`이고 기본값은 `solid`입니다. 색상은 6자리 HEX(기본 단색·시작색 `#d7e9c8`, 끝색 `#b7d6f2`), 방향은 0~360 정수(기본 90), 사진은 JPG/PNG/WEBP의 base64 data URL(기본 빈 문자열)입니다. 업로드 원본의 용량 제한 없이 긴 변 2560px·인코딩 결과 1MiB 이내로 자동 최적화한 뒤 저장합니다(base64 변환 시 약 4/3배). 기존 저장 사진에는 새 용량 제한을 적용하지 않습니다. **선택 UI·설정 저장만 구현했으며 `background.js`·배경 렌더러는 이 설정을 사용하지 않습니다.**
+
+`db/db.js`의 `resetAllData`는 공통 쓰기 잠금 안에서 북마크를 빈 배열, 카테고리를 새 기본 카테고리 하나, 설정을 기본값, 아이콘 보정 표시를 false로 한 번에 저장합니다. 저장 키는 남겨 다음 실행에서 시연 데이터가 다시 생성되지 않게 합니다. 크롬 원본 북마크나 다른 서비스의 저장소는 삭제하지 않습니다. 설정 창의 초기화 확인 버튼을 눌렀을 때만 호출하며 설정 취소로 되돌릴 수 없는 별도 즉시 실행 동작입니다. 크롬 북마크 동기화도 설정 저장과 별도로 즉시 실행합니다.
 
 키 이름이나 필드를 바꾸면 이미 저장된 데이터를 읽지 못하게 됩니다. 바꾸기 전에 팀에 묻습니다.
 

@@ -195,25 +195,6 @@ a:hover {
     line-height: var(--line-height-md);
     z-index: 3;
 }
-.bookmark-sync-button {
-    position: absolute;
-    left: var(--homepage-corner-inset);
-    bottom: var(--homepage-corner-inset);
-    z-index: 3;
-    width: 150px;
-    min-height: var(--popup-control-height);
-    padding: var(--space-2) var(--space-4);
-    border: var(--border-width) solid var(--color-neutral-500);
-    border-radius: var(--radius-field);
-    background: var(--color-base-100);
-    color: var(--color-base-content);
-    font-size: var(--font-size-xs);
-    line-height: var(--line-height-sm);
-    box-shadow: var(--shadow-dialog);
-}
-.bookmark-sync-button:hover:not(:disabled) {
-    background: var(--color-base-200);
-}
 .apps-button {
     width: var(--icon-button-size-default);
     height: var(--icon-button-size-default);

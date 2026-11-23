@@ -3,7 +3,7 @@ import { siteIconUrlForPage } from "../shared/site-icons.js";
 import { webUrl } from "../shared/validation.js";
 import { BookmarkDB } from "./bookmark.js";
 import { CategoryDB, GENERAL_CATEGORY_NAME, generalCategoryLast, isGeneralCategory } from "./category.js";
-import { SettingsDB } from "./settings.js";
+import { DEFAULT_SETTINGS, SettingsDB } from "./settings.js";
 import { storage, subscribeStorage, withWriteLock } from "./storage.js";
 
 const BOOKMARK_DB_KEY = "webprg-bookmarkmap-bookmarks";
@@ -89,6 +89,21 @@ export const ready = globalThis.navigator?.locks
 export const bookmarks = new BookmarkDB(BOOKMARK_DB_KEY, ready, CATEGORY_DB_KEY);
 export const categories = new CategoryDB(CATEGORY_DB_KEY, ready);
 export const settings = new SettingsDB(SETTINGS_DB_KEY, ready);
+
+// Reset only this extension's data. Keep explicit empty bookmarks so demo data is not seeded again.
+export async function resetAllData() {
+    await ready;
+    return withWriteLock(async () => {
+        await storage.set({
+            [BOOKMARK_DB_KEY]: [],
+            [CATEGORY_DB_KEY]: [
+                { id: crypto.randomUUID(), name: GENERAL_CATEGORY_NAME, createdAt: Date.now(), isGeneral: true },
+            ],
+            [SETTINGS_DB_KEY]: structuredClone(DEFAULT_SETTINGS),
+            [ICON_BACKFILL_KEY]: false,
+        });
+    });
+}
 
 export async function importChromeBookmarks(tree) {
     await ready;
