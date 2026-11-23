@@ -129,7 +129,16 @@
                 </div>
                 <div class="form-group"><label class="field-label" for="edit-name">페이지 이름</label><input id="edit-name" class="field" placeholder="페이지 이름을 입력하세요." aria-describedby="edit-name-error" autocomplete="off"><p id="edit-name-error" class="field-error"></p></div>
                 <div class="form-group"><label class="field-label" for="edit-url">URL</label><input id="edit-url" class="field" type="url" placeholder="https://example.com" aria-describedby="edit-url-error"><p id="edit-url-error" class="field-error"></p></div>
-                <div class="form-group"><span class="field-label">카테고리</span><div id="edit-category"></div></div>
+                <div class="form-group editor-category-group">
+                    <span id="edit-category-label" class="field-label">카테고리</span>
+                    <div id="edit-category"></div>
+                    <button id="edit-new-category" class="editor-category-action" type="button">＋ 새 카테고리 만들기</button>
+                    <div id="edit-new-category-fields" hidden>
+                        <input id="edit-new-category-name" class="field" aria-label="새 카테고리 이름" aria-describedby="edit-new-category-error" autocomplete="off" placeholder="새 카테고리 이름을 입력하세요.">
+                        <p id="edit-new-category-error" class="field-error" role="status"></p>
+                        <button id="edit-existing-category" class="editor-category-action" type="button">기존 카테고리 선택</button>
+                    </div>
+                </div>
                 <div class="form-group">
                     <span id="edit-design-label" class="field-label">건물 디자인</span>
                     <div class="building-selector">

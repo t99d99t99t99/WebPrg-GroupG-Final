@@ -16,7 +16,7 @@ import { createColorPicker } from "../shared/color-picker.js";
 import { isBookmarkEmoji } from "../shared/emoji-data.js";
 import { createEmojiPicker } from "../shared/emoji-picker.js";
 import { bookmarkEmoji, bookmarkIconUrl } from "../shared/site-icons.js";
-import { bookmarkNameError, webUrl } from "../shared/validation.js";
+import { bookmarkNameError, categoryError, webUrl } from "../shared/validation.js";
 import { paintBackground } from "./background-renderer.js";
 import { applyPreparedWallMask, buildingVisualBounds, prepareBuildingAppearance } from "./building-appearance.js";
 import { createBuildingDrag } from "./building-drag.js";
@@ -62,6 +62,7 @@ let drawnSignature = null;
 let decorationDensity = DEFAULT_SETTINGS.decorationDensity;
 let openInNewTab = DEFAULT_SETTINGS.openInNewTab;
 let emphasizedBuildings = new Set();
+let emphasizedIcons = new Set();
 let renderedGroups = new Map();
 const buildingWorldRects = new WeakMap();
 
@@ -349,7 +350,19 @@ function highlightCategory(id) {
 }
 
 function syncMapEmphasis() {
+    const categoryFocus = !activeLink && selectedCategory !== null;
     $("world").classList.toggle("detail-focus", Boolean(activeLink) || selectedCategory !== null);
+    $("world").classList.toggle("category-focus", categoryFocus);
+    const icons = new Set(
+        categoryFocus
+            ? [...$("building-labels").querySelectorAll(".building-icon")].filter(
+                  (icon) => icon.dataset.category === selectedCategory,
+              )
+            : [],
+    );
+    for (const icon of emphasizedIcons) if (!icons.has(icon)) icon.classList.remove("emphasized-icon");
+    for (const icon of icons) if (!emphasizedIcons.has(icon)) icon.classList.add("emphasized-icon");
+    emphasizedIcons = icons;
     const hoveredCategory = activeLink?.closest(".building").dataset.category;
     for (const row of $("category-list").children)
         row.querySelector(".category-filter")?.classList.toggle(
@@ -1172,6 +1185,7 @@ $("apps-button").addEventListener("click", () => {
     $("apps-button").setAttribute("aria-expanded", String(!section.hidden));
 });
 let editingBookmark;
+let draftEditCategory = null;
 let editCategories = [];
 let initialDesign = null;
 let editUseEmoji = false;
@@ -1248,6 +1262,31 @@ const paintEditDesign = (id) => {
     if (color) editDesign.setColor(color);
 };
 const editSelect = categorySelect($("edit-category"), { onChange: paintEditDesign });
+function setEditCategoryMode(create) {
+    draftEditCategory = create
+        ? {
+              id: crypto.randomUUID(),
+              color: colors.find((color) => !editCategories.some((item) => item.color === color)) ?? colors[0],
+          }
+        : null;
+    $("edit-category").hidden = create;
+    $("edit-new-category").hidden = create;
+    $("edit-new-category-fields").hidden = !create;
+    $("edit-category-label").textContent = create ? "새 카테고리 이름" : "카테고리";
+    $("edit-new-category-error").textContent = "";
+    $("edit-new-category-name").removeAttribute("aria-invalid");
+    if (create) {
+        $("edit-new-category-name").value = "일반";
+        editDesign.setColor(draftEditCategory.color);
+        $("edit-new-category-name").focus();
+        $("edit-new-category-name").select();
+    } else paintEditDesign(editSelect.value);
+}
+$("edit-new-category").addEventListener("click", () => setEditCategoryMode(true));
+$("edit-existing-category").addEventListener("click", () => {
+    setEditCategoryMode(false);
+    editSelect.trigger.focus();
+});
 function closeEditor() {
     editEmojiPicker.close();
     $("bookmark-editor").close();
@@ -1265,6 +1304,7 @@ $("edit-bookmark").addEventListener("click", async () => {
         }
         editCategories = assignCategoryColors(await categories.get()).categories;
         editSelect.setItems(editCategories, editingBookmark.category);
+        setEditCategoryMode(false);
         // Start from the design the map draws now; bookmarks saved without one get it from their id.
         const { family, variant } = buildingTexture(0, editingBookmark.id, false, editingBookmark.buildingDesign);
         editDesign.select(editingBookmark.buildingDesign, { family, variant });
@@ -1300,24 +1340,45 @@ const urlChanged = () => $("edit-url").value.trim() !== editingBookmark?.url;
 function validateEditor() {
     const nameMessage = nameChanged() ? bookmarkNameError($("edit-name").value) : "";
     const urlMessage = !urlChanged() || webUrl($("edit-url").value) ? "" : "http 또는 https 주소를 입력해 주세요.";
+    const categoryMessage = draftEditCategory ? categoryError($("edit-new-category-name").value, editCategories) : "";
+    $("edit-new-category-error").textContent = categoryMessage;
+    $("edit-new-category-name").setAttribute("aria-invalid", String(Boolean(categoryMessage)));
     $("edit-name-error").textContent = nameMessage;
     $("edit-url-error").textContent = urlMessage;
     $("edit-name").setAttribute("aria-invalid", String(Boolean(nameMessage)));
     $("edit-url").setAttribute("aria-invalid", String(Boolean(urlMessage)));
-    return !nameMessage && !urlMessage;
+    return !nameMessage && !urlMessage && !categoryMessage;
 }
 $("edit-name").addEventListener("input", validateEditor);
 $("edit-url").addEventListener("input", validateEditor);
+$("edit-new-category-name").addEventListener("input", validateEditor);
 $("edit-form").addEventListener("submit", async (event) => {
     event.preventDefault();
+    if ($("save-editor").disabled) return;
     if (!validateEditor()) return;
-    if (!editSelect.value) {
+    if (!draftEditCategory && !editSelect.value) {
         $("edit-status").textContent = "카테고리를 선택해 주세요.";
         editSelect.trigger.focus();
         return;
     }
     $("save-editor").disabled = true;
+    $("cancel-editor").disabled = true;
+    document.querySelector(".editor-content").inert = true;
     try {
+        if (draftEditCategory) {
+            const latest = await categories.get();
+            const error = categoryError($("edit-new-category-name").value, latest);
+            if (error) throw new Error(error);
+            if (!(await bookmarks.get(editingBookmark.id))) throw new Error("삭제된 북마크입니다.");
+            const created = await categories.add({
+                ...draftEditCategory,
+                name: $("edit-new-category-name").value.trim(),
+                customColor: false,
+            });
+            editCategories = assignCategoryColors(await categories.get()).categories;
+            editSelect.setItems(editCategories, created.id);
+            setEditCategoryMode(false);
+        }
         if (!(await categories.get(editSelect.value)))
             throw new Error("카테고리가 삭제되었습니다. 다시 선택해 주세요.");
         const changes = { category: editSelect.value };
@@ -1336,15 +1397,22 @@ $("edit-form").addEventListener("submit", async (event) => {
         console.error(error);
     } finally {
         $("save-editor").disabled = false;
+        $("cancel-editor").disabled = false;
+        document.querySelector(".editor-content").inert = false;
     }
 });
 $("bookmark-editor").addEventListener("close", () => {
     editEmojiPicker.close();
     editingBookmark = null;
+    draftEditCategory = null;
     $("world").classList.remove("editor-focus");
     hideTooltip();
 });
 $("bookmark-editor").addEventListener("cancel", (event) => {
+    if ($("save-editor").disabled) {
+        event.preventDefault();
+        return;
+    }
     if (!editEmojiPicker.isOpen) return;
     event.preventDefault();
     editEmojiPicker.close(true);
