@@ -62,6 +62,7 @@ let drawnSignature = null;
 let decorationDensity = DEFAULT_SETTINGS.decorationDensity;
 let openInNewTab = DEFAULT_SETTINGS.openInNewTab;
 let emphasizedBuildings = new Set();
+let emphasizedIcons = new Set();
 let renderedGroups = new Map();
 const buildingWorldRects = new WeakMap();
 
@@ -349,7 +350,19 @@ function highlightCategory(id) {
 }
 
 function syncMapEmphasis() {
+    const categoryFocus = !activeLink && selectedCategory !== null;
     $("world").classList.toggle("detail-focus", Boolean(activeLink) || selectedCategory !== null);
+    $("world").classList.toggle("category-focus", categoryFocus);
+    const icons = new Set(
+        categoryFocus
+            ? [...$("building-labels").querySelectorAll(".building-icon")].filter(
+                  (icon) => icon.dataset.category === selectedCategory,
+              )
+            : [],
+    );
+    for (const icon of emphasizedIcons) if (!icons.has(icon)) icon.classList.remove("emphasized-icon");
+    for (const icon of icons) if (!emphasizedIcons.has(icon)) icon.classList.add("emphasized-icon");
+    emphasizedIcons = icons;
     const hoveredCategory = activeLink?.closest(".building").dataset.category;
     for (const row of $("category-list").children)
         row.querySelector(".category-filter")?.classList.toggle(

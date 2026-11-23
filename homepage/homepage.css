@@ -303,7 +303,7 @@ a:hover {
     --hover-lift: translateY(calc(-1 * var(--hover-rise))) scale(var(--hover-grow));
     --hover-duration: var(--duration-hover);
 }
-/* While a building's details are open (or a category is selected) one veil covers the whole map
+/* While a building's details are open one veil covers the whole map
    and fades and blurs what lies under it; emphasized buildings rise above it. One element changes
    instead of every tile, prop and building, which kept hovering smooth on large maps.
    Depth: map items 1000 + x + y < veil 1300 < emphasized items (depth + 400) < focused 1999. */
@@ -329,6 +329,33 @@ a:hover {
     transition:
         opacity var(--duration-popup-in) ease-out,
         visibility 0s;
+}
+/* USER-MAIN-CATEGORY-007 uses opacity only; the wasteland canvas stays at 100%. */
+#world.category-focus {
+    --category-building-opacity: 0.4;
+    --category-map-opacity: 0.6;
+    --hover-grow: 1;
+    --hover-rise: 0px;
+}
+.category-focus #focus-veil {
+    opacity: 0;
+    visibility: hidden;
+    backdrop-filter: none;
+    transition: none;
+}
+.category-focus .building:not(.emphasized-building),
+.category-focus .building-icon:not(.emphasized-icon) {
+    opacity: var(--category-building-opacity);
+}
+.category-focus #ground > .tile,
+.category-focus #ground > .category-grass-tile,
+:where(.category-focus) .decoration,
+:where(.category-focus) .category-picket,
+.category-focus #traffic {
+    opacity: var(--category-map-opacity);
+}
+.category-focus .zone svg {
+    opacity: 0;
 }
 
 /* City life on the roads (homepage/traffic.js). Drawn at native pixel size; never takes the pointer. */
@@ -477,7 +504,7 @@ a:hover {
     border-top: 0;
     background: #8a5a2e;
 }
-.detail-focus .building.emphasized-building {
+.detail-focus:not(.category-focus) .building.emphasized-building {
     /* biome-ignore lint/complexity/noImportantStyles: lift above the focus veil, over the per-cell inline depth. */
     z-index: calc(var(--depth) + 400) !important;
 }
@@ -715,8 +742,10 @@ a:hover {
         box-shadow var(--duration-hover) ease-out;
 }
 /* Same emphasis whether the pointer is on the row itself or on one of its buildings on the map. */
-.category-row:has(.building-hovered)::before,
-.category-row:has(.category-filter):hover:not(:has(.building-list:hover))::before {
+.category-row:has(.building-hovered):not(:has(> .category-filter[aria-pressed="true"]))::before,
+.category-row:has(.category-filter):not(:has(> .category-filter[aria-pressed="true"])):hover:not(
+    :has(.building-list:hover)
+)::before {
     background-color: color-mix(in srgb, var(--color-primary) 12%, transparent);
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 24%, transparent);
 }
@@ -799,8 +828,8 @@ body.building-sorting-active * {
     font-size: var(--category-font-size);
     line-height: var(--line-height-sm);
 }
-.category-filter.building-hovered,
-.category-row:hover:not(:has(.building-list:hover)) .category-filter {
+.category-filter.building-hovered:not([aria-pressed="true"]),
+.category-row:hover:not(:has(.building-list:hover)) .category-filter:not([aria-pressed="true"]) {
     font-weight: var(--font-weight-bold);
     color: var(--color-primary);
 }
