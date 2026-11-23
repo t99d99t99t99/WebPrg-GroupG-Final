@@ -36,7 +36,7 @@
 | `homepage/category-colors.js` | 카테고리 기본 색 배정, 벽면 명도와 잔디 채도·명도 보정 |
 | `db/storage.js` | Chrome 저장소 및 웹 미리보기 어댑터, 저장 변경 알림, 공통 쓰기 잠금 |
 | `db/settings.js` | 지도 설정 저장소(`SettingsDB`). 지도 장식 밀도·도시 애니메이션·새 탭 열기·빈 공간 채우기 값을 검증·저장하며, 없거나 잘못된 값은 기본값으로 읽음 |
-| `homepage/settings-panel.js`, `homepage/settings.css` | 좌측 상단 설정 버튼과 설정 창. 저장·취소용 임시 설정, 장식 밀도, 동작 스위치, 빈 공간 채우기 편집·사진 업로드, 동기화 및 초기화 재확인. 빈 공간 채우기는 설정 창 미리보기와 저장만 하고 지도 배경에는 적용하지 않음 |
+| `homepage/settings-panel.js`, `homepage/settings.css` | 좌측 상단 설정 버튼과 설정 창. 설정 즉시 반영·취소 시 복원, 장식 밀도, 동작 스위치, 빈 공간 채우기 편집·사진 업로드, 동기화 및 초기화 재확인. 빈 공간 채우기는 설정 창 미리보기와 저장만 하고 지도 배경에는 적용하지 않음 |
 | `homepage/background-image.js` | 업로드 사진 검증 및 자동 압축. 긴 변 2560px·인코딩 결과 1MiB 이내를 목표로 WebP 화질과 해상도를 조절하고, 이미 목표 이내인 사진은 원본을 유지 |
 | `shared/` | 홈페이지 이름·URL 검증, 사이트 아이콘 URL 생성, 키보드로 조작할 수 있는 카테고리 선택 목록 |
 | `shared/building-designs.js` | 건물 5개 계열의 성장 에셋과 좌우 방향별 기본 디자인 10종. 팝업 선택·DB 검증·지도 렌더링이 공유 |
@@ -195,7 +195,7 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 
 **지도 설정:** `{ decorationDensity?, cityAnimation?, openInNewTab?, emptySpaceFill? }`
 
-- `decorationDensity`: 지도 장식 밀도. `"low"`(적게)·`"normal"`(보통)·`"high"`(많이) 중 하나이고 기본값은 `"normal"`입니다. `settings.get()`은 기본값을 채운 전체 설정을 돌려주고, `settings.edit({ decorationDensity })`는 값을 검사한 뒤 저장합니다(다른 저장 필드는 보존). 설정 창은 열 때 읽은 값의 복사본을 편집하며 저장 시 바뀐 항목만 `edit`으로 전달합니다. 취소·Esc·바깥 클릭은 복사본을 버리고 저장소를 쓰지 않습니다. 설정창 항목이 늘면 `db/settings.js`의 기본값과 검사 목록에 필드를 추가합니다.
+- `decorationDensity`: 지도 장식 밀도. `"low"`(적게)·`"normal"`(보통)·`"high"`(많이) 중 하나이고 기본값은 `"normal"`입니다. `settings.get()`은 기본값을 채운 전체 설정을 돌려주고, `settings.edit({ decorationDensity })`는 값을 검사한 뒤 저장합니다(다른 저장 필드는 보존). 설정 창은 열 때 읽은 값을 보관하고 변경한 항목을 즉시 저장·반영합니다. 연속 입력은 쓰기 순서를 보장하면서 대기 중인 이전 입력을 최신 값으로 합칩니다. **설정 취소**만 이번에 바꾼 항목을 창을 열기 전 값으로 복원하며, **설정 저장**·Esc·바깥 클릭은 변경을 유지합니다. 취소와 전체 초기화는 진행 중인 설정 쓰기 뒤에 처리해 뒤늦은 쓰기가 복원·초기화 값을 덮지 않도록 합니다. 설정창 항목이 늘면 `db/settings.js`의 기본값과 검사 목록에 필드를 추가합니다.
 
 - `cityAnimation`: boolean, 기본값 true. `homepage.js`가 설정을 읽어 `traffic.setEnabled`에 전달합니다. false이면 교통 요소만 정지하며 호버·대화상자 페이드는 유지합니다. OS 움직임 줄이기는 이 설정보다 우선합니다.
 - `openInNewTab`: boolean, 기본값 true. 일반 건물 클릭을 새 탭으로 열고 false이면 현재 탭으로 엽니다. Ctrl/⌘·Shift·가운데 클릭 등 브라우저 기본 동작과 방문 횟수 기록은 유지합니다.
