@@ -1,0 +1,167 @@
+.emoji-picker {
+    position: fixed;
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    width: var(--category-list-item-width);
+    height: var(--confirmation-dialog-height);
+    max-width: calc(100vw - var(--space-4));
+    border: var(--window-border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-md);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
+    box-shadow: var(--shadow-depth-1);
+    font-family: var(--font-family-category);
+    overflow: hidden;
+}
+.emoji-picker[hidden] {
+    display: none;
+}
+.emoji-picker-content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    padding: var(--spec-content-padding) var(--space-4) var(--space-1);
+}
+.emoji-search {
+    position: relative;
+    display: block;
+    flex-shrink: 0;
+}
+.emoji-search::before {
+    position: absolute;
+    top: 7px;
+    left: var(--spec-content-gap);
+    width: 17px;
+    height: 17px;
+    background: url("../assets/ui/emoji-search.svg") no-repeat center;
+    content: "";
+    pointer-events: none;
+}
+.emoji-search-input {
+    width: 100%;
+    height: var(--compact-input-height);
+    padding: 0 var(--space-3) 0 var(--space-8);
+    border: var(--border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-field);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
+    font-size: var(--font-size-xs);
+}
+.emoji-search-input::placeholder {
+    color: var(--color-neutral-500);
+    opacity: 1;
+}
+.emoji-picker-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: var(--space-4);
+    margin-top: var(--space-3);
+    margin-bottom: var(--space-1);
+}
+.emoji-category-control {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    max-width: 50%;
+    color: var(--color-base-content);
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-xs);
+}
+.emoji-category-name {
+    /* The unbound Figma instance places its 16px arrow at x=23 after the two-letter label. */
+    min-width: 23px;
+    white-space: nowrap;
+}
+.emoji-category-arrow {
+    display: block;
+    flex-shrink: 0;
+}
+.emoji-category {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+.emoji-category-control:focus-within {
+    outline: var(--focus-ring-width) solid var(--color-primary);
+    outline-offset: 1px;
+}
+.emoji-use-site {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-label);
+    line-height: var(--line-height-xs);
+    cursor: pointer;
+}
+.emoji-use-site:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
+}
+.emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    grid-auto-rows: var(--space-6);
+    align-content: start;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+.emoji-choice {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font-size: var(--font-size-section-title);
+    line-height: var(--line-height-md);
+    cursor: pointer;
+}
+.emoji-choice:hover,
+.emoji-choice[aria-pressed="true"] {
+    background: var(--color-selection-overlay);
+}
+.emoji-tabs {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    height: calc(var(--space-8) + var(--space-1));
+    padding: var(--space-2) var(--space-4);
+    border-top: var(--window-border-width) solid var(--color-neutral-500);
+}
+.emoji-tab {
+    display: grid;
+    place-items: center;
+    width: var(--icon-size-compact);
+    height: var(--icon-size-compact);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    cursor: pointer;
+}
+.emoji-tab img {
+    display: block;
+}
+.emoji-tab:hover,
+.emoji-tab[aria-selected="true"] {
+    background: var(--color-base-300);
+}
+.emoji-picker :focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-primary);
+    outline-offset: 1px;
+}
+.emoji-empty {
+    grid-column: 1 / -1;
+    margin: var(--space-2) 0;
+    font-size: var(--font-size-xs);
+}

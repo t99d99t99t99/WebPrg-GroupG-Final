@@ -6,6 +6,7 @@ import { assignCategoryColors, colors, wallColorAdjustments } from "../homepage/
 import { BUILDING_DESIGNS } from "../shared/building-designs.js";
 import { categorySelect } from "../shared/category-select.js";
 import { createColorPicker } from "../shared/color-picker.js";
+import { createEmojiPicker } from "../shared/emoji-picker.js";
 import { siteIconUrlForPage } from "../shared/site-icons.js";
 import { bookmarkNameError, categoryError as getCategoryError, webUrl } from "../shared/validation.js";
 
@@ -26,6 +27,52 @@ let savedCategories = [];
 let creatingCategory = false;
 let selectedDesign = 0;
 let draftColor = colors[crypto.getRandomValues(new Uint32Array(1))[0] % colors.length];
+let useEmoji = false;
+let selectedEmoji = "😊";
+
+function updateBookmarkIcon() {
+    const trigger = $("bookmarkIcon");
+    trigger.replaceChildren();
+    if (useEmoji) {
+        trigger.textContent = selectedEmoji;
+        return;
+    }
+    trigger.textContent = "🌐";
+    const src = webUrl(currentTab?.favIconUrl)?.href ?? siteIconUrlForPage(currentTab?.url);
+    if (!src) return;
+    const image = document.createElement("img");
+    image.alt = "";
+    image.hidden = true;
+    image.addEventListener(
+        "load",
+        () => {
+            if (!image.isConnected) return;
+            trigger.replaceChildren(image);
+            image.hidden = false;
+        },
+        { once: true },
+    );
+    image.addEventListener("error", () => image.remove(), { once: true });
+    image.src = src;
+    trigger.append(image);
+}
+
+const emojiPicker = createEmojiPicker($("popup-emoji-picker"), {
+    onChange(emoji) {
+        selectedEmoji = emoji;
+        useEmoji = true;
+        updateBookmarkIcon();
+    },
+    onUseSiteIcon() {
+        useEmoji = false;
+        updateBookmarkIcon();
+    },
+});
+$("bookmarkIcon").addEventListener("click", () => {
+    colorPicker.close();
+    if (emojiPicker.isOpen) emojiPicker.close();
+    else emojiPicker.open($("bookmarkIcon"), useEmoji ? selectedEmoji : "");
+});
 
 function showStatus(message) {
     status.textContent = message;
@@ -144,10 +191,14 @@ const colorPicker = createColorPicker($("popup-color-picker"), {
 });
 $("categoryColor").addEventListener("click", () => {
     if (!creatingCategory) return;
+    emojiPicker.close();
     if (colorPicker.isOpen) colorPicker.close();
     else colorPicker.open(draftColor, $("categoryColor"));
 });
-document.querySelector(".popup-content").addEventListener("scroll", () => colorPicker.close());
+document.querySelector(".popup-content").addEventListener("scroll", () => {
+    colorPicker.close();
+    emojiPicker.close();
+});
 
 function setCategoryMode(createNew) {
     colorPicker.close();
@@ -173,6 +224,7 @@ async function initialize() {
         currentTab = tab;
         bookmarkName.value = tab?.title ?? "";
         bookmarkName.title = bookmarkName.value;
+        updateBookmarkIcon();
         await loadCategories();
     } catch (error) {
         showStatus("현재 페이지 또는 카테고리 목록을 불러오지 못했습니다.");
@@ -267,6 +319,8 @@ form.addEventListener("submit", async (event) => {
             selectedCategory.id,
             bookmarkMemo.value,
             webUrl(currentTab.favIconUrl)?.href ?? siteIconUrlForPage(currentTab.url),
+            useEmoji,
+            selectedEmoji,
         );
         bookmark.buildingDesign = BUILDING_DESIGNS[selectedDesign].id;
         await bookmarks.add(bookmark);

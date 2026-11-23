@@ -1183,6 +1183,8 @@ body.building-sorting-active * {
 }
 /* Site icon before the name, on the round plate of the Figma hover card. */
 .tooltip-site-icon {
+    display: grid;
+    place-items: center;
     flex-shrink: 0;
     box-sizing: border-box;
     width: var(--icon-size-large);
@@ -1190,6 +1192,13 @@ body.building-sorting-active * {
     padding: var(--space-1);
     border-radius: var(--radius-pill);
     background: var(--color-base-200);
+    font-size: var(--font-size-base);
+    line-height: 1;
+}
+.tooltip-site-image {
+    display: block;
+    width: 100%;
+    height: 100%;
     object-fit: contain;
 }
 .tooltip-heading h2 {
