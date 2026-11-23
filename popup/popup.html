@@ -7,6 +7,7 @@
         <link rel="stylesheet" href="../style.css">
         <link rel="stylesheet" href="popup.css">
         <link rel="stylesheet" href="../shared/color-picker.css">
+        <link rel="stylesheet" href="../shared/emoji-picker.css">
         <title>페이지 저장</title>
     </head>
     <body class="popup-page">
@@ -21,13 +22,17 @@
                     <div class="popup-divider" aria-hidden="true"></div>
 
                     <section class="form-section page-name-section">
+                        <span id="bookmarkIconLabel" class="field-label">아이콘</span>
                         <label for="bookmarkName">페이지 이름</label>
+                        <button id="bookmarkIcon" class="bookmark-icon-trigger" type="button"
+                            aria-label="대표 아이콘 선택" aria-haspopup="dialog" aria-expanded="false"
+                            aria-controls="popup-emoji-picker">🌐</button>
                         <input
                             id="bookmarkName"
                             name="name"
                             type="text"
                             autocomplete="off"
-                            placeholder="페이지 이름을 입력하세요."
+                            placeholder="페이지 이름을 입력해주세요"
                             aria-describedby="bookmarkNameError"
                         >
                         <p id="bookmarkNameError" class="field-error" role="status" hidden></p>
@@ -115,6 +120,7 @@
             aria-label="카테고리 색상 선택"
             hidden
         ></section>
+        <section id="popup-emoji-picker" hidden></section>
         <script type="module" src="popup.js"></script>
     </body>
 </html>

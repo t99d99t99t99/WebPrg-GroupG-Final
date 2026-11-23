@@ -77,9 +77,11 @@
     gap: var(--space-2);
 }
 .page-name-section {
-    min-height: var(--popup-page-field-height);
+    grid-template-columns: var(--popup-control-height) minmax(0, 1fr);
+    column-gap: 9px;
+    row-gap: var(--spec-content-gap);
+    min-height: calc(var(--line-height-compact) + var(--spec-content-gap) + var(--popup-control-height));
     align-content: start;
-    gap: var(--popup-field-gap);
 }
 .memo-section {
     gap: var(--space-1);
@@ -464,4 +466,36 @@
 }
 .popup-content::-webkit-scrollbar-thumb {
     background: var(--color-text-muted);
+}
+
+.page-name-section .field-label,
+.page-name-section label {
+    line-height: var(--line-height-compact);
+}
+#bookmarkIconLabel {
+    text-align: center;
+}
+.bookmark-icon-trigger {
+    display: grid;
+    place-items: center;
+    width: var(--popup-control-height);
+    height: var(--popup-control-height);
+    padding: 0;
+    border: var(--border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-field);
+    background: var(--color-base-100);
+    font-size: var(--font-size-xl);
+    cursor: pointer;
+}
+.bookmark-icon-trigger img {
+    width: var(--icon-size-default);
+    height: var(--icon-size-default);
+    object-fit: contain;
+}
+.page-name-section input {
+    min-width: 0;
+    font-size: var(--font-size-xs);
+}
+.page-name-section .field-error {
+    grid-column: 1 / -1;
 }

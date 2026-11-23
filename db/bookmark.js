@@ -1,10 +1,11 @@
 import { buildingDesignById } from "../shared/building-designs.js";
+import { isBookmarkEmoji } from "../shared/emoji-data.js";
 import { isSiteIconUrl } from "../shared/site-icons.js";
 import { bookmarkNameError, webUrl } from "../shared/validation.js";
 import { storage, withWriteLock } from "./storage.js";
 
 export class Bookmark {
-    constructor(_id, _url, _name, _category, _memo = "", _iconUrl = "") {
+    constructor(_id, _url, _name, _category, _memo = "", _iconUrl = "", _useEmoji = false, _emoji = "😊") {
         this.id = _id;
         this.url = _url;
         this.name = _name;
@@ -13,6 +14,8 @@ export class Bookmark {
         this.clickCount = 0;
         this.memo = _memo;
         this.iconUrl = _iconUrl;
+        this.useEmoji = _useEmoji;
+        this.emoji = _emoji;
     }
 }
 
@@ -79,6 +82,9 @@ export class BookmarkDB {
                 if (!isSiteIconUrl(newBookmark.iconUrl)) throw new Error("아이콘 주소를 확인해 주세요.");
                 bookmark.iconUrl = newBookmark.iconUrl;
             }
+            validateEmojiFields(newBookmark);
+            bookmark.useEmoji = newBookmark.useEmoji ?? false;
+            bookmark.emoji = newBookmark.emoji ?? "😊";
             bookmark.isNew = newBookmark.isNew ?? true;
             bookmarks.push(bookmark);
             await storage.set({ [this.key]: bookmarks });
@@ -106,6 +112,7 @@ export class BookmarkDB {
             if (!changes || typeof changes !== "object") {
                 throw new TypeError("Bookmark changes must be an object.");
             }
+            validateEmojiFields(changes);
 
             if (changes.name !== undefined) {
                 const error = bookmarkNameError(changes.name);
@@ -126,7 +133,17 @@ export class BookmarkDB {
             }
             // A building's cell belongs to its old category's area; the map assigns a new one.
             if (changes.category !== undefined && changes.category !== bookmark.category) delete bookmark.cell;
-            for (const field of ["url", "name", "category", "memo", "isNew", "iconUrl", "buildingDesign"]) {
+            for (const field of [
+                "url",
+                "name",
+                "category",
+                "memo",
+                "isNew",
+                "iconUrl",
+                "buildingDesign",
+                "useEmoji",
+                "emoji",
+            ]) {
                 if (changes[field] !== undefined) bookmark[field] = changes[field];
             }
             await storage.set({ [this.key]: this.bookmarks });
@@ -166,4 +183,11 @@ export class BookmarkDB {
             await storage.set({ [this.key]: next });
         });
     }
+}
+
+function validateEmojiFields(bookmark) {
+    if (bookmark.useEmoji !== undefined && typeof bookmark.useEmoji !== "boolean")
+        throw new Error("이모지 사용 여부는 참 또는 거짓으로 지정해 주세요.");
+    if (bookmark.emoji !== undefined && !isBookmarkEmoji(bookmark.emoji))
+        throw new Error("대표 아이콘으로 사용할 이모지를 다시 선택해 주세요.");
 }

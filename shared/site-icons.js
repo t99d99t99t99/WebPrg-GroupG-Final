@@ -1,3 +1,4 @@
+import { isBookmarkEmoji } from "./emoji-data.js";
 import { webUrl } from "./validation.js";
 
 export function siteIconUrlForPage(pageUrl, size = 32) {
@@ -10,9 +11,13 @@ export function siteIconUrlForPage(pageUrl, size = 32) {
     return iconUrl.href;
 }
 
-// The icon address shown for a bookmark on the map and in its hover card: the saved icon,
-// or Chrome's favicon of the page. Empty when there is none (web preview without chrome).
+export function bookmarkEmoji(bookmark) {
+    return bookmark.useEmoji === true && isBookmarkEmoji(bookmark.emoji) ? bookmark.emoji : "";
+}
+
+// The image address for a bookmark's representative icon. Emoji bookmarks render text instead.
 export function bookmarkIconUrl(bookmark) {
+    if (bookmarkEmoji(bookmark)) return "";
     return isSiteIconUrl(bookmark.iconUrl)
         ? bookmark.iconUrl || siteIconUrlForPage(bookmark.url)
         : siteIconUrlForPage(bookmark.url);

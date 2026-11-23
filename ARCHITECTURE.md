@@ -35,9 +35,11 @@
 | `db/settings.js` | 지도 설정 저장소(`SettingsDB`). 설정창 항목을 객체 하나로 저장하고, 없거나 잘못된 값은 기본값으로 읽음. 현재 항목은 지도 장식 밀도 |
 | `shared/` | 홈페이지 이름·URL 검증, 사이트 아이콘 URL 생성, 키보드로 조작할 수 있는 카테고리 선택 목록 |
 | `shared/building-designs.js` | 건물 5개 계열의 성장 에셋과 좌우 방향별 기본 디자인 10종. 팝업 선택·DB 검증·지도 렌더링이 공유 |
-| `shared/site-icons.js` | Chrome Favicon API 조회 URL 생성, 저장할 아이콘 URL 검증, 지도·호버 카드가 함께 쓰는 북마크 아이콘 주소(`bookmarkIconUrl`) |
+| `shared/site-icons.js` | Chrome Favicon API 조회 URL 생성, 저장할 아이콘 URL 검증. 지도·호버 카드·카테고리 건물 목록이 함께 쓰는 대표 이모지(`bookmarkEmoji`)와 사이트 아이콘 주소(`bookmarkIconUrl`) 결정 |
 | `shared/building-picker.js`, `shared/building-picker.css` | 홈페이지 북마크 수정 창의 건물 디자인 선택 띠(좌우 화살표, 3개씩 표시, 카테고리 색 벽면 미리보기). 팝업은 아직 같은 모양의 자체 코드를 씀 |
 | `shared/color-picker.js`, `shared/color-picker.css` | 홈페이지와 팝업이 함께 쓰는 컬러피커 UI·스타일. 채도/밝기 드래그·방향키, 색조, HEX, Escape·바깥 클릭 닫기. 저장은 호출 화면에서 처리 |
+| `shared/emoji-picker.js`, `shared/emoji-picker.css` | 대표 아이콘 선택창. 한국어·영어 검색, 최근 사용(선택기 인스턴스 동안 유지)과 사람·자연·음식·활동·여행·사물·기호·깃발 분류, 키보드 이동, 사이트 아이콘 복귀. 저장은 팝업에서 처리 |
+| `shared/emoji-data.js`, `shared/emoji-LICENSE.txt` | Unicode Emoji 17.0의 기본 피부색 이모지와 CLDR 48 한국어 이름·영어 검색어, 허용 이모지 검증 및 데이터 라이선스 |
 | `homepage/google-account.js` | 계정 표시 전용 어댑터. 전달받은 이름·HTTPS 사진 URL을 표시하고 사진 부재·실패 시 기본 아바타로 복귀. 인증·권한·저장소 접근 없음 |
 | `homepage/category-manager.js` | 카테고리 목록 패널. 건물명 검색(앞 글자 음절 일치 순), 선택한 카테고리 아래 건물 목록(호버·클릭은 `homepage.js`의 `hoverBuilding`·`selectBuilding`으로 지도 강조·상세 카드 고정), 생성·이름 수정·드래그 순서 이동·삭제 확인, 색상 칩이나 연필로 이름 수정 칸과 컬러피커를 함께 열기(카테고리 일반의 색상 칩은 컬러피커만), 수정 중 확인·취소, 휴지통 버튼으로 삭제 창 열기, 카테고리 강조 선택 |
 | `homepage/category-reorder.js` | 행의 포인터 드래그·자동 스크롤·정착 애니메이션·취소와 저장 콜백 처리. 다른 행의 카테고리 줄 가운데에 놓으면 병합 콜백 |
@@ -64,7 +66,7 @@
 | 화면 | manifest 항목 | 불러오는 순서 |
 |---|---|---|
 | 새 탭 | `chrome_url_overrides.newtab` | `homepage/homepage.html` → `daisyui.generated.css`, `style.css`, `homepage.css`, `shared/color-picker.css`, `shared/building-picker.css`, `homepage.js`(module) |
-| 팝업 | `action.default_popup` | `popup/popup.html` → `daisyui.generated.css`, `style.css`, `popup.css`, `shared/color-picker.css`, `popup.js`(module) |
+| 팝업 | `action.default_popup` | `popup/popup.html` → `daisyui.generated.css`, `style.css`, `popup.css`, `shared/color-picker.css`, `shared/emoji-picker.css`, `popup.js`(module) |
 
 ## 호출 관계
 
@@ -91,7 +93,10 @@ popup/popup.js ──> chrome.tabs.query / shared/site-icons.js (현재 탭 제�
 homepage/homepage.js ──> chrome.bookmarks.getTree → db/db.js (importChromeBookmarks)
 background.js ──> chrome.tabs.onUpdated / onActivated → db/db.js (저장된 사이트 파비콘 갱신)
 shared/site-icons.js ──> chrome.runtime.getURL (Chrome Favicon API 주소 생성)
+shared/site-icons.js ──> shared/emoji-data.js (저장된 대표 이모지 검증)
 popup/popup.js ──> shared/category-select.js / shared/validation.js
+popup/popup.js ──> shared/emoji-picker.js ──> shared/emoji-data.js
+db/bookmark.js ──> shared/emoji-data.js (저장·수정할 이모지 검증)
 popup/popup.js / homepage/category-manager.js ──> db/category.js (기본 카테고리 판별)
 popup/popup.js ──> homepage/category-colors.js (기존 카테고리 색상·새 카테고리 초기 색상)
 popup/popup.js ──> homepage/building-appearance.js (미리보기 벽면 마스크)
@@ -153,7 +158,7 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 | `webprg-bookmarkmap-icon-backfill-v1` | 기존 북마크의 아이콘 주소를 홈페이지 첫 실행에서 한 번 보정했는지 여부 |
 | `webprg-bookmarkmap-settings` | 지도 설정 객체 |
 
-**북마크:** `{ id, url, name, category, savedAt, clickCount, cell, lastVisitedAt?, memo?, isNew?, preview?, iconUrl?, buildingDesign? }`
+**북마크:** `{ id, url, name, category, savedAt, clickCount, cell, lastVisitedAt?, memo?, isNew?, preview?, iconUrl?, useEmoji?, emoji?, buildingDesign? }`
 - `id`: `crypto.randomUUID()` 문자열
 - `category`: 카테고리의 `id`. 일치하는 카테고리가 없으면 DB 초기화 및 도시 갱신 시 "카테고리 일반"의 ID로 바꾸어 저장합니다
 - `savedAt`: 저장 시각(`Date.now()`). Chrome 북마크 가져오기는 원래 등록일(`dateAdded`)을 사용합니다.
@@ -162,6 +167,8 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 - `cell`: 지도 그리드에서 건물이 놓인 칸 `{ x, y }`(절대 좌표). 새 탭이 처음 그릴 때 채웁니다. 카테고리를 바꾸면(`edit`) 지워지고 새로 배정됩니다. 지도에서 건물을 끌어 옮기면(`moveBookmark`) 놓은 칸이 저장됩니다
 
 - `memo`: 글자 수 제한 없는 문자열 메모. 기존 데이터에 없으면 빈 메모로 표시합니다. 팝업에서는 최종 저장 버튼을 누를 때만 북마크와 함께 저장합니다.
+- `useEmoji`: 대표 아이콘으로 이모지를 쓸지 여부(boolean). 새 북마크의 기본값은 false이고, 필드가 없는 기존 북마크도 사이트 아이콘을 사용하는 것으로 해석합니다.
+- `emoji`: 선택한 이모지 문자열. 새 북마크의 기본값은 `😊`이며 `useEmoji`가 false여도 선택값을 보존합니다. 팝업의 아이콘 선택은 최종 저장 시 두 필드와 기존 `iconUrl`을 함께 저장하며, `BookmarkDB.add`와 `edit`는 타입 및 허용 이모지 목록을 검증합니다. `useEmoji`가 true이고 이모지가 유효하면 홈페이지 지도 라벨·호버 카드·카테고리 건물 목록에 해당 이모지를 텍스트로 표시합니다. 그 외에는 기존 사이트 아이콘 경로를 사용합니다.
 - `buildingDesign`: 선택적 디자인 ID (`blue-homes:a` 등). `shared/building-designs.js`의 ID를 `add`/`edit`에서 검증합니다. 선택한 계열과 방향을 성장·파손 단계에서도 유지하며, 필드가 없으면 ID 기반 규칙을 사용합니다. 데이터 호환을 위해 `cafe:a`·`pizza:a`도 허용하며 각각 카페·피자 가게의 외형 단계부터 표시합니다.
 - `iconUrl`: 선택 사항인 웹사이트 아이콘 URL. 저장 팝업은 현재 탭 파비콘 URL을 저장하고, 없으면 Chrome Favicon API 주소를 생성합니다. 기존 북마크는 `webprg-bookmarkmap-icon-backfill-v1` 표시를 두고 홈페이지 최초 실행에서 한 번 보정합니다. Chrome 북마크 API는 파비콘을 제공하지 않으므로 동기화한 URL을 Favicon API로 연결합니다. 탭에서 파비콘이 갱신되거나 페이지가 활성화되면 서비스 워커가 같은 URL의 저장된 북마크를 찾아 실제 파비콘 URL을 저장합니다. 아이콘 정보가 없거나 로딩이 실패하면 홈페이지 지도는 지구본 이모지를 표시합니다. 호버 카드는 사이트명 앞에 지도와 같은 아이콘 주소(`shared/site-icons.js`의 `bookmarkIconUrl`)를 표시하며, 불러온 뒤에 바꿔 깨진 이미지를 보이지 않고, 불러오지 못하면 확장 프로그램 아이콘(`assets/icons/icon32.png`)을 표시합니다.
 - `isNew`: 새로 저장한 건물의 NEW 표시. 건물을 호버·포커스하면 false로 저장합니다. 새 탭을 떠날 때(다른 탭으로 전환), 그 화면을 보기 시작한 시각보다 먼저 저장된 북마크도 false로 저장합니다. 따라서 새로 연 탭에서는 NEW가 보이고, 한 번 본 뒤 다시 들어오면 사라집니다. 기존 데이터에는 표시하지 않습니다.

@@ -1,6 +1,6 @@
 import { isGeneralCategory } from "../db/category.js";
 import { bookmarks, categories, deleteCategory, mergeCategory } from "../db/db.js";
-import { bookmarkIconUrl } from "../shared/site-icons.js";
+import { bookmarkEmoji, bookmarkIconUrl } from "../shared/site-icons.js";
 import { categoryError } from "../shared/validation.js";
 import { buildingReorder } from "./building-reorder.js";
 import { categoryReorder } from "./category-reorder.js";
@@ -128,13 +128,18 @@ export function categoryManager({
         select.setAttribute("aria-pressed", "false");
         select.title = bookmark.name;
         const badge = node("span", "building-row-icon");
-        const icon = node("img", "");
-        icon.alt = "";
-        icon.addEventListener("error", () => {
-            if (icon.getAttribute("src") !== FALLBACK_ICON) icon.src = FALLBACK_ICON;
-        });
-        icon.src = bookmarkIconUrl(bookmark) || FALLBACK_ICON;
-        badge.append(icon);
+        const emoji = bookmarkEmoji(bookmark);
+        badge.setAttribute("aria-hidden", "true");
+        if (emoji) badge.textContent = emoji;
+        else {
+            const icon = node("img", "");
+            icon.alt = "";
+            icon.addEventListener("error", () => {
+                if (icon.getAttribute("src") !== FALLBACK_ICON) icon.src = FALLBACK_ICON;
+            });
+            icon.src = bookmarkIconUrl(bookmark) || FALLBACK_ICON;
+            badge.append(icon);
+        }
         select.append(badge, node("span", "building-row-name", bookmark.name));
         select.addEventListener("click", () => selectBuilding(bookmark.id, row));
         select.addEventListener("focus", () => hoverBuilding(bookmark.id, row));

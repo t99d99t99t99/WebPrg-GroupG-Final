@@ -13,7 +13,7 @@ import { DEFAULT_SETTINGS } from "../db/settings.js";
 import { buildingPicker } from "../shared/building-picker.js";
 import { categorySelect } from "../shared/category-select.js";
 import { createColorPicker } from "../shared/color-picker.js";
-import { bookmarkIconUrl } from "../shared/site-icons.js";
+import { bookmarkEmoji, bookmarkIconUrl } from "../shared/site-icons.js";
 import { bookmarkNameError, webUrl } from "../shared/validation.js";
 import { paintBackground } from "./background-renderer.js";
 import { applyPreparedWallMask, buildingVisualBounds, prepareBuildingAppearance } from "./building-appearance.js";
@@ -113,23 +113,31 @@ function safeUrl(raw) {
     }
 }
 
-// Hover card icon: the same address as the building's map icon (already loaded, so it shows
-// at once). It is swapped in only after it loads, so no broken image shows; when it cannot
-// load, the extension icon is shown.
+// The hover card uses the same emoji or favicon as the building's map icon.
 const DEFAULT_SITE_ICON = "../assets/icons/icon32.png";
 let tooltipIconLoad = null;
 function showTooltipIcon(bookmark) {
     const icon = $("tooltip-icon");
-    const src = bookmarkIconUrl(bookmark) || DEFAULT_SITE_ICON;
     tooltipIconLoad = null; // an earlier, slower load must not replace this one
-    if (icon.getAttribute("src") === src) return;
+    const emoji = bookmarkEmoji(bookmark);
+    if (emoji) {
+        icon.textContent = emoji;
+        return;
+    }
+    const src = bookmarkIconUrl(bookmark) || DEFAULT_SITE_ICON;
+    if (icon.querySelector("img")?.getAttribute("src") === src) return;
+    const image = element("img", "tooltip-site-image");
+    image.alt = "";
+    image.src = DEFAULT_SITE_ICON;
+    icon.replaceChildren(image);
+    if (src === DEFAULT_SITE_ICON) return;
     const loader = new Image();
     tooltipIconLoad = loader;
     loader.onload = () => {
-        if (tooltipIconLoad === loader) icon.src = src;
+        if (tooltipIconLoad === loader) image.src = src;
     };
     loader.onerror = () => {
-        if (tooltipIconLoad === loader) icon.src = DEFAULT_SITE_ICON;
+        if (tooltipIconLoad === loader) image.src = DEFAULT_SITE_ICON;
     };
     loader.src = src;
 }
@@ -464,7 +472,7 @@ function createBuilding(bookmark, category, cell, labels, interactive = true) {
     siteIcon.dataset.category = category.id;
     siteIcon.style.left = `${position.left}px`;
     siteIcon.style.top = `${position.top - 6}px`;
-    const fallbackIcon = element("span", "building-icon-fallback", "🌐");
+    const fallbackIcon = element("span", "building-icon-fallback", bookmarkEmoji(bookmark) || "🌐");
     siteIcon.append(fallbackIcon);
     const iconUrl = bookmarkIconUrl(bookmark);
     if (iconUrl) {
