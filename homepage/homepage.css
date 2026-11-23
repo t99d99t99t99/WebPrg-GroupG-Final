@@ -1352,12 +1352,15 @@ body.building-sorting-active * {
     }
 }
 .bookmark-editor {
+    /* USER-MAIN-EDIT instance height, including its 1.5px border. */
+    --edit-modal-height: 659px;
     width: var(--popup-width);
     height: var(--edit-modal-height);
     max-height: none;
     margin: 0;
     inset: auto;
     padding: 0;
+    box-shadow: var(--shadow-card);
     transform-origin: top left;
 }
 .bookmark-editor::backdrop {
@@ -1401,7 +1404,7 @@ body.building-sorting-active * {
     margin: 0;
     color: var(--color-base-content);
     font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-bold);
     line-height: var(--line-height-md);
 }
 .editor-divider {
@@ -1425,20 +1428,101 @@ body.building-sorting-active * {
 .form-group .field-error {
     margin: 0;
 }
+.bookmark-editor .field-label {
+    color: var(--color-base-content);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-sm);
+}
+.bookmark-editor .form-group {
+    flex-shrink: 0;
+    min-height: var(--popup-page-field-height);
+    align-content: start;
+    gap: var(--popup-field-gap);
+}
+.bookmark-editor .form-group:has(#edit-category) {
+    /* Preserve the category selector's 92px slot before the design strip. */
+    min-height: calc(var(--popup-page-field-height) + var(--space-6));
+}
+.editor-category-group {
+    position: relative;
+}
+.editor-category-action {
+    justify-self: start;
+    min-height: var(--line-height-sm);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-neutral-500);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-sm);
+    text-align: left;
+}
+#edit-new-category {
+    position: absolute;
+    left: var(--popup-category-text-offset);
+    top: calc(var(--line-height-sm) + var(--popup-field-gap) + var(--popup-control-height) + var(--space-3));
+}
+#edit-new-category-fields {
+    display: grid;
+    gap: var(--popup-field-gap);
+    min-width: 0;
+}
+#edit-existing-category {
+    margin-top: var(--popup-category-action-gap);
+    margin-left: var(--popup-category-text-offset);
+}
 .bookmark-editor .form-actions {
+    height: var(--action-footer-height);
+    flex: 0 0 var(--action-footer-height);
     min-height: var(--action-footer-height);
     margin-top: auto;
-    padding: var(--action-footer-padding-block) var(--action-footer-padding-inline);
+    align-items: center;
+    padding: 0 var(--action-footer-padding-inline);
     gap: var(--space-6);
     border-top: var(--border-width) solid var(--color-neutral-500);
 }
 .bookmark-editor .field {
     min-height: var(--popup-control-height);
+    height: var(--popup-control-height);
+    padding-inline: var(--popup-field-padding-inline);
+    border: var(--border-width) solid var(--color-neutral-500);
+    background-color: var(--color-base-100);
+    color: var(--color-base-content);
+    font-weight: var(--font-weight-regular);
+    box-shadow: none;
+}
+.bookmark-editor .category-select-trigger {
+    padding-right: var(--space-10);
+}
+.bookmark-editor .field::placeholder {
+    color: var(--color-base-content);
+    opacity: 1;
+}
+.bookmark-editor .field:focus {
+    border-color: var(--color-primary);
+}
+.bookmark-editor .field[aria-invalid="true"] {
+    border-color: var(--color-error);
 }
 .bookmark-editor .action {
     width: var(--popup-action-width);
     min-width: var(--popup-action-width);
     flex: 0 0 var(--popup-action-width);
+    border: var(--border-width) solid var(--color-neutral-500);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-sm);
+    box-shadow: var(--shadow-depth-1);
+}
+.bookmark-editor .action-primary {
+    border: var(--window-border-width) solid var(--color-primary);
+    background: var(--color-primary);
+    color: var(--color-primary-content);
+    font-weight: var(--font-weight-bold);
 }
 .category-delete {
     width: var(--confirmation-dialog-width);
