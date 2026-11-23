@@ -4,7 +4,7 @@ import { BUILDING_DESIGNS } from "./building-designs.js";
 
 // Building design strip with left/right arrows: three designs at a time, the selected one highlighted.
 // Styles: shared/building-picker.css. The popup still has its own copy of this strip (popup/popup.js).
-export function buildingPicker({ host, previous, next }) {
+export function buildingPicker({ host, previous, next, onChange = () => {} }) {
     let selected = 0;
     let color = null;
 
@@ -43,9 +43,11 @@ export function buildingPicker({ host, previous, next }) {
             preview.append(image, tint, light);
             button.append(preview);
             button.addEventListener("click", () => {
+                const changed = selected !== index;
                 selected = index;
                 render();
                 host.querySelector('[aria-pressed="true"]')?.focus();
+                if (changed) onChange(BUILDING_DESIGNS[selected].id);
             });
             host.append(button);
         }
@@ -60,9 +62,11 @@ export function buildingPicker({ host, previous, next }) {
         [next, 1],
     ]) {
         arrow.addEventListener("click", () => {
+            const before = selected;
             selected = Math.max(0, Math.min(BUILDING_DESIGNS.length - 1, selected + step));
             render();
             if (arrow.hidden) host.querySelector('[aria-pressed="true"]')?.focus();
+            if (before !== selected) onChange(BUILDING_DESIGNS[selected].id);
         });
     }
 
