@@ -64,6 +64,7 @@ let openInNewTab = DEFAULT_SETTINGS.openInNewTab;
 let emphasizedBuildings = new Set();
 let emphasizedIcons = new Set();
 let renderedGroups = new Map();
+let editDesignPreview = null;
 const buildingWorldRects = new WeakMap();
 
 function setObstructedBuildings(next = new Set()) {
@@ -942,6 +943,13 @@ async function render() {
         }
         const snapshot = snapshotFromGroups(groups);
         mapState = { snapshot, fingerprint: layoutFingerprint(snapshot.categories, snapshot.bookmarks) };
+        if (editDesignPreview)
+            for (const group of groups)
+                group.items = group.items.map((bookmark) =>
+                    bookmark.id === editDesignPreview.id
+                        ? { ...bookmark, buildingDesign: editDesignPreview.buildingDesign }
+                        : bookmark,
+                );
         hideTooltip();
         lastGroups = groups;
         const signature = JSON.stringify([
@@ -974,6 +982,12 @@ async function render() {
         $("map-status").textContent = total
             ? ""
             : "저장한 페이지가 아직 없습니다. 확장프로그램에서 첫 페이지를 저장해 보세요.";
+        if ($("bookmark-editor").open && editingBookmark) {
+            activeLink = $("buildings").querySelector(
+                `.building[data-bookmark="${CSS.escape(String(editingBookmark.id))}"] .building-link`,
+            );
+            activeLink?.closest(".building").classList.add("focused-building");
+        }
         applyFilter();
         for (const link of $("buildings").querySelectorAll(".building-link"))
             link.target = openInNewTab ? "_blank" : "_self";
@@ -1256,6 +1270,11 @@ const editDesign = buildingPicker({
     host: $("edit-designs"),
     previous: $("edit-previous-design"),
     next: $("edit-next-design"),
+    onChange(buildingDesign) {
+        if (!editingBookmark || !$("bookmark-editor").open) return;
+        editDesignPreview = buildingDesign === initialDesign ? null : { id: editingBookmark.id, buildingDesign };
+        render();
+    },
 });
 // The design strip shows the walls in the color of the chosen category.
 const paintEditDesign = (id) => {
@@ -1403,20 +1422,42 @@ $("edit-form").addEventListener("submit", async (event) => {
     }
 });
 $("bookmark-editor").addEventListener("close", () => {
+    const hadPreview = editDesignPreview !== null;
+    editDesignPreview = null;
     editEmojiPicker.close();
     editingBookmark = null;
     draftEditCategory = null;
     $("world").classList.remove("editor-focus");
     hideTooltip();
+    if (hadPreview) render();
 });
-$("bookmark-editor").addEventListener("cancel", (event) => {
+$("bookmark-editor").addEventListener("cancel", async (event) => {
     if ($("save-editor").disabled) {
         event.preventDefault();
         return;
     }
-    if (!editEmojiPicker.isOpen) return;
+    if (editEmojiPicker.isOpen) {
+        event.preventDefault();
+        editEmojiPicker.close(true);
+        return;
+    }
+    if (!editDesignPreview) return;
     event.preventDefault();
-    editEmojiPicker.close(true);
+    $("save-editor").disabled = true;
+    $("cancel-editor").disabled = true;
+    document.querySelector(".editor-content").inert = true;
+    try {
+        const result = await bookmarks.edit(editingBookmark.id, { buildingDesign: editDesignPreview.buildingDesign });
+        if (!result) throw new Error("삭제된 북마크입니다.");
+        closeEditor();
+    } catch (error) {
+        $("edit-status").textContent = "건물 디자인을 저장하지 못했습니다. 다시 시도해 주세요.";
+        console.error(error);
+    } finally {
+        $("save-editor").disabled = false;
+        $("cancel-editor").disabled = false;
+        document.querySelector(".editor-content").inert = false;
+    }
 });
 
 createSettingsPanel({

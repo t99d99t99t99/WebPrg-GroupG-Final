@@ -29,6 +29,9 @@ export function createSettingsPanel({
     let resetCompleted = false;
     let generation = 0;
     let colorField;
+    let changedFields = new Set();
+    let writeQueue = Promise.resolve(true);
+    let writeRevision = 0;
 
     function status(message, element = $("settings-status"), error = true) {
         element.textContent = message;
@@ -79,6 +82,7 @@ export function createSettingsPanel({
             if (!draft || !colorField) return;
             draft.emptySpaceFill[colorField] = color;
             renderFill();
+            applyDraft("emptySpaceFill");
         },
         position(host, anchor) {
             const gap = Number.parseFloat(getComputedStyle(host).getPropertyValue("--color-picker-trigger-gap"));
@@ -124,6 +128,55 @@ export function createSettingsPanel({
         }
         renderFill();
     }
+    function queueWrite(values, message = "설정을 반영하지 못했습니다. 다시 시도해 주세요.") {
+        const revision = ++writeRevision;
+        const token = generation;
+        // Keep the latest complete edit when sliders change faster than storage can write.
+        writeQueue = writeQueue
+            .then(async () => {
+                if (revision !== writeRevision) return true;
+                if (Object.keys(values).length) {
+                    await settings.edit(values);
+                    await onSaved();
+                }
+                return true;
+            })
+            .catch((error) => {
+                console.error(error);
+                if (token === generation && draft) status(message);
+                else onError(message);
+                return false;
+            });
+        return writeQueue;
+    }
+    function changedValues(source) {
+        return structuredClone(Object.fromEntries([...changedFields].map((field) => [field, source[field]])));
+    }
+    function applyDraft(field) {
+        changedFields.add(field);
+        status("");
+        return queueWrite(changedValues(draft));
+    }
+    async function finish(cancel = false) {
+        if (saving || resetting || (!cancel && (uploading || syncing)) || !draft) return;
+        saving = true;
+        if (cancel) uploadController?.abort();
+        picker.close();
+        closeOptions();
+        busy();
+        status("");
+        try {
+            const success = await queueWrite(
+                changedValues(cancel ? initial : draft),
+                cancel ? "설정을 복원하지 못했습니다. 다시 시도해 주세요." : undefined,
+            );
+            saving = false;
+            if (success) close(true);
+        } finally {
+            saving = false;
+            busy();
+        }
+    }
     function close(restoreFocus = false) {
         if (saving || resetting) return;
         uploadController?.abort();
@@ -140,8 +193,10 @@ export function createSettingsPanel({
         if (opening || !panel.hidden || confirmation.open) return;
         opening = true;
         try {
+            await writeQueue;
             initial = await settings.get();
             draft = structuredClone(initial);
+            changedFields = new Set();
             generation++;
             colorField = null;
             status("");
@@ -161,37 +216,16 @@ export function createSettingsPanel({
         }
     }
     trigger.addEventListener("click", open);
-    $("settings-cancel").addEventListener("click", () => close(true));
-    $("settings-form").addEventListener("submit", async (event) => {
+    $("settings-cancel").addEventListener("click", () => finish(true));
+    $("settings-form").addEventListener("submit", (event) => {
         event.preventDefault();
-        if (saving || uploading || syncing || !draft) return;
-        saving = true;
-        picker.close();
-        closeOptions();
-        busy();
-        status("");
-        try {
-            const changes = Object.fromEntries(
-                Object.entries(draft).filter(
-                    ([field, value]) => JSON.stringify(value) !== JSON.stringify(initial[field]),
-                ),
-            );
-            if (Object.keys(changes).length) await settings.edit(changes);
-            await onSaved();
-            saving = false;
-            close(true);
-        } catch (error) {
-            console.error(error);
-            status("설정을 저장하지 못했습니다. 다시 시도해 주세요.");
-        } finally {
-            saving = false;
-            busy();
-        }
+        return finish();
     });
     for (const button of $("settings-density").querySelectorAll("button"))
         button.addEventListener("click", () => {
             draft.decorationDensity = button.dataset.density;
             render();
+            return applyDraft("decorationDensity");
         });
     for (const [id, field] of [
         ["settings-animation", "cityAnimation"],
@@ -200,6 +234,7 @@ export function createSettingsPanel({
         $(id).addEventListener("click", () => {
             draft[field] = !draft[field];
             render();
+            return applyDraft(field);
         });
 
     function openOptions() {
@@ -221,6 +256,7 @@ export function createSettingsPanel({
             picker.close();
             renderFill();
             closeOptions(true);
+            return applyDraft("emptySpaceFill");
         });
     options.addEventListener("keydown", (event) => {
         const index = optionButtons.indexOf(document.activeElement);
@@ -246,6 +282,7 @@ export function createSettingsPanel({
             draft.emptySpaceFill.colorMode = button.dataset.colorMode;
             picker.close();
             renderFill();
+            return applyDraft("emptySpaceFill");
         });
     for (const button of panel.querySelectorAll("[data-fill-color]"))
         button.addEventListener("click", () => {
@@ -259,6 +296,7 @@ export function createSettingsPanel({
     $("settings-gradient-angle").addEventListener("input", (event) => {
         draft.emptySpaceFill.angle = Number(event.target.value);
         renderFill();
+        return applyDraft("emptySpaceFill");
     });
 
     async function upload(file) {
@@ -271,9 +309,10 @@ export function createSettingsPanel({
         status("");
         try {
             const dataUrl = await prepareBackgroundImage(file, { signal: controller.signal });
-            if (token !== generation || !draft) return;
+            if (controller.signal.aborted || token !== generation || !draft) return;
             draft.emptySpaceFill.photoDataUrl = dataUrl;
             renderFill();
+            await applyDraft("emptySpaceFill");
         } catch (error) {
             if (error.name === "AbortError") return;
             console.error(error);
@@ -303,6 +342,7 @@ export function createSettingsPanel({
     $("settings-photo-remove").addEventListener("click", () => {
         draft.emptySpaceFill.photoDataUrl = "";
         renderFill();
+        return applyDraft("emptySpaceFill");
     });
 
     $("sync-bookmarks").addEventListener("click", async () => {
@@ -350,6 +390,7 @@ export function createSettingsPanel({
         busy();
         status("", $("settings-reset-status"));
         try {
+            await writeQueue;
             await resetAllData();
             await onReset();
             resetCompleted = true;
