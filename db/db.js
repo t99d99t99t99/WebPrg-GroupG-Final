@@ -155,7 +155,11 @@ export async function importChromeBookmarks(tree) {
                         collect(node, general);
                         continue;
                     }
-                    const name = node.title?.trim() || "이름 없는 폴더";
+                    // Same 10-character limit as categories made in the app (shared/validation.js categoryError).
+                    const name = Array.from(node.title?.trim() || "이름 없는 폴더")
+                        .slice(0, 10)
+                        .join("")
+                        .trim();
                     let category = savedCategories.find((item) => item.name === name);
                     if (!category) {
                         category = { id: crypto.randomUUID(), name, createdAt: Date.now() };
