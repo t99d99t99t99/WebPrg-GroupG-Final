@@ -76,6 +76,7 @@ export function categoryManager({
         },
         // A category dropped on another one merges into it (Figma USER-MAIN-CATEGORY-001).
         async merge(fromId, toId) {
+            if (!(await confirmMerge(fromId, toId))) return;
             const { from, to } = await mergeCategory(fromId, toId);
             toast(`‘${from.name}’ 카테고리를 ‘${to.name}’에 합쳤습니다.`);
         },
@@ -93,6 +94,31 @@ export function categoryManager({
             toast(cause.message || "건물 순서를 저장하지 못했습니다.");
         },
     });
+    // Merging deletes the dragged category, so a drop asks first like the delete button does.
+    function confirmMerge(fromId, toId) {
+        const group = (id) => lastGroups.find((item) => item.category.id === id);
+        const from = group(fromId);
+        const to = group(toId);
+        if (!from || !to) return Promise.resolve(false);
+        $("merge-name").textContent =
+            `‘${from.category.name}’의 북마크 ${from.items.length}개를 ‘${to.category.name}’(으)로 옮기고 ‘${from.category.name}’ 카테고리를 삭제합니다.`;
+        const dialog = $("category-merge");
+        return new Promise((resolve) => {
+            const finish = (confirmed) => {
+                $("confirm-merge").removeEventListener("click", onConfirm);
+                $("cancel-merge").removeEventListener("click", onCancel);
+                dialog.removeEventListener("close", onCancel);
+                if (dialog.open) dialog.close();
+                resolve(confirmed);
+            };
+            const onConfirm = () => finish(true);
+            const onCancel = () => finish(false);
+            $("confirm-merge").addEventListener("click", onConfirm);
+            $("cancel-merge").addEventListener("click", onCancel);
+            dialog.addEventListener("close", onCancel);
+            dialog.showModal();
+        });
+    }
     async function attempt(action) {
         try {
             await action();

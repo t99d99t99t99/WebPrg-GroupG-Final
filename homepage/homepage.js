@@ -955,9 +955,14 @@ async function render() {
                 );
         hideTooltip();
         lastGroups = groups;
+        // The photo data URL can be over 1MB; its length and both ends identify it without copying it.
+        const { photoDataUrl: photo, ...fill } = emptySpaceFill;
         const signature = JSON.stringify([
             decorationDensity,
-            emptySpaceFill,
+            fill,
+            photo.length,
+            photo.slice(0, 64),
+            photo.slice(-64),
             groups
                 .map((group) => ({
                     id: group.category.id,
@@ -1163,10 +1168,17 @@ subscribe((changes) => {
     const keys = Object.keys(changes);
     const bookmarkChange = changes["webprg-bookmarkmap-bookmarks"];
     if (keys.length === 1 && bookmarkChange?.oldValue && bookmarkChange.newValue) {
-        const mapFields = (items) => items.map(({ memo: _memo, isNew: _new, preview: _preview, ...item }) => item);
+        // A favicon update from another tab (background.js) only refreshes the open card's icon;
+        // the map icons pick it up on the next full render.
+        const mapFields = (items) =>
+            items.map(({ memo: _memo, isNew: _new, preview: _preview, iconUrl: _iconUrl, ...item }) => item);
         if (JSON.stringify(mapFields(bookmarkChange.oldValue)) === JSON.stringify(mapFields(bookmarkChange.newValue))) {
             if (activeBookmark) {
                 const updated = bookmarkChange.newValue.find((item) => item.id === activeBookmark.id);
+                if (updated && updated.iconUrl !== activeBookmark.iconUrl && !tooltip.hidden) {
+                    activeBookmark.iconUrl = updated.iconUrl;
+                    showTooltipIcon(activeBookmark);
+                }
                 if (updated && document.activeElement !== $("tooltip-memo")) {
                     activeBookmark = updated;
                     $("tooltip-memo").value = updated.memo ?? "";
