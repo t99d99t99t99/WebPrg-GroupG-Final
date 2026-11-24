@@ -10,6 +10,23 @@ export function wheelIntent(event) {
     return "zoom";
 }
 
+// Pixel-art assets are sharpest when one source pixel covers a whole number of device pixels.
+// Wheel zoom levels (device px per source px) are indexed: 0 → 1, 1 → 1.5, 2 → 2, 3 → 2.5 …;
+// -1 → 1/2, -2 → 1/3 …. Half steps repeat an even 2-to-3 pixel pattern, unlike arbitrary scales.
+// `ratio` is device pixels per design-canvas pixel (page scale × devicePixelRatio).
+export function levelIndex(zoom, ratio) {
+    const k = zoom * ratio;
+    return k >= 1 ? Math.round((k - 1) * 2) : 1 - Math.round(1 / k);
+}
+export function levelZoom(index, ratio) {
+    return (index >= 0 ? 1 + index / 2 : 1 / (1 - index)) / ratio;
+}
+// The largest zoom level that is not above `zoom` (fits the city without overflowing).
+export function crispZoomAtMost(zoom, ratio) {
+    const k = zoom * ratio;
+    return (k >= 1 ? Math.floor(k * 2) / 2 : 1 / Math.ceil(1 / k)) / ratio;
+}
+
 export function zoomAt(view, point, factor, min, max) {
     const zoom = clamp(view.zoom * factor, min, max);
     const ratio = zoom / view.zoom;
@@ -29,14 +46,29 @@ export function createMapCamera({ surface, canvas, world, canStart, onChange }) 
     let suppressAux = false;
     let wheelTime = -Infinity;
     let intent = null;
+    // Wheel/pinch input collected (in log-zoom units) until it is enough for one zoom level.
+    let pendingZoom = 0;
+    const LEVEL_STEP = 0.15;
 
+    const ratio = () => geometry().scale * devicePixelRatio;
+    // Keep the zoom on a crisp level and the origin on the device pixel grid.
+    function snap(next) {
+        const r = ratio();
+        const zoom = levelZoom(levelIndex(next.zoom, r), r);
+        return { x: Math.round(next.x * r) / r, y: Math.round(next.y * r) / r, zoom };
+    }
+    function apply() {
+        world.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`;
+    }
     function paint() {
         frame = 0;
-        world.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`;
+        apply();
         onChange({ ...view });
     }
-    function change(next) {
-        view = next;
+    // Zoom steps glide between levels (CSS .camera-zooming); panning follows the pointer directly.
+    function change(next, zooming = false) {
+        world.classList.toggle("camera-zooming", zooming);
+        view = snap(next);
         manual = true;
         interacting = true;
         world.classList.add("camera-controlled");
@@ -61,14 +93,22 @@ export function createMapCamera({ surface, canvas, world, canStart, onChange }) 
             const now = performance.now();
             const nextIntent = wheelIntent(event);
             // Keep a two-finger flick's faster momentum events in the same pan gesture.
-            if (event.ctrlKey || now - wheelTime > 180 || nextIntent === "pan") intent = nextIntent;
+            if (event.ctrlKey || now - wheelTime > 180 || nextIntent === "pan") {
+                if (nextIntent !== intent || now - wheelTime > 180) pendingZoom = 0;
+                intent = nextIntent;
+            }
             wheelTime = now;
             if (intent === "pan") {
                 change({ ...view, x: view.x - (event.deltaX * unit) / scale, y: view.y - delta / scale });
             } else {
+                pendingZoom += -clamp(delta, -240, 240) * (event.ctrlKey ? 0.01 : 0.002);
+                if (Math.abs(pendingZoom) < LEVEL_STEP) return;
+                const r = ratio();
+                const zoom = levelZoom(levelIndex(view.zoom, r) + Math.sign(pendingZoom), r);
+                pendingZoom = 0;
+                if (zoom < minimum || zoom > 4) return;
                 const point = { x: (event.clientX - rect.left) / scale, y: (event.clientY - rect.top) / scale };
-                const factor = Math.exp(-clamp(delta, -240, 240) * (event.ctrlKey ? 0.01 : 0.002));
-                change(zoomAt(view, point, factor, minimum, 4));
+                change(zoomAt(view, point, zoom / view.zoom, 0, Infinity), true);
             }
         },
         { passive: false },
@@ -125,10 +165,13 @@ export function createMapCamera({ surface, canvas, world, canStart, onChange }) 
     return {
         fit(next) {
             minimum = Math.min(0.1, next.zoom * 0.4);
-            if (!manual) view = next;
-            world.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`;
+            // A manual view is kept, but re-snapped because a resize can change the pixel ratio.
+            view = snap(manual ? view : next);
+            apply();
             return { ...view };
         },
+        crispZoomAtMost: (zoom) => crispZoomAtMost(zoom, ratio()),
+        pixelRatio: ratio,
         isInteracting: () => interacting,
     };
 }

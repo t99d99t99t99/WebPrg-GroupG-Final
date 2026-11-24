@@ -225,6 +225,9 @@ a:hover {
 #world.camera-controlled {
     transition: none;
 }
+#world.camera-controlled.camera-zooming {
+    transition: transform 0.16s ease-out;
+}
 #city.camera-panning {
     cursor: grabbing;
 }
@@ -1666,6 +1669,7 @@ body.building-sorting-active * {
 
 @media (prefers-reduced-motion: reduce) {
     #world.animated,
+    #world.camera-controlled.camera-zooming,
     .zone svg,
     #ground,
     #zones,
