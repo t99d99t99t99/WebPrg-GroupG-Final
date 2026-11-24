@@ -167,7 +167,12 @@
         <p id="delete-status" class="field-error" role="status"></p>
         <div class="form-actions"><button id="cancel-delete" class="action" type="button">취소</button><button id="confirm-delete" class="action action-primary" type="button">삭제</button></div>
     </dialog>
-    <dialog id="bookmark-delete" class="app-dialog category-delete" aria-labelledby="bookmark-delete-title">
+    <dialog id="category-merge" class="app-dialog category-delete" aria-labelledby="merge-title">
+        <h2 id="merge-title">카테고리를 합치시겠습니까?</h2>
+        <p><span id="merge-name"></span><br>합친 뒤에는 되돌릴 수 없습니다.</p>
+        <div class="form-actions"><button id="cancel-merge" class="action" type="button">취소</button><button id="confirm-merge" class="action action-primary" type="button">합치기</button></div>
+    </dialog>
+    <dialog id="bookmark-delete"class="app-dialog category-delete" aria-labelledby="bookmark-delete-title">
         <h2 id="bookmark-delete-title">북마크를 삭제하시겠습니까?</h2>
         <p><span id="bookmark-delete-name"></span><br>삭제한 내용은 복구할 수 없습니다.</p>
         <p id="bookmark-delete-status" class="field-error" role="status"></p>
