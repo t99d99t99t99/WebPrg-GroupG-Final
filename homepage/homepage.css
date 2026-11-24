@@ -1798,7 +1798,9 @@ body.building-dragging .zone svg {
 .editor-icon-field {
     flex-shrink: 0;
     display: grid;
-    gap: var(--spec-content-gap);
+    grid-template-columns: var(--popup-control-height) minmax(0, 1fr);
+    column-gap: 9px;
+    row-gap: var(--spec-content-gap);
 }
 .editor-icon-labels,
 .editor-icon-control {
@@ -1813,13 +1815,25 @@ body.building-dragging .zone svg {
 .editor-icon-labels .field-label:first-child {
     text-align: center;
 }
+.editor-icon-labels {
+    grid-column: 1 / -1;
+}
 .editor-icon-control {
+    grid-column: 1;
     width: 100%;
     padding: 0;
     border: 0;
     background: transparent;
     cursor: pointer;
     text-align: left;
+}
+#edit-name {
+    grid-column: 2;
+    min-width: 0;
+}
+#edit-name-error {
+    grid-column: 2;
+    margin: 0;
 }
 #edit-icon-preview,
 .editor-icon-prompt {
