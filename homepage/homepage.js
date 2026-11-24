@@ -61,6 +61,7 @@ let drawnSignature = null;
 // "지도 장식 밀도" from the saved settings, read on every render.
 let decorationDensity = DEFAULT_SETTINGS.decorationDensity;
 let openInNewTab = DEFAULT_SETTINGS.openInNewTab;
+let emptySpaceFill = { ...DEFAULT_SETTINGS.emptySpaceFill };
 let emphasizedBuildings = new Set();
 let emphasizedIcons = new Set();
 let renderedGroups = new Map();
@@ -685,6 +686,7 @@ function drawBackground(layer, land = backgroundLand) {
         view: backgroundView,
         width: canvas.offsetWidth,
         height: canvas.offsetHeight,
+        fill: emptySpaceFill,
     }).catch((error) => {
         console.error(error);
         toast("배경을 불러오지 못했습니다. 새로고침해 주세요.");
@@ -936,6 +938,7 @@ async function render() {
         if (version !== renderVersion) return;
         decorationDensity = mapSettings.decorationDensity;
         openInNewTab = mapSettings.openInNewTab;
+        emptySpaceFill = mapSettings.emptySpaceFill;
         traffic.setEnabled(mapSettings.cityAnimation);
         if (buildingDrag.isDragging()) {
             renderWaiting = true;
@@ -954,6 +957,7 @@ async function render() {
         lastGroups = groups;
         const signature = JSON.stringify([
             decorationDensity,
+            emptySpaceFill,
             groups
                 .map((group) => ({
                     id: group.category.id,

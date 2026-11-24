@@ -19,8 +19,38 @@ function load(src) {
     return images.get(src);
 }
 
+function paintFill(context, fill, width, height, photoImage) {
+    if (fill.mode === "none" || fill.mode === "tile") return;
+    if (fill.mode === "photo") {
+        if (!photoImage) return;
+        const scale = Math.max(width / photoImage.width, height / photoImage.height);
+        const imageWidth = photoImage.width * scale;
+        const imageHeight = photoImage.height * scale;
+        context.drawImage(photoImage, (width - imageWidth) / 2, (height - imageHeight) / 2, imageWidth, imageHeight);
+        return;
+    }
+    if (fill.colorMode === "gradient") {
+        const angle = (fill.angle * Math.PI) / 180;
+        const dx = Math.sin(angle);
+        const dy = -Math.cos(angle);
+        const reach = Math.abs(dx * width) / 2 + Math.abs(dy * height) / 2;
+        const gradient = context.createLinearGradient(
+            width / 2 - dx * reach,
+            height / 2 - dy * reach,
+            width / 2 + dx * reach,
+            height / 2 + dy * reach,
+        );
+        gradient.addColorStop(0, fill.gradientStart);
+        gradient.addColorStop(1, fill.gradientEnd);
+        context.fillStyle = gradient;
+    } else {
+        context.fillStyle = fill.solidColor;
+    }
+    context.fillRect(0, 0, width, height);
+}
+
 // Rasterise only at screen/design resolution, even when the world is zoomed far out.
-export async function paintBackground(layer, { land, view, width, height }) {
+export async function paintBackground(layer, { land, view, width, height, fill }) {
     const version = (versions.get(layer) ?? 0) + 1;
     versions.set(layer, version);
     const { x, y, zoom } = view;
@@ -31,9 +61,10 @@ export async function paintBackground(layer, { land, view, width, height }) {
     const paintWidth = width + padding * 2,
         paintHeight = height + padding * 2;
     const bounds = cellBounds(left, top, (width + padding - x) / zoom, (height + padding - y) / zoom);
-    const tiles = planBackground(land, bounds);
+    const tiles = fill.mode === "tile" ? planBackground(land, bounds) : [];
     const sources = [...new Set(tiles.map((tile) => tile.src))];
     const loaded = await Promise.all(sources.map(load));
+    const photoImage = fill.mode === "photo" && fill.photoDataUrl ? await load(fill.photoDataUrl) : null;
     if (versions.get(layer) !== version || !layer.isConnected) return;
     const sprites = new Map(sources.map((src, i) => [src, loaded[i]]));
     const canvas = document.createElement("canvas");
@@ -45,6 +76,7 @@ export async function paintBackground(layer, { land, view, width, height }) {
     const context = canvas.getContext("2d");
     context.imageSmoothingEnabled = false;
     context.scale(resolution, resolution);
+    paintFill(context, fill, paintWidth, paintHeight, photoImage);
     for (const tile of tiles) {
         const p = project(tile.x, tile.y);
         context.drawImage(
