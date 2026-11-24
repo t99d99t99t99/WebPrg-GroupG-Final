@@ -10,17 +10,18 @@ export function wheelIntent(event) {
     return "zoom";
 }
 
-// Pixel-art assets stay crisp only when one source pixel covers a whole number of device pixels.
-// Zoom levels are indexed: 0 → 1 device px per source px, 1 → 2, 2 → 3 …; -1 → 1/2, -2 → 1/3 …
+// Pixel-art assets are sharpest when one source pixel covers a whole number of device pixels.
+// Wheel zoom levels (device px per source px) are indexed: 0 → 1, 1 → 1.5, 2 → 2, 3 → 2.5 …;
+// -1 → 1/2, -2 → 1/3 …. Half steps repeat an even 2-to-3 pixel pattern, unlike arbitrary scales.
 // `ratio` is device pixels per design-canvas pixel (page scale × devicePixelRatio).
 export function levelIndex(zoom, ratio) {
     const k = zoom * ratio;
-    return k >= 1 ? Math.round(k) - 1 : 1 - Math.round(1 / k);
+    return k >= 1 ? Math.round((k - 1) * 2) : 1 - Math.round(1 / k);
 }
 export function levelZoom(index, ratio) {
-    return (index >= 0 ? index + 1 : 1 / (1 - index)) / ratio;
+    return (index >= 0 ? 1 + index / 2 : 1 / (1 - index)) / ratio;
 }
-// The largest crisp zoom that is not above `zoom` (used to fit the city without overflowing).
+// The largest whole-number zoom that is not above `zoom` (fits the city at the sharpest scale).
 export function crispZoomAtMost(zoom, ratio) {
     const k = zoom * ratio;
     return (k >= 1 ? Math.floor(k) : 1 / Math.ceil(1 / k)) / ratio;
