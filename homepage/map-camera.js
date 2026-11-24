@@ -21,10 +21,10 @@ export function levelIndex(zoom, ratio) {
 export function levelZoom(index, ratio) {
     return (index >= 0 ? 1 + index / 2 : 1 / (1 - index)) / ratio;
 }
-// The largest whole-number zoom that is not above `zoom` (fits the city at the sharpest scale).
+// The largest zoom level that is not above `zoom` (fits the city without overflowing).
 export function crispZoomAtMost(zoom, ratio) {
     const k = zoom * ratio;
-    return (k >= 1 ? Math.floor(k) : 1 / Math.ceil(1 / k)) / ratio;
+    return (k >= 1 ? Math.floor(k * 2) / 2 : 1 / Math.ceil(1 / k)) / ratio;
 }
 
 export function zoomAt(view, point, factor, min, max) {
@@ -65,7 +65,9 @@ export function createMapCamera({ surface, canvas, world, canStart, onChange }) 
         apply();
         onChange({ ...view });
     }
-    function change(next) {
+    // Zoom steps glide between levels (CSS .camera-zooming); panning follows the pointer directly.
+    function change(next, zooming = false) {
+        world.classList.toggle("camera-zooming", zooming);
         view = snap(next);
         manual = true;
         interacting = true;
@@ -106,7 +108,7 @@ export function createMapCamera({ surface, canvas, world, canStart, onChange }) 
                 pendingZoom = 0;
                 if (zoom < minimum || zoom > 4) return;
                 const point = { x: (event.clientX - rect.left) / scale, y: (event.clientY - rect.top) / scale };
-                change(zoomAt(view, point, zoom / view.zoom, 0, Infinity));
+                change(zoomAt(view, point, zoom / view.zoom, 0, Infinity), true);
             }
         },
         { passive: false },
