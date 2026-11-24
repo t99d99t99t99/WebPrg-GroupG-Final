@@ -49,10 +49,11 @@ export class BookmarkDB {
         return withWriteLock(async () => {
             const bookmarks = await this.get();
             if (!newBookmark || newBookmark.id == null || !newBookmark.url || !newBookmark.name) {
-                throw new TypeError("A bookmark with an id, URL, and name is required.");
+                throw new TypeError("북마크를 저장하려면 ID, 주소, 이름이 필요합니다.");
             }
             const error = bookmarkNameError(newBookmark.name);
             if (error) throw new Error(error);
+            if (!webUrl(newBookmark.url)) throw new Error("http 또는 https 주소를 입력해 주세요.");
             if (this.categoryKey) {
                 const data = await storage.get({ [this.categoryKey]: [] });
                 if (!data[this.categoryKey].some((category) => category.id === newBookmark.category))
@@ -110,7 +111,7 @@ export class BookmarkDB {
             const bookmark = await this.get(id);
             if (!bookmark) return false;
             if (!changes || typeof changes !== "object") {
-                throw new TypeError("Bookmark changes must be an object.");
+                throw new TypeError("북마크 변경 내용이 올바르지 않습니다.");
             }
             validateEmojiFields(changes);
 

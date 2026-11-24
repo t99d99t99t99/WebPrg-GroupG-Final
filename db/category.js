@@ -48,7 +48,7 @@ export class CategoryDB {
         return withWriteLock(async () => {
             const categories = await this.get();
             if (!newCategory || newCategory.id == null || !newCategory.name) {
-                throw new TypeError("A category with an id and name is required.");
+                throw new TypeError("카테고리를 저장하려면 ID와 이름이 필요합니다.");
             }
 
             if (newCategory.name.trim() === GENERAL_CATEGORY_NAME)
@@ -63,7 +63,7 @@ export class CategoryDB {
             };
             if (newCategory.color !== undefined) {
                 if (typeof newCategory.color !== "string" || !/^#[\da-f]{6}$/i.test(newCategory.color)) {
-                    throw new TypeError("Category color must be a six-digit hex color.");
+                    throw new TypeError("카테고리 색상은 #으로 시작하는 6자리 색상 코드여야 합니다.");
                 }
                 if (newCategory.customColor !== undefined && typeof newCategory.customColor !== "boolean")
                     throw new TypeError("색상 지정 여부는 참 또는 거짓이어야 합니다.");
@@ -95,7 +95,7 @@ export class CategoryDB {
             const category = await this.get(id);
             if (!category) return false;
             if (!changes || typeof changes !== "object") {
-                throw new TypeError("Category changes must be an object.");
+                throw new TypeError("카테고리 변경 내용이 올바르지 않습니다.");
             }
 
             if (changes.name !== undefined) {
@@ -108,7 +108,7 @@ export class CategoryDB {
             }
             if (changes.color !== undefined) {
                 if (typeof changes.color !== "string" || !/^#[\da-f]{6}$/i.test(changes.color)) {
-                    throw new TypeError("Category color must be a six-digit hex color.");
+                    throw new TypeError("카테고리 색상은 #으로 시작하는 6자리 색상 코드여야 합니다.");
                 }
                 if (changes.customColor !== undefined && typeof changes.customColor !== "boolean")
                     throw new TypeError("색상 지정 여부는 참 또는 거짓이어야 합니다.");
