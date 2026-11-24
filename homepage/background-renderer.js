@@ -50,12 +50,13 @@ function paintFill(context, fill, width, height, photoImage) {
 }
 
 // Rasterise only at screen/design resolution, even when the world is zoomed far out.
-export async function paintBackground(layer, { land, view, width, height, fill }) {
+export async function paintBackground(layer, { land, view, width, height, fill, pixelRatio = 1 }) {
     const version = (versions.get(layer) ?? 0) + 1;
     versions.set(layer, version);
     const { x, y, zoom } = view;
     // Overscan keeps short camera gestures covered while the cached canvas follows the world.
-    const padding = 256;
+    // A whole number of device pixels keeps the canvas edge, and so every tile, on the pixel grid.
+    const padding = Math.round(256 * pixelRatio) / pixelRatio;
     const left = (-x - padding) / zoom,
         top = (-y - padding) / zoom;
     const paintWidth = width + padding * 2,
@@ -68,7 +69,9 @@ export async function paintBackground(layer, { land, view, width, height, fill }
     if (versions.get(layer) !== version || !layer.isConnected) return;
     const sprites = new Map(sources.map((src, i) => [src, loaded[i]]));
     const canvas = document.createElement("canvas");
-    const resolution = Math.min(1, Math.sqrt(4_000_000 / (paintWidth * paintHeight)));
+    // One canvas pixel per device pixel, so tiles are as sharp as the map above them.
+    // ponytail: capped at 16M pixels (about 64MB); larger screens fall back to a softer background.
+    const resolution = Math.min(pixelRatio, Math.sqrt(16_000_000 / (paintWidth * paintHeight)));
     canvas.width = Math.ceil(paintWidth * resolution);
     canvas.height = Math.ceil(paintHeight * resolution);
     canvas.style.cssText = `position:absolute;left:${left}px;top:${top}px;width:${paintWidth / zoom}px;height:${paintHeight / zoom}px;pointer-events:none`;

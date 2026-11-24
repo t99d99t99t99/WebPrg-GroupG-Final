@@ -660,7 +660,8 @@ function fitCity(tiles) {
     minTop -= TILE_HEIGHT; // room for buildings and labels above the top row
     const width = maxRight - minLeft;
     const height = maxBottom - minTop;
-    const zoom = Math.min(MAX_ZOOM, MAP_AREA.width / width, MAP_AREA.height / height);
+    // Round down to a crisp pixel-art zoom (see map-camera.js), so the city still fits.
+    const zoom = camera.crispZoomAtMost(Math.min(MAX_ZOOM, MAP_AREA.width / width, MAP_AREA.height / height));
     const x = MAP_AREA.left + (MAP_AREA.width - width * zoom) / 2 - minLeft * zoom;
     const y = MAP_AREA.top + (MAP_AREA.height - height * zoom) / 2 - minTop * zoom;
     const world = $("world");
@@ -686,6 +687,7 @@ function drawBackground(layer, land = backgroundLand) {
         view: backgroundView,
         width: canvas.offsetWidth,
         height: canvas.offsetHeight,
+        pixelRatio: camera.pixelRatio(),
         fill: emptySpaceFill,
     }).catch((error) => {
         console.error(error);
