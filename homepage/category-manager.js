@@ -420,14 +420,17 @@ export function categoryManager({
                         const latest = await categories.get();
                         const error = categoryError(draft, latest, category.id);
                         if (error) throw new Error(error);
-                        if (category.id === "new")
+                        if (category.id === "new") {
+                            const id = crypto.randomUUID();
                             await categories.add({
-                                id: crypto.randomUUID(),
+                                id,
                                 name: draft.trim(),
                                 color: draftColor,
                                 customColor: draftColorTouched,
                             });
-                        else await categories.edit(category.id, { name: draft.trim() });
+                            // New categories go to the top of the list, where the input row was.
+                            await categories.reorder([id, ...latest.map((item) => item.id)]);
+                        } else await categories.edit(category.id, { name: draft.trim() });
                         editing = null;
                         render(
                             groups
