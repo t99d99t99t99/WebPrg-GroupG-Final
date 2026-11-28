@@ -12,11 +12,44 @@ export const DEFAULT_EMPTY_SPACE_FILL = Object.freeze({
     angle: 90,
     photoDataUrl: "",
 });
+// Every app the Google Service launcher can show, in the order "추가 앱" lists them. The launcher
+// shows nine of them; the first nine are the default.
+export const GOOGLE_LAUNCHER_APPS = Object.freeze([
+    "account",
+    "search",
+    "maps",
+    "play",
+    "news",
+    "gmail",
+    "drive",
+    "meet",
+    "contacts",
+    "youtube",
+    "gemini",
+    "calendar",
+    "photos",
+    "translate",
+    "vids",
+    "sheets",
+    "docs",
+    "slides",
+    "one",
+    "shopping",
+    "store",
+    "finance",
+    "keep",
+    "ad-center",
+    "classroom",
+    "chat",
+    "earth",
+]);
+export const GOOGLE_LAUNCHER_SIZE = 9;
 export const DEFAULT_SETTINGS = Object.freeze({
     decorationDensity: "normal",
     cityAnimation: true,
     openInNewTab: true,
     emptySpaceFill: DEFAULT_EMPTY_SPACE_FILL,
+    googleLauncher: Object.freeze(GOOGLE_LAUNCHER_APPS.slice(0, GOOGLE_LAUNCHER_SIZE)),
 });
 
 const hexColor = (value) => typeof value === "string" && /^#[\da-f]{6}$/i.test(value);
@@ -33,6 +66,11 @@ const fillValidators = {
 };
 
 const validators = {
+    googleLauncher: (value) =>
+        Array.isArray(value) &&
+        value.length === GOOGLE_LAUNCHER_SIZE &&
+        new Set(value).size === GOOGLE_LAUNCHER_SIZE &&
+        value.every((id) => GOOGLE_LAUNCHER_APPS.includes(id)),
     decorationDensity: (value) => DECORATION_DENSITIES.includes(value),
     cityAnimation: (value) => typeof value === "boolean",
     openInNewTab: (value) => typeof value === "boolean",

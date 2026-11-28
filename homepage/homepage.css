@@ -1138,7 +1138,27 @@ body.building-sorting-active * {
     margin: var(--space-6) 5px 0 var(--space-1);
     background: var(--color-neutral-500);
 }
+/* Title row (Figma "Google Service" State=default / State=edit): 8px inline padding, 20px action icons 8px apart. */
+.google-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0 var(--space-2);
+}
+.google-action {
+    display: grid;
+    flex: none;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    cursor: pointer;
+}
+.google-action:hover {
+    background: var(--color-base-200);
+}
 #google-services .google-heading {
+    flex: 1;
     display: flex;
     align-items: center;
     min-height: calc(var(--space-10) + var(--border-width-emphasis));
@@ -1181,6 +1201,73 @@ body.building-sorting-active * {
     height: var(--space-12);
     object-fit: contain;
     flex-shrink: 0;
+}
+/* Launcher editing (Figma USER-MAIN-CATEGORY-008): only Google Service shows, with "추가 앱" below the launcher. */
+.google-extra {
+    display: none;
+}
+#google-services.editing {
+    margin-bottom: 0;
+}
+#google-services.editing::after,
+.category-panel:has(#google-services.editing) > :not(#google-services) {
+    display: none;
+}
+#google-services.editing .google-extra {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    height: 398px;
+    margin-top: var(--space-6);
+    padding: var(--space-3);
+    border-radius: var(--radius-field);
+    background: var(--color-base-300);
+    font-family: var(--font-family-category);
+}
+.google-extra h3 {
+    margin: 0;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-sm);
+}
+.google-extra-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-content: start;
+    gap: var(--space-2);
+    min-height: 0;
+    overflow-x: clip;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+.google-extra-grid a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: 58px;
+    min-width: 0;
+    padding: 0 6px;
+    border-radius: 8px;
+    background: var(--color-base-200);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    text-decoration: none;
+    cursor: grab;
+}
+.google-extra-grid a > span:last-child {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.google-extra-grid .google-service-icon {
+    width: 26px;
+    height: 26px;
+}
+.google-grid a.drop-target {
+    outline: 2px solid var(--color-primary);
 }
 .account-avatar {
     position: relative;

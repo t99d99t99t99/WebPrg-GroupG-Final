@@ -26,6 +26,7 @@ import { assignCategoryColors, colors, grassAppearanceForCategory, wallColorAdju
 import { categoryManager } from "./category-manager.js";
 import { decorationsFor, yardFor } from "./decorations.js";
 import { setGoogleAccount } from "./google-account.js";
+import { createGoogleLauncher } from "./google-launcher.js";
 import { planCity, planRoads, project, TILE_HEIGHT, TILE_WIDTH } from "./layout.js";
 import { createMapCamera } from "./map-camera.js";
 import { createSettingsPanel } from "./settings-panel.js";
@@ -1216,7 +1217,14 @@ $("tooltip-memo").addEventListener("input", (event) => {
             toast("메모를 저장하지 못했습니다.");
         });
 });
+const googleLauncher = createGoogleLauncher({
+    load: async () => (await settings.get()).googleLauncher,
+    save: (ids) => settings.edit({ googleLauncher: ids }),
+    onError: (message) => toast(message),
+});
+googleLauncher.refresh().catch(console.error);
 function showGoogleServices(shown) {
+    if (!shown) googleLauncher.cancel();
     $("google-services").hidden = !shown;
     $("apps-button").setAttribute("aria-expanded", String(shown));
 }
@@ -1498,6 +1506,7 @@ createSettingsPanel({
         renderedGroups.clear();
         drawnSignature = null;
         hideTooltip();
+        await googleLauncher.refresh();
         await render();
         toast("모든 데이터를 초기화했습니다.");
     },
