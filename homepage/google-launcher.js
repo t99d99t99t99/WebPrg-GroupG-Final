@@ -42,8 +42,8 @@ export function createGoogleLauncher({ load, save, onError }) {
             onError("Google Service 구성을 저장하지 못했습니다. 다시 시도해 주세요.");
         }
     });
-    // Only apps from "추가 앱" can be dropped; the dragged app takes the slot it is dropped on,
-    // the apps after it shift, and the last one leaves the launcher.
+    // Only apps from "추가 앱" can be dropped; the dragged app swaps with the app in the slot
+    // it is dropped on, which goes back to "추가 앱".
     extras.addEventListener("dragstart", (event) => {
         dragged = event.target.closest("a[data-app]");
         event.dataTransfer.effectAllowed = "move";
@@ -63,8 +63,8 @@ export function createGoogleLauncher({ load, save, onError }) {
         if (!target) return;
         event.preventDefault();
         const ids = [...grid.children].map((app) => app.dataset.app);
-        ids.splice(ids.indexOf(target.dataset.app), 0, dragged.dataset.app);
-        show(ids.slice(0, saved.length));
+        ids[ids.indexOf(target.dataset.app)] = dragged.dataset.app;
+        show(ids);
     });
 
     return {

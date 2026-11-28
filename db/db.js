@@ -110,26 +110,40 @@ export async function importChromeBookmarks(tree) {
     return withWriteLock(async () => {
         const data = await storage.get({ [BOOKMARK_DB_KEY]: [], [CATEGORY_DB_KEY]: [] });
         const savedCategories = data[CATEGORY_DB_KEY];
-        const savedBookmarks = data[BOOKMARK_DB_KEY];
         const general = savedCategories.find(isGeneralCategory);
         if (!general) throw new Error("기본 카테고리를 찾지 못했습니다. 새로고침 후 다시 시도해 주세요.");
-        const urls = new Set(savedBookmarks.map((bookmark) => webUrl(bookmark.url)?.href ?? bookmark.url));
-        const result = { bookmarks: 0, categories: 0, duplicates: 0, skipped: 0 };
+        let savedBookmarks = data[BOOKMARK_DB_KEY];
+        const byUrl = new Map(savedBookmarks.map((bookmark) => [webUrl(bookmark.url)?.href ?? bookmark.url, bookmark]));
+        // `chromeId` links a bookmark to the Chrome bookmark it came from, so that deleting it
+        // in Chrome deletes it here. Bookmarks saved from the popup have no `chromeId` and stay.
+        const linked = new Set(savedBookmarks.map((bookmark) => bookmark.chromeId).filter(Boolean));
+        const inChrome = new Set();
+        const result = { bookmarks: 0, categories: 0, duplicates: 0, skipped: 0, removed: 0 };
+        let changed = false;
 
         function collect(node, category) {
             if (node.url !== undefined) {
+                inChrome.add(node.id);
                 const url = webUrl(node.url);
                 if (!url) {
                     result.skipped++;
                     return;
                 }
-                if (urls.has(url.href)) {
+                const existing = byUrl.get(url.href);
+                if (existing || linked.has(node.id)) {
+                    // Link bookmarks imported before `chromeId` existed (same address).
+                    if (existing && !existing.chromeId && !linked.has(node.id)) {
+                        existing.chromeId = node.id;
+                        linked.add(node.id);
+                        changed = true;
+                    }
                     result.duplicates++;
                     return;
                 }
                 const iconUrl = siteIconUrlForPage(url.href);
-                savedBookmarks.push({
+                const added = {
                     id: crypto.randomUUID(),
+                    chromeId: node.id,
                     url: url.href,
                     name: node.title?.trim() || url.hostname,
                     category: category.id,
@@ -138,8 +152,10 @@ export async function importChromeBookmarks(tree) {
                     clickCount: 0,
                     isNew: true,
                     ...(iconUrl ? { iconUrl } : {}),
-                });
-                urls.add(url.href);
+                };
+                savedBookmarks.push(added);
+                byUrl.set(url.href, added);
+                linked.add(node.id);
                 result.bookmarks++;
             } else {
                 for (const child of node.children ?? []) collect(child, category);
@@ -170,7 +186,10 @@ export async function importChromeBookmarks(tree) {
                 }
             }
         }
-        if (result.bookmarks || result.categories) {
+        const kept = savedBookmarks.filter((bookmark) => !bookmark.chromeId || inChrome.has(bookmark.chromeId));
+        result.removed = savedBookmarks.length - kept.length;
+        savedBookmarks = kept;
+        if (result.bookmarks || result.categories || result.removed || changed) {
             await storage.set({
                 [CATEGORY_DB_KEY]: generalCategoryFirst(savedCategories),
                 [BOOKMARK_DB_KEY]: savedBookmarks,

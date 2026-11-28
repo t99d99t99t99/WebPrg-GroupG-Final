@@ -48,6 +48,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
     decorationDensity: "normal",
     cityAnimation: true,
     openInNewTab: true,
+    autoSyncBookmarks: false,
     emptySpaceFill: DEFAULT_EMPTY_SPACE_FILL,
     googleLauncher: Object.freeze(GOOGLE_LAUNCHER_APPS.slice(0, GOOGLE_LAUNCHER_SIZE)),
 });
@@ -74,6 +75,7 @@ const validators = {
     decorationDensity: (value) => DECORATION_DENSITIES.includes(value),
     cityAnimation: (value) => typeof value === "boolean",
     openInNewTab: (value) => typeof value === "boolean",
+    autoSyncBookmarks: (value) => typeof value === "boolean",
     emptySpaceFill: (value) =>
         value &&
         typeof value === "object" &&

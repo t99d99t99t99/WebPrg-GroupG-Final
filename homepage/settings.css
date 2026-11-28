@@ -7,22 +7,23 @@
     margin-left: calc(21px - var(--space-8));
     padding: 0;
     border: 0;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-pill);
     background: transparent;
 }
-/* The button is hidden while the settings panel is open; keep its slot so the nav does not shift. */
-.account-nav:has(.settings-button[hidden]) {
-    padding-right: calc(var(--icon-button-size-default) + 21px);
+/* Stays highlighted while the settings panel is open (Figma "설정 버튼 / 선택됨 배경"). */
+.settings-button[aria-expanded="true"] {
+    background: var(--color-base-200);
 }
+/* Opens where the category panel sits, in its place (Figma USER-MAIN-OPTIONS). */
 .settings-panel {
     position: absolute;
-    left: var(--space-8);
-    top: 20.5px;
+    right: var(--homepage-corner-inset);
+    top: calc(var(--homepage-corner-inset) + var(--control-height-md) + var(--space-4));
     z-index: 2800;
     display: flex;
     flex-direction: column;
     width: 360px;
-    max-height: calc(100vh / var(--homepage-scale) - var(--space-10));
+    max-height: calc(100% - 2 * var(--homepage-corner-inset) - var(--control-height-md) - var(--space-4));
     padding: var(--space-4);
     border: var(--border) solid var(--color-neutral-500);
     border-radius: var(--radius-box);
@@ -35,23 +36,42 @@
 .settings-body {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: var(--space-2);
     min-height: 0;
 }
+/* The scroll area reaches into the panel's right padding and the content keeps its width, so the
+   scrollbar sits in that padding instead of over the switches and buttons. */
 .settings-body {
+    margin-right: calc(-1 * var(--space-4));
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
 }
 .settings-body > * {
     flex-shrink: 0;
+    width: calc(360px - 2 * var(--space-4) - 2 * var(--border));
 }
 .settings-heading {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    height: var(--space-8);
+    padding: var(--space-1) 0 var(--space-3);
     flex-shrink: 0;
+}
+.settings-reset-confirm .settings-heading {
+    height: var(--space-8);
+    padding: 0;
+}
+.settings-close {
+    display: grid;
+    place-items: center;
+    width: var(--space-6);
+    height: var(--space-6);
+    margin-left: auto;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
 }
 .settings-heading img,
 .settings-button img,
@@ -62,9 +82,9 @@
 }
 .settings-heading h2 {
     margin: 0;
-    font-size: var(--font-size-heading);
+    font-size: var(--font-size-xl);
     font-weight: var(--font-weight-bold);
-    line-height: var(--line-height-body);
+    line-height: 1.2;
 }
 .settings-divider {
     width: 100%;
@@ -77,36 +97,40 @@
 }
 .settings-section-title {
     margin: 0;
+    padding-top: var(--space-1);
     color: var(--color-primary);
-    font-size: var(--font-size-label);
-    line-height: var(--font-size-sm);
+    font-size: var(--font-size-base);
+    line-height: 1.2;
     font-weight: var(--font-weight-bold);
 }
-.settings-field,
-.settings-color-controls,
+.settings-section-title-first {
+    padding-bottom: var(--space-2);
+}
+.settings-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding-bottom: var(--space-2);
+}
+.settings-density,
 .settings-gradient {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
 }
-.settings-copy {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-1);
-}
-.settings-copy h4 {
+.settings-field h4,
+.settings-row h4 {
     margin: 0;
     color: var(--color-base-content);
-    font-size: var(--font-size-sm);
-    line-height: var(--line-height-xs);
+    font-size: var(--font-size-base);
+    line-height: 1.2;
     font-weight: var(--font-weight-bold);
 }
-.settings-copy p {
+.settings-description {
     margin: 0;
     color: var(--color-text-muted);
-    font-size: var(--font-size-2xs);
-    line-height: var(--font-size-xs);
+    font-size: var(--font-size-xs);
+    line-height: 1.2;
 }
 .settings-segments {
     min-width: 0;
@@ -129,7 +153,7 @@
     border-radius: var(--radius-pill);
     background: transparent;
     color: var(--color-text-muted);
-    font-size: var(--font-size-label);
+    font-size: var(--font-size-base);
     font-weight: var(--font-weight-medium);
 }
 .settings-segments button[aria-pressed="true"] {
@@ -137,85 +161,78 @@
     background: var(--color-primary);
     font-weight: var(--font-weight-bold);
 }
-.settings-fill-select {
-    position: relative;
-}
-.settings-select-trigger {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-2);
-    width: 100%;
+/* "배경": four 79x36 segments in a 40px track. */
+.settings-fill-mode {
     height: var(--popup-control-height);
-    padding: 0 var(--space-3);
-    border: var(--border-width) solid var(--color-neutral-500);
-    border-radius: var(--radius-field);
-    background: var(--color-base-100);
-    color: var(--color-base-content);
+    gap: var(--border-width-emphasis);
+}
+.settings-fill-mode button {
+    height: calc(var(--space-8) + var(--space-1));
     font-size: var(--font-size-xs);
-    text-align: left;
-}
-.settings-select-trigger[aria-expanded="true"] {
-    border-color: var(--color-primary);
-}
-.settings-select-trigger[aria-expanded="true"] img {
-    rotate: 180deg;
-}
-.settings-fill-options {
-    position: absolute;
-    top: calc(100% + var(--space-2));
-    left: 0;
-    right: 0;
-    z-index: 2;
-    padding: var(--space-1);
-    border: var(--border-width) solid var(--color-neutral-500);
-    border-radius: var(--radius-field);
-    background: var(--color-base-100);
-    box-shadow: var(--shadow-depth-1);
-}
-.settings-fill-options button {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    min-height: calc(var(--space-8) + var(--space-1));
-    padding: 0 var(--space-2);
-    border: 0;
-    border-radius: var(--radius-field);
-    background: transparent;
-    font-size: var(--font-size-xs);
-    text-align: left;
-}
-.settings-fill-options button:hover,
-.settings-fill-options button:focus-visible,
-.settings-fill-options button[aria-selected="true"] {
-    background: var(--color-base-200);
-}
-.settings-fill-options button[aria-selected="true"] {
-    color: var(--color-primary);
-    font-weight: var(--font-weight-bold);
-}
-.settings-fill-options button[aria-selected="true"]::after {
-    content: "선택됨";
-    font-size: var(--font-size-2xs);
 }
 .settings-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-2);
-    min-height: 52px;
+    height: var(--popup-control-height);
 }
-.settings-toggle-row .settings-copy h4 {
+.settings-toggle-row {
+    position: relative;
+}
+.settings-toggle-row h4 {
     font-family: var(--font-family-base);
-    font-size: var(--font-size-base);
-    line-height: 1.2;
     font-weight: var(--font-weight-semibold);
 }
-.settings-toggle-row .settings-copy p {
-    font-family: var(--font-family-base);
+.settings-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+.settings-help {
+    display: grid;
+    place-items: center;
+    width: var(--space-6);
+    height: var(--space-6);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--color-base-100);
+    position: relative;
+}
+/* Explanation bubble under the info button, from the row's left edge; shown on hover, focus or click. */
+.settings-tooltip {
+    position: absolute;
+    left: 0;
+    top: calc(var(--space-8) + var(--space-1));
+    z-index: 1;
+    display: none;
+    padding: var(--space-2) var(--space-3);
+    border: var(--border-width) solid var(--color-neutral-500);
+    border-radius: var(--radius-sm);
+    background: var(--color-base-200);
+    color: var(--color-base-content);
     font-size: var(--font-size-xs);
     line-height: 1.2;
+    white-space: nowrap;
+    filter: drop-shadow(0 3px 4px rgb(0 0 0 / 12%));
+}
+.settings-tooltip-tail {
+    position: absolute;
+    left: 6.8px;
+    top: 21px;
+    z-index: 2;
+    display: none;
+    width: 10.3923px;
+    max-width: none;
+}
+.settings-help:hover + .settings-tooltip,
+.settings-help:focus-visible + .settings-tooltip,
+.settings-help[aria-expanded="true"] + .settings-tooltip,
+.settings-help:hover .settings-tooltip-tail,
+.settings-help:focus-visible .settings-tooltip-tail,
+.settings-help[aria-expanded="true"] .settings-tooltip-tail {
+    display: block;
 }
 .settings-toggle {
     flex-shrink: 0;
@@ -238,23 +255,21 @@
     background: var(--color-base-200);
 }
 .settings-reset-button {
-    width: 128px;
-    height: var(--popup-control-height);
+    display: grid;
     flex-shrink: 0;
+    place-items: center;
+    width: var(--icon-button-size-compact);
+    height: var(--icon-button-size-compact);
     padding: 0;
     border: var(--border) solid var(--color-error);
-    border-radius: var(--radius-field);
+    border-radius: var(--radius-pill);
     background: var(--color-base-100);
-    color: var(--color-error);
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-bold);
 }
 .settings-actions {
     display: flex;
     justify-content: space-between;
     gap: var(--settings-action-gap);
     flex-shrink: 0;
-    margin-top: var(--space-2);
     padding-top: var(--space-3);
     border-top: var(--border-width) solid var(--color-neutral-500);
     min-height: calc(var(--popup-control-height) + var(--space-3) + var(--border-width));
@@ -268,8 +283,8 @@
     border-radius: var(--radius-field);
     background: var(--color-base-100);
     color: var(--color-base-content);
-    font-size: var(--font-size-xs);
-    line-height: var(--line-height-compact);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-sm);
     font-weight: var(--font-weight-medium);
 }
 .settings-action-primary {
@@ -290,14 +305,14 @@
     align-items: center;
     gap: var(--space-2);
 }
+/* Preview and colour buttons share one 36px height; the solid preview is 164px next to a 154px button. */
 .settings-fill-preview {
-    height: 56px;
+    height: calc(var(--space-8) + var(--space-1));
     border: var(--border-width) solid var(--color-neutral-500);
     border-radius: var(--radius-field);
 }
 .settings-solid .settings-fill-preview {
-    flex: 1;
-    height: var(--space-12);
+    flex: 0 0 164px;
 }
 .settings-color-button {
     display: flex;
@@ -311,8 +326,12 @@
     border-radius: var(--radius-field);
     background: var(--color-base-100);
     color: var(--color-base-content);
-    font-size: var(--font-size-label);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
     text-align: left;
+}
+.settings-color-button[aria-expanded="true"] {
+    border: var(--border-width-emphasis) solid var(--color-primary);
 }
 .settings-color-chip {
     width: var(--line-height-body);
@@ -321,13 +340,19 @@
     border: var(--border-width) solid var(--color-neutral-500);
     border-radius: var(--radius-sm);
 }
+.settings-angle-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
 .settings-angle-label {
     display: flex;
     align-items: center;
     justify-content: space-between;
     color: var(--color-base-content);
-    font-size: var(--font-size-2xs);
-    line-height: var(--line-height-xs);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.2;
 }
 .settings-angle-label output {
     color: var(--color-text-muted);
@@ -351,11 +376,13 @@
     border-radius: var(--radius-field);
     background: var(--color-base-200);
     color: var(--color-base-content);
-    font-size: var(--font-size-label);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
 }
 .settings-upload-hint {
     color: var(--color-primary);
-    font-size: var(--font-size-2xs);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-regular);
 }
 .settings-upload.drag-over {
     border-color: var(--color-primary);
@@ -381,8 +408,12 @@
     color: var(--color-error);
     font-size: var(--font-size-xs);
 }
+/* The settings instance of the shared picker is 154px wide, the width of the colour button above it
+   (Figma "Settings / Color Picker / Solid": the 184px original scaled by 154/184). */
 #settings-color-picker {
+    --picker-scale: 0.8369565217;
     position: absolute;
+    width: 154px;
 }
 .settings-reset-confirm {
     position: fixed;
@@ -408,16 +439,16 @@
 }
 .settings-reset-warning strong {
     color: var(--color-error);
-    font-size: var(--font-size-md);
-    line-height: var(--line-height-sm);
+    font-size: var(--font-size-lg);
+    line-height: 1.2;
 }
 #settings-reset-warning {
     width: 286px;
     max-width: 100%;
     margin: 0;
     color: var(--color-text-muted);
-    font-size: var(--font-size-label);
-    line-height: var(--font-size-sm);
+    font-size: var(--font-size-base);
+    line-height: 1.2;
 }
 .settings-reset-actions {
     display: flex;
