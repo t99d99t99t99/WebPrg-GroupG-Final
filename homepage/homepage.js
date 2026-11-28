@@ -334,13 +334,17 @@ function showTooltip(bookmark, category, link) {
     const gap = Number.parseFloat(getComputedStyle(tooltip).getPropertyValue("--building-popup-gap"));
     const left = visible.left - box.width - gap;
     const right = visible.right + gap;
+    const y = Math.max(12, Math.min(visible.top, innerHeight - box.height - 12));
+    // The category panel sits at the top right; keep the card clear of it where they share rows.
+    const panel = document.querySelector(".category-panel").getBoundingClientRect();
+    const besidePanel = panel.width && y < panel.bottom && y + box.height > panel.top;
+    const rightEdge = besidePanel ? panel.left : innerWidth;
     const leftFits = left >= 12;
-    const rightFits = right + box.width <= innerWidth - 12;
+    const rightFits = right + box.width <= rightEdge - 12;
     let x = preferRight ? right : left;
     if (preferRight && !rightFits && leftFits) x = left;
     if (!preferRight && !leftFits && rightFits) x = right;
-    const y = Math.max(12, Math.min(visible.top, innerHeight - box.height - 12));
-    tooltip.style.left = `${Math.max(12, Math.min(x, innerWidth - box.width - 12))}px`;
+    tooltip.style.left = `${Math.max(12, Math.min(x, rightEdge - box.width - 12))}px`;
     tooltip.style.top = `${y}px`;
     positionHoverBridge();
 }
