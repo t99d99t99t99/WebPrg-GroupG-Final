@@ -228,6 +228,24 @@ export async function saveCategoryColors(colors) {
     });
 }
 
+// Saves where a category's name picket was dragged to: an offset {x, y} from the corner of its area,
+// so the picket moves along with the land. layout.js falls back to its own spot when that cell is taken.
+export async function saveCategoryPicket(id, picket) {
+    if (!picket || !Number.isInteger(picket.x) || !Number.isInteger(picket.y) || picket.x < 0 || picket.y < 0)
+        throw new TypeError("표지판 위치가 올바르지 않습니다.");
+    await ready;
+    return withWriteLock(async () => {
+        await ready;
+        const data = await storage.get({ [CATEGORY_DB_KEY]: [] });
+        if (!data[CATEGORY_DB_KEY].some((category) => category.id === id)) return false;
+        const savedCategories = data[CATEGORY_DB_KEY].map((category) =>
+            category.id === id ? { ...category, picket: { x: picket.x, y: picket.y } } : category,
+        );
+        await storage.set({ [CATEGORY_DB_KEY]: savedCategories });
+        return true;
+    });
+}
+
 export function subscribe(listener) {
     return subscribeStorage((changes) => {
         if (

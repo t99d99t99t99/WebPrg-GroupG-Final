@@ -5,6 +5,7 @@ import {
     dismissNewBefore,
     importChromeBookmarks,
     moveBookmark,
+    saveCategoryPicket,
     settings,
     subscribe,
     updateCity,
@@ -29,6 +30,7 @@ import { setGoogleAccount } from "./google-account.js";
 import { createGoogleLauncher } from "./google-launcher.js";
 import { planCity, planRoads, project, TILE_HEIGHT, TILE_WIDTH } from "./layout.js";
 import { createMapCamera } from "./map-camera.js";
+import { createPicketDrag } from "./picket-drag.js";
 import { createSettingsPanel } from "./settings-panel.js";
 import { SpatialIndex } from "./spatial-index.js";
 import { createTraffic } from "./traffic.js";
@@ -280,7 +282,7 @@ function intersectsHoverCorridor(rect) {
 
 function showTooltip(bookmark, category, link) {
     // No detail card while a building is being dragged (focus can return mid-drag).
-    if (buildingDrag.isDragging() || camera.isInteracting()) return;
+    if (buildingDrag.isDragging() || picketDrag.isDragging() || camera.isInteracting()) return;
     if (activeLink && activeLink !== link) activeLink.removeAttribute("aria-describedby");
     activeLink = link;
     activeBookmark = bookmark;
@@ -763,12 +765,29 @@ const buildingDrag = createBuildingDrag({
     toast,
 });
 
+const picketDrag = createPicketDrag({
+    world: $("world"),
+    canvas: $("canvas"),
+    overlay: $("zones"),
+    onStart: hideTooltip,
+    // Changes that arrived while dragging (the saved move included) are drawn now.
+    onEnd() {
+        if (renderWaiting) {
+            renderWaiting = false;
+            render();
+        }
+    },
+    commit: saveCategoryPicket,
+    toast,
+});
+
 let cameraBackgroundTimer;
 const camera = createMapCamera({
     surface: $("city"),
     canvas: $("canvas"),
     world: $("world"),
-    canStart: () => !buildingDrag.isDragging() && !document.querySelector(".drag-arming, dialog[open]"),
+    canStart: () =>
+        !buildingDrag.isDragging() && !picketDrag.isDragging() && !document.querySelector(".drag-arming, dialog[open]"),
     onChange(view) {
         backgroundView = view;
         if (activeLink || !tooltip.hidden) hideTooltip();
@@ -840,6 +859,7 @@ function createDecoration({ x, y, src, flip = false, anchor = 0.92 }, categoryId
 
 // The category's name on a wooden sign in its picket cell (layout.js keeps that cell empty).
 // Decorative: the category list already names every category for screen readers.
+// The sign can be dragged to another empty cell of its land (picket-drag.js).
 function createPicket(cell, category) {
     const position = project(cell.x + 0.5, cell.y + 0.5);
     const picket = element("div", "category-picket");
@@ -911,7 +931,12 @@ function drawCity(groups, preview = null) {
                     map.append(createDecoration(prop, category.id));
         }
         for (const prop of decorationsFor(group, decorationDensity)) map.append(createDecoration(prop, category.id));
-        if (group.picket) map.append(createPicket(group.picket, category));
+        if (group.picket) {
+            const picket = createPicket(group.picket, category);
+            // Only saved categories keep a picket position; the preview map is pictures only.
+            if (!preview && group.category.id !== "uncategorized") picketDrag.attach(picket, group);
+            map.append(picket);
+        }
         const entry = { key };
         for (const [name, fragment] of Object.entries({ ground, zones, map, labels })) {
             entry[name] = [...fragment.childNodes];
@@ -947,8 +972,8 @@ function drawCity(groups, preview = null) {
 }
 
 async function render() {
-    // Keep the map still under a dragged building; redraw when the drag ends.
-    if (buildingDrag.isDragging()) {
+    // Keep the map still under a dragged building or picket; redraw when the drag ends.
+    if (buildingDrag.isDragging() || picketDrag.isDragging()) {
         renderWaiting = true;
         return;
     }
@@ -960,7 +985,7 @@ async function render() {
         openInNewTab = mapSettings.openInNewTab;
         emptySpaceFill = mapSettings.emptySpaceFill;
         traffic.setEnabled(mapSettings.cityAnimation);
-        if (buildingDrag.isDragging()) {
+        if (buildingDrag.isDragging() || picketDrag.isDragging()) {
             renderWaiting = true;
             return;
         }

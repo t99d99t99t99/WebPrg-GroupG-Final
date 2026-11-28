@@ -485,7 +485,9 @@ a:hover {
     flex-direction: column;
     align-items: center;
     transform: translate(-50%, -100%);
-    pointer-events: none;
+    cursor: grab; /* dragged to another empty cell of its land (picket-drag.js) */
+    touch-action: none;
+    user-select: none;
 }
 .category-picket-board {
     max-width: 96px;
@@ -1852,6 +1854,27 @@ body.building-dragging .zone svg {
     background: var(--marker-color);
     opacity: 0.7;
     z-index: 2;
+}
+/* Picket drag (homepage/picket-drag.js): the same look as a dragged building. */
+body.picket-dragging,
+body.picket-dragging * {
+    cursor: grabbing;
+    user-select: none;
+}
+body.picket-dragging .zone svg {
+    opacity: 0;
+}
+.category-picket.picket-source {
+    opacity: 0.3;
+}
+.category-picket.picket-ghost {
+    pointer-events: none;
+    opacity: 0.9;
+    filter: drop-shadow(0 10px 6px rgb(0 0 0 / 30%));
+}
+.category-picket.picket-ghost.drag-invalid {
+    opacity: 0.55;
+    filter: grayscale(1);
 }
 /* Pressed and about to be picked up. */
 .building.drag-arming .building-image,

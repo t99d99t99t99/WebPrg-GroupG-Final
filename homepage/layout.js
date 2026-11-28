@@ -434,11 +434,15 @@ function placeBuildings(group, spread) {
     const free = [];
     for (let y = area.y; y < area.y + area.h; y++)
         for (let x = area.x; x < area.x + area.w; x++) if (!taken.has(`${x},${y}`)) free.push({ x, y });
-    // The name picket takes the free cell nearest the land's front (bottom) corner.
+    // The name picket stays where it was dragged to (category `picket`, an offset from the land's
+    // corner) while that cell is free; otherwise it takes the free cell nearest the land's front corner.
     const front = { x: area.x + area.w - 1, y: area.y + area.h - 1 };
     const nearFront = (cell) => Math.abs(cell.x - front.x) + Math.abs(cell.y - front.y);
-    let picket = null;
-    for (const cell of free) if (!picket || nearFront(cell) < nearFront(picket)) picket = cell;
+    const saved = group.category.picket;
+    let picket = saved
+        ? (free.find((cell) => cell.x - area.x === saved.x && cell.y - area.y === saved.y) ?? null)
+        : null;
+    if (!picket) for (const cell of free) if (!picket || nearFront(cell) < nearFront(picket)) picket = cell;
     const open = free.filter((cell) => cell !== picket);
     // New buildings prefer a free cell with no building beside it, then the checkerboard cells
     // (the picket's colour stays for decorations), then a cell picked by the bookmark id.
