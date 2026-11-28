@@ -1,17 +1,18 @@
-/* Settings geometry comes from USER-MAIN-OPTIONS; button and panel share the same icon position. */
+/* Settings button (USER-MAIN-CATEGORY-001): last in the top-right nav, its 24px icon 31px right of the apps button. */
 .settings-button {
-    position: absolute;
-    left: 39.5px;
-    top: var(--space-8);
-    z-index: 30;
     display: grid;
     place-items: center;
     width: var(--icon-button-size-default);
     height: var(--icon-button-size-default);
+    margin-left: calc(21px - var(--space-8));
     padding: 0;
     border: 0;
     border-radius: var(--radius-sm);
     background: transparent;
+}
+/* The button is hidden while the settings panel is open; keep its slot so the nav does not shift. */
+.account-nav:has(.settings-button[hidden]) {
+    padding-right: calc(var(--icon-button-size-default) + 21px);
 }
 .settings-panel {
     position: absolute;

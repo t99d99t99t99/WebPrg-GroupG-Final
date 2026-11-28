@@ -548,7 +548,7 @@ export function planCity(savedCategories, savedBookmarks, { pinned = [], compact
             if (bookmark.cell?.x !== cell.x || bookmark.cell?.y !== cell.y) changed.cells.set(bookmark.id, cell);
         }
     }
-    groups.sort((a, b) => Number(a.category.isGeneral === true) - Number(b.category.isGeneral === true));
+    groups.sort((a, b) => Number(b.category.isGeneral === true) - Number(a.category.isGeneral === true));
     return { groups, changed };
 }
 

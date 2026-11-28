@@ -200,6 +200,10 @@ a:hover {
     height: var(--icon-button-size-default);
     font-size: var(--font-size-xl);
 }
+/* Stays highlighted while Google Service is open (Figma "Google Links" State=Pressed). */
+.apps-button[aria-expanded="true"] {
+    background: var(--color-base-200);
+}
 .apps-dots {
     width: var(--icon-size-large);
     height: var(--icon-size-large);
@@ -701,29 +705,24 @@ a:hover {
 .building-search input::-webkit-search-cancel-button {
     display: none;
 }
-/* Always visible while there is a query, unlike Chrome's hover-only native clear button. */
+/* Clear button (Figma "Icon / Clear Search"): always shown, 17px, 10px from the right edge. */
 .building-search-clear {
     position: absolute;
-    right: var(--space-1);
-    top: 50%;
-    display: grid;
-    place-items: center;
-    width: 24px;
-    height: 24px;
+    right: 10px;
+    top: calc(50% - 0.5px);
+    display: block;
     padding: 0;
     border: 0;
     border-radius: var(--radius-pill);
     background: none;
-    color: var(--color-neutral-500);
     cursor: pointer;
     transform: translateY(-50%);
 }
-.building-search-clear[hidden] {
-    display: none;
+.building-search-clear img {
+    display: block;
 }
 .building-search-clear:hover,
 .building-search-clear:focus-visible {
-    color: var(--color-base-content);
     background: var(--color-selection-overlay);
     outline: none;
 }
@@ -918,14 +917,6 @@ body.building-sorting-active * {
 .category-row .category-delete-button img {
     width: var(--icon-size-compact);
     height: var(--icon-size-compact);
-}
-/* The general category shows edit and delete too, but they do nothing. */
-.category-row .icon-button:disabled {
-    opacity: 1;
-    cursor: default;
-}
-.category-row .icon-button:disabled:hover {
-    background: transparent;
 }
 /* The selected category's buildings (Figma USER-MAIN-BUILD): rows 280×44 from x 28, a 2px line in the category
    color at 45% just left of them (always in front), up to 10 rows before the list scrolls. */

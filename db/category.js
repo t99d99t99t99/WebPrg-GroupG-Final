@@ -7,8 +7,8 @@ export function isGeneralCategory(category) {
     return category?.isGeneral === true;
 }
 
-export function generalCategoryLast(categories) {
-    return [...categories].sort((a, b) => Number(isGeneralCategory(a)) - Number(isGeneralCategory(b)));
+export function generalCategoryFirst(categories) {
+    return [...categories].sort((a, b) => Number(isGeneralCategory(b)) - Number(isGeneralCategory(a)));
 }
 
 export class Category {
@@ -28,7 +28,7 @@ export class CategoryDB {
         this.ready = initialized
             .then(() => storage.get({ [_key]: [] }))
             .then((data) => {
-                this.categories = generalCategoryLast(Array.isArray(data[_key]) ? data[_key] : []);
+                this.categories = generalCategoryFirst(Array.isArray(data[_key]) ? data[_key] : []);
                 return this.categories;
             });
     }
@@ -36,7 +36,7 @@ export class CategoryDB {
     async get(...args) {
         await this.ready;
         const data = await storage.get({ [this.key]: [] });
-        this.categories = generalCategoryLast(Array.isArray(data[this.key]) ? data[this.key] : []);
+        this.categories = generalCategoryFirst(Array.isArray(data[this.key]) ? data[this.key] : []);
         if (args.length > 0) {
             return this.categories.find((category) => category.id === args[0]);
         }
@@ -71,7 +71,7 @@ export class CategoryDB {
                 category.customColor = newCategory.customColor ?? true;
             }
             categories.push(category);
-            await storage.set({ [this.key]: generalCategoryLast(categories) });
+            await storage.set({ [this.key]: generalCategoryFirst(categories) });
             return category;
         });
     }
@@ -125,7 +125,7 @@ export class CategoryDB {
             const saved = await this.get();
             const ordered = [...new Set(ids)].map((id) => saved.find((item) => item.id === id)).filter(Boolean);
             for (const item of saved) if (!ordered.includes(item)) ordered.push(item);
-            await storage.set({ [this.key]: generalCategoryLast(ordered) });
+            await storage.set({ [this.key]: generalCategoryFirst(ordered) });
         });
     }
 }

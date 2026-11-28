@@ -38,7 +38,7 @@
 | `homepage/category-colors.js` | 카테고리 기본 색 배정, 벽면 명도와 잔디 채도·명도 보정 |
 | `db/storage.js` | Chrome 저장소 및 웹 미리보기 어댑터, 저장 변경 알림, 공통 쓰기 잠금 |
 | `db/settings.js` | 지도 설정 저장소(`SettingsDB`). 지도 장식 밀도·도시 애니메이션·새 탭 열기·빈 공간 채우기 값을 검증·저장하며, 없거나 잘못된 값은 기본값으로 읽음 |
-| `homepage/settings-panel.js`, `homepage/settings.css` | 좌측 상단 설정 버튼과 설정 창. 설정 즉시 반영·취소 시 복원, 장식 밀도, 동작 스위치, 빈 공간 채우기 편집·사진 업로드, 동기화 및 초기화 재확인. 빈 공간 채우기 설정을 지도 배경 렌더러에 전달 |
+| `homepage/settings-panel.js`, `homepage/settings.css` | 우측 상단 내비게이션의 설정 버튼과 좌측 상단 설정 창. 설정 즉시 반영·취소 시 복원, 장식 밀도, 동작 스위치, 빈 공간 채우기 편집·사진 업로드, 동기화 및 초기화 재확인. 빈 공간 채우기 설정을 지도 배경 렌더러에 전달 |
 | `homepage/background-image.js` | 업로드 사진 검증 및 자동 압축. 긴 변 2560px·인코딩 결과 1MiB 이내를 목표로 WebP 화질과 해상도를 조절하고, 이미 목표 이내인 사진은 원본을 유지 |
 | `shared/` | 홈페이지 이름·URL 검증, 사이트 아이콘 URL 생성, 키보드로 조작할 수 있는 카테고리 선택 목록 |
 | `shared/building-designs.js` | 건물 5개 계열의 성장 에셋과 좌우 방향별 기본 디자인 10종. 팝업 선택·DB 검증·지도 렌더링이 공유 |
@@ -188,7 +188,7 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 
 **카테고리:** `{ id, name, createdAt, area, color, customColor?, buildingFamily?, isGeneral? }`
 
-- `isGeneral`: true이면 기본 카테고리인 “카테고리 일반”. 초기화 때 이름을 정규화하고 ID와 연결된 북마크는 보존합니다. 이 항목이 없으면 같은 이름의 카테고리를 지정하거나 새 UUID로 생성합니다. 이름 변경과 삭제는 `CategoryDB` 및 `deleteCategory`에서 거부하며 색상 변경은 허용합니다. 저장·조회·정렬 및 지도 렌더링에서 항상 마지막이고 순서 이동 UI는 제공하지 않습니다. 팝업의 카테고리 선택은 이 항목을 기본값으로 사용합니다.
+- `isGeneral`: true이면 기본 카테고리인 “카테고리 일반”. 초기화 때 이름을 정규화하고 ID와 연결된 북마크는 보존합니다. 이 항목이 없으면 같은 이름의 카테고리를 지정하거나 새 UUID로 생성합니다. 이름 변경과 삭제는 `CategoryDB` 및 `deleteCategory`에서 거부하며 색상 변경은 허용합니다. 저장·조회·정렬 및 지도 렌더링에서 항상 맨 앞이고 순서 이동 UI는 제공하지 않습니다. 팝업의 카테고리 선택은 이 항목을 기본값으로 사용합니다.
 
 - `area`: 지도 그리드에서 구역이 차지하는 칸 `{ x, y, w, h }`. 새 탭이 처음 그릴 때 채웁니다
 - `color`: 카테고리 목록의 색상 표시, 구역 강조 영역, 구역 안 집·잔디 색에 적용하는 6자리 hex 색상. 비어 있는 기존 카테고리는 지도에서 자동 지정해 저장합니다.

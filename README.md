@@ -83,7 +83,7 @@ VS Code를 쓰면 Biome 확장을 설치해 저장할 때 자동으로 맞출 �
 ### 카테고리 목록 아이콘
 
 - 디자인 원본: Figma 화면명세(11.19) `Components / Main Map`의 `Icon / Search`, `Main / Reorder Button`, `Main / Category List Item`
-- 파일: `assets/ui/search.svg`(17×17px), `reorder.svg`(20×20px), `edit.svg`(20×20px), `delete.svg`(18×18px, 빨간 선). 카테고리 아이콘(쌓인 타일 3장)은 `homepage/category-manager.js`가 SVG로 그립니다.
+- 파일: `assets/ui/search.svg`(17×17px), `clear-search.svg`(17×17px), `reorder.svg`(20×20px), `edit.svg`(20×20px), `delete.svg`(18×18px, 빨간 선). 카테고리 아이콘(쌓인 타일 3장)은 `homepage/category-manager.js`가 SVG로 그립니다.
 
 ### 팝업 건물 선택 화살표
 
@@ -148,7 +148,7 @@ PNG는 바깥 배경과 문이 투명합니다. 16·32px은 파란 집 한 채, 
 - 크롬 북마크 동기화: 기존 왼쪽 아래 전용 버튼을 없애고 설정 창으로 옮겼습니다. 누르면 즉시 가져오며 설정 취소로 가져온 북마크를 되돌리지는 않습니다.
 - 전체 초기화: 확인 창의 **초기화하기**를 눌러야 북마크·카테고리·지도 배치·설정을 지웁니다. 빈 도시와 기본 카테고리 하나로 시작하며 시연 데이터가 다시 생기지 않습니다. 크롬 원본 북마크는 지우지 않습니다.
 
-설정 아이콘 `assets/ui/settings*.svg` 7개는 [Figma 설정 창 명세](https://www.figma.com/design/AJUY7H7Zq3FM2nLZ9s7bKk/?node-id=6441-8272)에서 가져왔습니다. 버튼의 위치는 [메인 화면 명세](https://www.figma.com/design/AJUY7H7Zq3FM2nLZ9s7bKk/?node-id=6397-5504)의 1920×1080 기준 아이콘 좌표(49.5, 42)를 사용합니다.
+설정 아이콘 `assets/ui/settings*.svg` 7개는 [Figma 설정 창 명세](https://www.figma.com/design/AJUY7H7Zq3FM2nLZ9s7bKk/?node-id=6441-8272)에서 가져왔습니다. 버튼은 [카테고리 화면 명세](https://www.figma.com/design/AJUY7H7Zq3FM2nLZ9s7bKk/?node-id=6795-62839)대로 오른쪽 위 Google 바로가기의 맨 끝(9개 점 버튼 오른쪽)에 둡니다.
 
 ### 디버그 옵션
 

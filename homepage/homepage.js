@@ -1216,11 +1216,11 @@ $("tooltip-memo").addEventListener("input", (event) => {
             toast("메모를 저장하지 못했습니다.");
         });
 });
-$("apps-button").addEventListener("click", () => {
-    const section = $("google-services");
-    section.hidden = !section.hidden;
-    $("apps-button").setAttribute("aria-expanded", String(!section.hidden));
-});
+function showGoogleServices(shown) {
+    $("google-services").hidden = !shown;
+    $("apps-button").setAttribute("aria-expanded", String(shown));
+}
+$("apps-button").addEventListener("click", () => showGoogleServices($("google-services").hidden));
 let editingBookmark;
 let draftEditCategory = null;
 let editCategories = [];
@@ -1485,6 +1485,7 @@ $("bookmark-editor").addEventListener("cancel", async (event) => {
 createSettingsPanel({
     onOpen() {
         hideTooltip();
+        showGoogleServices(false);
         colorPicker.close();
     },
     onSaved: render,

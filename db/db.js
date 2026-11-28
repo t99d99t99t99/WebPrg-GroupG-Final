@@ -2,7 +2,7 @@ import { createDemoData } from "../demo/seed-data.js";
 import { siteIconUrlForPage } from "../shared/site-icons.js";
 import { webUrl } from "../shared/validation.js";
 import { BookmarkDB } from "./bookmark.js";
-import { CategoryDB, GENERAL_CATEGORY_NAME, generalCategoryLast, isGeneralCategory } from "./category.js";
+import { CategoryDB, GENERAL_CATEGORY_NAME, generalCategoryFirst, isGeneralCategory } from "./category.js";
 import { DEFAULT_SETTINGS, SettingsDB } from "./settings.js";
 import { storage, subscribeStorage, withWriteLock } from "./storage.js";
 
@@ -73,10 +73,10 @@ async function initializeDemo() {
                 };
                 saved.push(general);
             }
-            await storage.set({ [CATEGORY_DB_KEY]: generalCategoryLast(saved) });
-        } else if (general.name !== GENERAL_CATEGORY_NAME || saved.at(-1) !== general) {
+            await storage.set({ [CATEGORY_DB_KEY]: generalCategoryFirst(saved) });
+        } else if (general.name !== GENERAL_CATEGORY_NAME || saved[0] !== general) {
             general.name = GENERAL_CATEGORY_NAME;
-            await storage.set({ [CATEGORY_DB_KEY]: generalCategoryLast(saved) });
+            await storage.set({ [CATEGORY_DB_KEY]: generalCategoryFirst(saved) });
         }
         if (assignUncategorized(data)) await storage.set({ [BOOKMARK_DB_KEY]: data[BOOKMARK_DB_KEY] });
     });
@@ -172,7 +172,7 @@ export async function importChromeBookmarks(tree) {
         }
         if (result.bookmarks || result.categories) {
             await storage.set({
-                [CATEGORY_DB_KEY]: generalCategoryLast(savedCategories),
+                [CATEGORY_DB_KEY]: generalCategoryFirst(savedCategories),
                 [BOOKMARK_DB_KEY]: savedBookmarks,
             });
         }
@@ -226,7 +226,7 @@ export async function updateCity(planner) {
     return withWriteLock(async () => {
         const data = await storage.get({ [BOOKMARK_DB_KEY]: [], [CATEGORY_DB_KEY]: [] });
         const reassigned = assignUncategorized(data);
-        const result = planner(generalCategoryLast(data[CATEGORY_DB_KEY]), data[BOOKMARK_DB_KEY]);
+        const result = planner(generalCategoryFirst(data[CATEGORY_DB_KEY]), data[BOOKMARK_DB_KEY]);
         const { areas, cells } = result.plan.changed;
         const families = result.families ?? new Map();
         if (reassigned || areas.size || cells.size || result.colors.size || families.size) {

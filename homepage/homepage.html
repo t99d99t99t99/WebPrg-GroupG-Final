@@ -16,11 +16,11 @@
 <body class="bg-base-100 text-base-content">
     <div id="viewport">
         <div id="canvas">
-            <button id="settings-button" class="settings-button" type="button" aria-label="설정 열기" aria-haspopup="dialog" aria-expanded="false" aria-controls="settings-panel"><img src="../assets/ui/settings.svg" width="24" height="24" alt=""></button>
             <nav class="account-nav" aria-label="Google 바로가기">
                 <a class="link link-hover" href="https://mail.google.com/">Gmail</a>
                 <a class="link link-hover" href="https://www.google.com/imghp">이미지</a>
                 <button id="apps-button" class="apps-button icon-button" type="button" aria-label="Google 서비스 표시" aria-expanded="false" aria-controls="google-services"><span class="apps-dots" aria-hidden="true"></span></button>
+                <button id="settings-button" class="settings-button" type="button" aria-label="설정 열기" aria-haspopup="dialog" aria-expanded="false" aria-controls="settings-panel"><img src="../assets/ui/settings.svg" width="24" height="24" alt=""></button>
             </nav>
 
             <main id="city" aria-label="카테고리별 북마크 지도">
@@ -57,7 +57,7 @@
                 <label class="building-search">
                     <img class="building-search-icon" src="../assets/ui/search.svg" width="17" height="17" alt="">
                     <input id="building-search" type="search" placeholder="건물명을 입력하세요" aria-label="건물명 검색" aria-controls="building-results" aria-describedby="building-search-status" autocomplete="off" spellcheck="false">
-                    <button id="building-search-clear" class="building-search-clear" type="button" aria-label="검색어 지우기" hidden><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M1 1l8 8M9 1L1 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+                    <button id="building-search-clear" class="building-search-clear" type="button" aria-label="검색어 지우기"><img src="../assets/ui/clear-search.svg" width="17" height="17" alt=""></button>
                 </label>
                 <p id="building-search-status" class="building-search-status" role="status" aria-live="polite" hidden></p>
                 <div id="category-list" class="category-list"></div>

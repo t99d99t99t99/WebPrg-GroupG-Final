@@ -142,9 +142,7 @@ export function categoryManager({
         icon.src = src;
         icon.alt = "";
         button.append(icon);
-        if (onClick) button.addEventListener("click", onClick);
-        // Without an action (the general category) the button shows but does nothing.
-        else button.disabled = true;
+        button.addEventListener("click", onClick);
         return button;
     }
     // A building's row in the panel (Figma "Main / Building List Item"): its icon and name select it, the ≡
@@ -264,7 +262,6 @@ export function categoryManager({
         cancelAnimationFrame(searchFrame);
         searchFrame = 0;
         query = searchInput.value;
-        clearButton.hidden = !query;
         onSearchChange();
         if (!query.trim()) render(lastGroups);
         renderResults();
@@ -283,7 +280,6 @@ export function categoryManager({
         queueSearch();
     });
     searchInput.addEventListener("input", (event) => {
-        clearButton.hidden = !searchInput.value;
         if (!event.isComposing) queueSearch();
     });
     clearButton.addEventListener("click", () => {
@@ -459,20 +455,17 @@ export function categoryManager({
                 );
                 filter.addEventListener("click", () => toggleCategory(category.id));
                 row.append(filter);
-                // The general category shows both buttons too, but they do nothing (it cannot be edited or deleted).
-                const general = isGeneralCategory(category);
-                const edit = iconButton(
-                    "../assets/ui/edit.svg",
-                    `${category.name} 수정`,
-                    general ? null : () => startEdit(category, groups),
-                );
-                const remove = iconButton(
-                    "../assets/ui/delete.svg",
-                    `${category.name} 삭제`,
-                    general ? null : () => askDelete(category, groups),
-                );
-                remove.classList.add("category-delete-button");
-                row.append(edit, remove);
+                // The general category cannot be edited or deleted, so it has no buttons.
+                if (!isGeneralCategory(category)) {
+                    const edit = iconButton("../assets/ui/edit.svg", `${category.name} 수정`, () =>
+                        startEdit(category, groups),
+                    );
+                    const remove = iconButton("../assets/ui/delete.svg", `${category.name} 삭제`, () =>
+                        askDelete(category, groups),
+                    );
+                    remove.classList.add("category-delete-button");
+                    row.append(edit, remove);
+                }
                 // The category's buildings, shown under the row while the category is selected (homepage applyFilter).
                 const items = groups.find((group) => group.category.id === category.id)?.items ?? [];
                 if (items.length) {
