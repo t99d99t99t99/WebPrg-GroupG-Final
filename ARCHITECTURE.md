@@ -38,7 +38,7 @@
 | `homepage/category-colors.js` | 카테고리 기본 색 배정, 벽면 명도와 잔디 채도·명도 보정 |
 | `db/storage.js` | Chrome 저장소 및 웹 미리보기 어댑터, 저장 변경 알림, 공통 쓰기 잠금 |
 | `db/settings.js` | 지도 설정 저장소(`SettingsDB`). 지도 장식 밀도·도시 애니메이션·새 탭 열기·빈 공간 채우기 값을 검증·저장하며, 없거나 잘못된 값은 기본값으로 읽음 |
-| `homepage/settings-panel.js`, `homepage/settings.css` | 좌측 상단 설정 버튼과 설정 창. 설정 즉시 반영·취소 시 복원, 장식 밀도, 동작 스위치, 빈 공간 채우기 편집·사진 업로드, 동기화 및 초기화 재확인. 빈 공간 채우기 설정을 지도 배경 렌더러에 전달 |
+| `homepage/settings-panel.js`, `homepage/settings.css` | 우측 상단 내비게이션의 설정 버튼과 좌측 상단 설정 창. 설정 즉시 반영·취소 시 복원, 장식 밀도, 동작 스위치, 빈 공간 채우기 편집·사진 업로드, 동기화 및 초기화 재확인. 빈 공간 채우기 설정을 지도 배경 렌더러에 전달 |
 | `homepage/background-image.js` | 업로드 사진 검증 및 자동 압축. 긴 변 2560px·인코딩 결과 1MiB 이내를 목표로 WebP 화질과 해상도를 조절하고, 이미 목표 이내인 사진은 원본을 유지 |
 | `shared/` | 홈페이지 이름·URL 검증, 사이트 아이콘 URL 생성, 키보드로 조작할 수 있는 카테고리 선택 목록 |
 | `shared/building-designs.js` | 건물 5개 계열의 성장 에셋과 좌우 방향별 기본 디자인 10종. 팝업 선택·DB 검증·지도 렌더링이 공유 |
@@ -48,6 +48,7 @@
 | `shared/emoji-picker.js`, `shared/emoji-picker.css` | 저장 팝업·홈페이지 북마크 수정 창의 대표 아이콘 선택창. 한국어·영어 검색, 최근 사용(선택기 인스턴스 동안 유지)과 사람·자연·음식·활동·여행·사물·기호·깃발 분류, 키보드 이동, 사이트 아이콘 복귀. 저장은 호출 화면에서 처리하며 `position` 콜백으로 배율이 적용된 대화상자 안의 위치를 계산할 수 있음 |
 | `shared/emoji-data.js`, `shared/emoji-LICENSE.txt` | Unicode Emoji 17.0의 기본 피부색 이모지와 CLDR 48 한국어 이름·영어 검색어, 허용 이모지 검증 및 데이터 라이선스 |
 | `homepage/google-account.js` | 계정 표시 전용 어댑터. 전달받은 이름·HTTPS 사진 URL을 표시하고 사진 부재·실패 시 기본 아바타로 복귀. 인증·권한·저장소 접근 없음 |
+| `homepage/google-launcher.js` | Google Service 런처 편집(USER-MAIN-CATEGORY-008). `homepage.html`에 있는 앱 링크 27개를 런처 9칸과 **추가 앱** 목록 사이에서 옮김. 추가 앱을 런처 칸에 끌어다 놓으면 그 자리에 넣고 마지막 앱을 뺌. 불러오기·저장은 콜백(`settings`의 `googleLauncher`)으로 받고 저장소에 직접 접근하지 않음 |
 | `homepage/category-manager.js` | 카테고리 목록 패널. 건물명·도메인 검색(다중 단어·초성·공백/문자 정규화, 일치 강조, 50개씩 추가 표시, 키보드 조작), 선택한 카테고리 아래 건물 목록(호버·클릭은 `homepage.js`의 `hoverBuilding`·`selectBuilding`으로 지도 강조·상세 카드 고정), 생성·이름 수정·드래그 순서 이동·삭제 확인, 색상 칩이나 연필로 이름 수정 칸과 컬러피커를 함께 열기(카테고리 일반의 색상 칩은 컬러피커만), 수정 중 확인·취소, 휴지통 버튼으로 삭제 창 열기, 카테고리 강조 선택 |
 | `homepage/bookmark-search.js` | 홈페이지 검색 전용 순수 모듈. 제목·도메인 색인, NFKC·대소문자·공백 정규화, 한글 초성, 모든 단어 일치 및 제목 우선 순위, 원문 강조 범위, 최근 12개 검색 결과 캐시. 저장소를 수정하지 않음 |
 | `homepage/category-reorder.js` | 행의 포인터 드래그·자동 스크롤·정착 애니메이션·취소와 저장 콜백 처리. 다른 행의 카테고리 줄 가운데에 놓으면 병합 콜백 |
@@ -91,7 +92,7 @@ homepage/homepage.js ──> homepage/building-drag.js ──> homepage/building
 homepage/homepage.js ──> db/db.js (moveBookmark: 건물 이동 저장)
 homepage/homepage.js ──> homepage/category-colors.js
 homepage/homepage.js ──> homepage/building-rules.js / homepage/building-appearance.js
-homepage/homepage.js ──> homepage/category-manager.js / homepage/google-account.js
+homepage/homepage.js ──> homepage/category-manager.js / homepage/google-account.js / homepage/google-launcher.js
 homepage/category-manager.js ──> homepage/category-reorder.js / homepage/building-reorder.js / homepage/bookmark-search.js
 homepage/homepage.js ──> homepage/settings-panel.js ──> db/db.js (settings, resetAllData) / shared/color-picker.js / homepage/background-image.js
 homepage/homepage.js ──> homepage/traffic.js ──> homepage/layout.js (project, planRoads 결과의 칸·타일 이름)
@@ -188,7 +189,7 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 
 **카테고리:** `{ id, name, createdAt, area, color, customColor?, buildingFamily?, isGeneral? }`
 
-- `isGeneral`: true이면 기본 카테고리인 “카테고리 일반”. 초기화 때 이름을 정규화하고 ID와 연결된 북마크는 보존합니다. 이 항목이 없으면 같은 이름의 카테고리를 지정하거나 새 UUID로 생성합니다. 이름 변경과 삭제는 `CategoryDB` 및 `deleteCategory`에서 거부하며 색상 변경은 허용합니다. 저장·조회·정렬 및 지도 렌더링에서 항상 마지막이고 순서 이동 UI는 제공하지 않습니다. 팝업의 카테고리 선택은 이 항목을 기본값으로 사용합니다.
+- `isGeneral`: true이면 기본 카테고리인 “카테고리 일반”. 초기화 때 이름을 정규화하고 ID와 연결된 북마크는 보존합니다. 이 항목이 없으면 같은 이름의 카테고리를 지정하거나 새 UUID로 생성합니다. 이름 변경과 삭제는 `CategoryDB` 및 `deleteCategory`에서 거부하며 색상 변경은 허용합니다. 저장·조회·정렬 및 지도 렌더링에서 항상 맨 앞이고 순서 이동 UI는 제공하지 않습니다. 팝업의 카테고리 선택은 이 항목을 기본값으로 사용합니다.
 
 - `area`: 지도 그리드에서 구역이 차지하는 칸 `{ x, y, w, h }`. 새 탭이 처음 그릴 때 채웁니다
 - `color`: 카테고리 목록의 색상 표시, 구역 강조 영역, 구역 안 집·잔디 색에 적용하는 6자리 hex 색상. 비어 있는 기존 카테고리는 지도에서 자동 지정해 저장합니다.
@@ -196,12 +197,13 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 - `customColor`: 이전 화면의 사용자 색상 지정 여부. 저장 값은 보존하지만 홈페이지 건물 색상에는 사용하지 않습니다.
 - `buildingFamily`: 이전 버전이 저장한 선택적 계열 ID. 현재 화면의 계열 선택에는 사용하지 않으며, 기존 필드는 데이터 호환을 위해 보존합니다.
 
-**지도 설정:** `{ decorationDensity?, cityAnimation?, openInNewTab?, emptySpaceFill? }`
+**지도 설정:** `{ decorationDensity?, cityAnimation?, openInNewTab?, emptySpaceFill?, googleLauncher? }`
 
 - `decorationDensity`: 지도 장식 밀도. `"low"`(적게)·`"normal"`(보통)·`"high"`(많이) 중 하나이고 기본값은 `"normal"`입니다. `settings.get()`은 기본값을 채운 전체 설정을 돌려주고, `settings.edit({ decorationDensity })`는 값을 검사한 뒤 저장합니다(다른 저장 필드는 보존). 설정 창은 열 때 읽은 값을 보관하고 변경한 항목을 즉시 저장·반영합니다. 연속 입력은 쓰기 순서를 보장하면서 대기 중인 이전 입력을 최신 값으로 합칩니다. **설정 취소**만 이번에 바꾼 항목을 창을 열기 전 값으로 복원하며, **설정 저장**·Esc·바깥 클릭은 변경을 유지합니다. 취소와 전체 초기화는 진행 중인 설정 쓰기 뒤에 처리해 뒤늦은 쓰기가 복원·초기화 값을 덮지 않도록 합니다. 설정창 항목이 늘면 `db/settings.js`의 기본값과 검사 목록에 필드를 추가합니다.
 
 - `cityAnimation`: boolean, 기본값 true. `homepage.js`가 설정을 읽어 `traffic.setEnabled`에 전달합니다. false이면 교통 요소만 정지하며 호버·대화상자 페이드는 유지합니다. OS 움직임 줄이기는 이 설정보다 우선합니다.
 - `openInNewTab`: boolean, 기본값 true. 일반 건물 클릭을 새 탭으로 열고 false이면 현재 탭으로 엽니다. Ctrl/⌘·Shift·가운데 클릭 등 브라우저 기본 동작과 방문 횟수 기록은 유지합니다.
+- `googleLauncher`: Google Service 런처에 표시할 앱 ID 9개의 배열(순서대로, 중복 없음). ID 목록은 `db/settings.js`의 `GOOGLE_LAUNCHER_APPS`(27개)이고 기본값은 그 앞 9개(계정·검색·지도·Play·뉴스·Gmail·드라이브·Meet·주소록)입니다. 값이 없거나 올바르지 않으면 기본값을 씁니다.
 - `emptySpaceFill`: `{ mode, colorMode, solidColor, gradientStart, gradientEnd, angle, photoDataUrl }`. `mode`는 `none`·`color`·`photo`·`tile`이고 기본값은 `tile`, `colorMode`는 `solid`·`gradient`이고 기본값은 `solid`입니다. 색상은 6자리 HEX(기본 단색·시작색 `#d7e9c8`, 끝색 `#b7d6f2`), 방향은 0~360 정수(기본 90), 사진은 JPG/PNG/WEBP의 base64 data URL(기본 빈 문자열)입니다. 업로드 원본의 용량 제한 없이 긴 변 2560px·인코딩 결과 1MiB 이내로 자동 최적화한 뒤 저장합니다(base64 변환 시 약 4/3배). 기존 저장 사진에는 새 용량 제한을 적용하지 않습니다. **선택 UI·설정 저장만 구현했으며 `background.js`·배경 렌더러는 이 설정을 사용하지 않습니다.**
 
 `db/db.js`의 `resetAllData`는 공통 쓰기 잠금 안에서 북마크를 빈 배열, 카테고리를 새 기본 카테고리 하나, 설정을 기본값, 아이콘 보정 표시를 false로 한 번에 저장합니다. 저장 키는 남겨 다음 실행에서 시연 데이터가 다시 생성되지 않게 합니다. 크롬 원본 북마크나 다른 서비스의 저장소는 삭제하지 않습니다. 설정 창의 초기화 확인 버튼을 눌렀을 때만 호출하며 설정 취소로 되돌릴 수 없는 별도 즉시 실행 동작입니다. 크롬 북마크 동기화도 설정 저장과 별도로 즉시 실행합니다.

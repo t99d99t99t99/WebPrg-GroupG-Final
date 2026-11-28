@@ -26,6 +26,7 @@ import { assignCategoryColors, colors, grassAppearanceForCategory, wallColorAdju
 import { categoryManager } from "./category-manager.js";
 import { decorationsFor, yardFor } from "./decorations.js";
 import { setGoogleAccount } from "./google-account.js";
+import { createGoogleLauncher } from "./google-launcher.js";
 import { planCity, planRoads, project, TILE_HEIGHT, TILE_WIDTH } from "./layout.js";
 import { createMapCamera } from "./map-camera.js";
 import { createSettingsPanel } from "./settings-panel.js";
@@ -334,13 +335,17 @@ function showTooltip(bookmark, category, link) {
     const gap = Number.parseFloat(getComputedStyle(tooltip).getPropertyValue("--building-popup-gap"));
     const left = visible.left - box.width - gap;
     const right = visible.right + gap;
+    const y = Math.max(12, Math.min(visible.top, innerHeight - box.height - 12));
+    // The category panel sits at the top right; keep the card clear of it where they share rows.
+    const panel = document.querySelector(".category-panel").getBoundingClientRect();
+    const besidePanel = panel.width && y < panel.bottom && y + box.height > panel.top;
+    const rightEdge = besidePanel ? panel.left : innerWidth;
     const leftFits = left >= 12;
-    const rightFits = right + box.width <= innerWidth - 12;
+    const rightFits = right + box.width <= rightEdge - 12;
     let x = preferRight ? right : left;
     if (preferRight && !rightFits && leftFits) x = left;
     if (!preferRight && !leftFits && rightFits) x = right;
-    const y = Math.max(12, Math.min(visible.top, innerHeight - box.height - 12));
-    tooltip.style.left = `${Math.max(12, Math.min(x, innerWidth - box.width - 12))}px`;
+    tooltip.style.left = `${Math.max(12, Math.min(x, rightEdge - box.width - 12))}px`;
     tooltip.style.top = `${y}px`;
     positionHoverBridge();
 }
@@ -1212,11 +1217,18 @@ $("tooltip-memo").addEventListener("input", (event) => {
             toast("메모를 저장하지 못했습니다.");
         });
 });
-$("apps-button").addEventListener("click", () => {
-    const section = $("google-services");
-    section.hidden = !section.hidden;
-    $("apps-button").setAttribute("aria-expanded", String(!section.hidden));
+const googleLauncher = createGoogleLauncher({
+    load: async () => (await settings.get()).googleLauncher,
+    save: (ids) => settings.edit({ googleLauncher: ids }),
+    onError: (message) => toast(message),
 });
+googleLauncher.refresh().catch(console.error);
+function showGoogleServices(shown) {
+    if (!shown) googleLauncher.cancel();
+    $("google-services").hidden = !shown;
+    $("apps-button").setAttribute("aria-expanded", String(shown));
+}
+$("apps-button").addEventListener("click", () => showGoogleServices($("google-services").hidden));
 let editingBookmark;
 let draftEditCategory = null;
 let editCategories = [];
@@ -1481,6 +1493,7 @@ $("bookmark-editor").addEventListener("cancel", async (event) => {
 createSettingsPanel({
     onOpen() {
         hideTooltip();
+        showGoogleServices(false);
         colorPicker.close();
     },
     onSaved: render,
@@ -1493,6 +1506,7 @@ createSettingsPanel({
         renderedGroups.clear();
         drawnSignature = null;
         hideTooltip();
+        await googleLauncher.refresh();
         await render();
         toast("모든 데이터를 초기화했습니다.");
     },

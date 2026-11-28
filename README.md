@@ -83,7 +83,7 @@ VS Code를 쓰면 Biome 확장을 설치해 저장할 때 자동으로 맞출 �
 ### 카테고리 목록 아이콘
 
 - 디자인 원본: Figma 화면명세(11.19) `Components / Main Map`의 `Icon / Search`, `Main / Reorder Button`, `Main / Category List Item`
-- 파일: `assets/ui/search.svg`(17×17px), `reorder.svg`(20×20px), `edit.svg`(20×20px), `delete.svg`(18×18px, 빨간 선). 카테고리 아이콘(쌓인 타일 3장)은 `homepage/category-manager.js`가 SVG로 그립니다.
+- 파일: `assets/ui/search.svg`(17×17px), `clear-search.svg`(17×17px), `reorder.svg`(20×20px), `edit.svg`(20×20px), `delete.svg`(18×18px, 빨간 선). 카테고리 아이콘(쌓인 타일 3장)은 `homepage/category-manager.js`가 SVG로 그립니다.
 
 ### 팝업 건물 선택 화살표
 
@@ -130,7 +130,7 @@ PNG는 바깥 배경과 문이 투명합니다. 16·32px은 파란 집 한 채, 
 - 새로 추가한 북마크는 홈페이지에서 NEW 말풍선과 빨간 외곽선으로 표시되고, 호버·포커스하거나 화면을 본 뒤 다른 탭으로 나갔다 돌아오면 해제됩니다.
 - 지도 라벨·건물 설명 카드·카테고리 건물 목록에는 저장할 때 선택한 대표 이모지 또는 사이트 아이콘을 표시합니다. 사이트 아이콘을 불러올 수 없으면 지도는 지구본, 설명 카드와 목록은 확장 프로그램 아이콘을 표시합니다.
 - 건물 설명 카드에서 메모를 입력하면 즉시 저장됩니다. 수정 버튼에서 페이지 이름·URL·카테고리·건물 디자인을 바꿉니다. 건물 디자인은 선택 즉시 지도에 반영되며 **취소하기**를 누르면 원래 모습으로 돌아갑니다. **수정하기**는 편집한 내용을 저장하고, **Esc**로 닫으면 선택한 건물 디자인만 저장합니다. 삭제 버튼에서 확인 후 북마크를 지우고, 링크를 복사할 수 있습니다. 건물을 클릭하면 사이트로 이동하고 방문 횟수가 증가합니다.
-- 우측 상단 앱 버튼으로 Google 서비스 바로가기를 접고 펼칩니다.
+- 우측 상단 앱 버튼으로 Google 서비스 바로가기를 접고 펼칩니다. Google Service 제목 옆 연필 버튼으로 편집 상태에 들어가 **추가 앱**을 런처 칸으로 끌어다 놓으면 그 자리에 들어가고 마지막 앱이 빠집니다(항상 9개). 체크는 저장, X는 취소입니다.
 - 지도 위에서 트랙패드 핀치로 확대·축소하고 두 손가락 스크롤로 이동합니다. 마우스는 휠로 확대·축소하고 가운데 버튼을 누른 채 드래그해 이동합니다. 확대 중심은 포인터 위치입니다. 사이드바·설정·상세 카드의 스크롤은 그대로 사용합니다. 카메라 위치는 현재 탭에서 유지하며 새로고침하면 도시 전체 맞춤으로 돌아옵니다. 트랙패드와 고해상도 휠은 브라우저가 장치를 구분하지 않아 델타 패턴으로 판별합니다.
 - 카테고리와 건물은 자동 배치합니다. 건물·구역 수동 이동과 캘린더 연동은 지원하지 않습니다.
 - 수업 공지·팀 과제 안내는 시연용 `example.com` 주소입니다.
@@ -148,7 +148,7 @@ PNG는 바깥 배경과 문이 투명합니다. 16·32px은 파란 집 한 채, 
 - 크롬 북마크 동기화: 기존 왼쪽 아래 전용 버튼을 없애고 설정 창으로 옮겼습니다. 누르면 즉시 가져오며 설정 취소로 가져온 북마크를 되돌리지는 않습니다.
 - 전체 초기화: 확인 창의 **초기화하기**를 눌러야 북마크·카테고리·지도 배치·설정을 지웁니다. 빈 도시와 기본 카테고리 하나로 시작하며 시연 데이터가 다시 생기지 않습니다. 크롬 원본 북마크는 지우지 않습니다.
 
-설정 아이콘 `assets/ui/settings*.svg` 7개는 [Figma 설정 창 명세](https://www.figma.com/design/AJUY7H7Zq3FM2nLZ9s7bKk/?node-id=6441-8272)에서 가져왔습니다. 버튼의 위치는 [메인 화면 명세](https://www.figma.com/design/AJUY7H7Zq3FM2nLZ9s7bKk/?node-id=6397-5504)의 1920×1080 기준 아이콘 좌표(49.5, 42)를 사용합니다.
+설정 아이콘 `assets/ui/settings*.svg` 7개는 [Figma 설정 창 명세](https://www.figma.com/design/AJUY7H7Zq3FM2nLZ9s7bKk/?node-id=6441-8272)에서 가져왔습니다. 버튼은 [카테고리 화면 명세](https://www.figma.com/design/AJUY7H7Zq3FM2nLZ9s7bKk/?node-id=6795-62839)대로 오른쪽 위 Google 바로가기의 맨 끝(9개 점 버튼 오른쪽)에 둡니다.
 
 ### 디버그 옵션
 
@@ -197,5 +197,25 @@ UI 아이콘(NEW 말풍선 꼬리 포함)의 디자인 원본은 위 Figma 화�
 - `drive.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/drive_2020q4_48dp.png)
 - `meet.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/meet_2020q4_48dp.png)
 - `contacts.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/contacts_2022_48dp.png)
+- `youtube.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/youtube_48dp.png)
+- `gemini.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/gemini_48dp.png)
+- `calendar.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/calendar_2020q4_48dp.png)
+- `photos.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/photos_48dp.png)
+- `translate.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/translate_48dp.png)
+- `vids.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/vids_48dp.png)
+- `sheets.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/sheets_2020q4_48dp.png)
+- `docs.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/docs_2020q4_48dp.png)
+- `slides.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/slides_2020q4_48dp.png)
+- `one.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/one_48dp.png)
+- `shopping.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/shopping_48dp.png)
+- `store.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/gstore_48dp.png)
+- `finance.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/finance_48dp.png)
+- `keep.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/keep_2020q4_48dp.png)
+- `ad-center.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/my_ad_center_48dp.png)
+- `classroom.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/classroom_48dp.png)
+- `chat.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/chat_2023q4_48dp.png)
+- `earth.png`: [Google 공식 이미지](https://www.gstatic.com/images/branding/product/2x/earth_48dp.png)
+
+런처 편집의 체크·취소 아이콘 `assets/ui/check.svg`, `cancel.svg`(20×20px)는 [Figma 구글런처 편집 명세](https://www.figma.com/design/AJUY7H7Zq3FM2nLZ9s7bKk/?node-id=6900-72696)에서 가져왔습니다.
 
 Google 계정 표시는 인증된 계정 정보를 입력받으며 인증·로그인 처리는 포함하지 않습니다. 연결 방법은 [ARCHITECTURE.md의 Google 계정 표시 연결](ARCHITECTURE.md#google-계정-표시-연결)을 참고합니다.

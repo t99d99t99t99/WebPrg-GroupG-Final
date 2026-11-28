@@ -16,11 +16,11 @@
 <body class="bg-base-100 text-base-content">
     <div id="viewport">
         <div id="canvas">
-            <button id="settings-button" class="settings-button" type="button" aria-label="설정 열기" aria-haspopup="dialog" aria-expanded="false" aria-controls="settings-panel"><img src="../assets/ui/settings.svg" width="24" height="24" alt=""></button>
             <nav class="account-nav" aria-label="Google 바로가기">
                 <a class="link link-hover" href="https://mail.google.com/">Gmail</a>
                 <a class="link link-hover" href="https://www.google.com/imghp">이미지</a>
                 <button id="apps-button" class="apps-button icon-button" type="button" aria-label="Google 서비스 표시" aria-expanded="false" aria-controls="google-services"><span class="apps-dots" aria-hidden="true"></span></button>
+                <button id="settings-button" class="settings-button" type="button" aria-label="설정 열기" aria-haspopup="dialog" aria-expanded="false" aria-controls="settings-panel"><img src="../assets/ui/settings.svg" width="24" height="24" alt=""></button>
             </nav>
 
             <main id="city" aria-label="카테고리별 북마크 지도">
@@ -37,26 +37,55 @@
 
             <aside class="category-panel" aria-labelledby="category-title">
                 <section id="google-services" class="fade-popup" hidden>
-                    <h2 class="google-heading">Google Service</h2>
+                    <header class="google-header">
+                        <h2 class="google-heading">Google Service</h2>
+                        <button id="google-edit" class="google-action" type="button" aria-label="Google Service 편집"><img src="../assets/ui/edit.svg" width="20" height="20" alt=""></button>
+                        <button id="google-save" class="google-action" type="button" aria-label="편집 저장" hidden><img src="../assets/ui/check.svg" width="20" height="20" alt=""></button>
+                        <button id="google-cancel" class="google-action" type="button" aria-label="편집 취소" hidden><img src="../assets/ui/cancel.svg" width="20" height="20" alt=""></button>
+                    </header>
                     <div class="google-grid">
-                        <a id="google-account-link" href="https://myaccount.google.com/" aria-label="Google 계정">
+                        <a id="google-account-link" data-app="account" href="https://myaccount.google.com/" aria-label="Google 계정">
                             <span class="google-service-icon account-avatar"><span id="google-account-fallback" class="account-fallback" aria-hidden="true"></span><img id="google-account-photo" alt="" referrerpolicy="no-referrer" hidden></span>
                             <span id="google-account-label">계정</span>
                         </a>
-                        <a href="https://www.google.com/" aria-label="Google 검색"><img class="google-service-icon" src="../assets/ui/google/search.png" width="52" height="52" alt=""><span>검색</span></a>
-                        <a href="https://maps.google.com/" aria-label="Google 지도"><img class="google-service-icon" src="../assets/ui/google/maps.png" width="52" height="52" alt=""><span>지도</span></a>
-                        <a href="https://play.google.com/" aria-label="Google Play"><img class="google-service-icon" src="../assets/ui/google/play.png" width="52" height="52" alt=""><span>Play</span></a>
-                        <a href="https://news.google.com/" aria-label="Google 뉴스"><img class="google-service-icon" src="../assets/ui/google/news.png" width="52" height="52" alt=""><span>뉴스</span></a>
-                        <a href="https://mail.google.com/" aria-label="Gmail"><img class="google-service-icon" src="../assets/ui/google/gmail.png" width="52" height="52" alt=""><span>Gmail</span></a>
-                        <a href="https://drive.google.com/" aria-label="Google Drive"><img class="google-service-icon" src="../assets/ui/google/drive.png" width="52" height="52" alt=""><span>드라이브</span></a>
-                        <a href="https://meet.google.com/" aria-label="Google Meet"><img class="google-service-icon" src="../assets/ui/google/meet.png" width="52" height="52" alt=""><span>Meet</span></a>
-                        <a href="https://contacts.google.com/" aria-label="Google 주소록"><img class="google-service-icon" src="../assets/ui/google/contacts.png" width="52" height="52" alt=""><span>주소록</span></a>
+                        <a data-app="search" href="https://www.google.com/" aria-label="Google 검색"><img class="google-service-icon" src="../assets/ui/google/search.png" width="52" height="52" alt=""><span>검색</span></a>
+                        <a data-app="maps" href="https://maps.google.com/" aria-label="Google 지도"><img class="google-service-icon" src="../assets/ui/google/maps.png" width="52" height="52" alt=""><span>지도</span></a>
+                        <a data-app="play" href="https://play.google.com/" aria-label="Google Play"><img class="google-service-icon" src="../assets/ui/google/play.png" width="52" height="52" alt=""><span>Play</span></a>
+                        <a data-app="news" href="https://news.google.com/" aria-label="Google 뉴스"><img class="google-service-icon" src="../assets/ui/google/news.png" width="52" height="52" alt=""><span>뉴스</span></a>
+                        <a data-app="gmail" href="https://mail.google.com/" aria-label="Gmail"><img class="google-service-icon" src="../assets/ui/google/gmail.png" width="52" height="52" alt=""><span>Gmail</span></a>
+                        <a data-app="drive" href="https://drive.google.com/" aria-label="Google Drive"><img class="google-service-icon" src="../assets/ui/google/drive.png" width="52" height="52" alt=""><span>드라이브</span></a>
+                        <a data-app="meet" href="https://meet.google.com/" aria-label="Google Meet"><img class="google-service-icon" src="../assets/ui/google/meet.png" width="52" height="52" alt=""><span>Meet</span></a>
+                        <a data-app="contacts" href="https://contacts.google.com/" aria-label="Google 주소록"><img class="google-service-icon" src="../assets/ui/google/contacts.png" width="52" height="52" alt=""><span>주소록</span></a>
+                    </div>
+                    <div id="google-extra" class="google-extra">
+                        <h3>추가 앱</h3>
+                        <div id="google-extra-grid" class="google-extra-grid">
+                            <a data-app="youtube" href="https://www.youtube.com/"><img class="google-service-icon" src="../assets/ui/google/youtube.png" width="48" height="48" alt=""><span>YouTube</span></a>
+                            <a data-app="gemini" href="https://gemini.google.com/"><img class="google-service-icon" src="../assets/ui/google/gemini.png" width="48" height="48" alt=""><span>Gemini</span></a>
+                            <a data-app="calendar" href="https://calendar.google.com/"><img class="google-service-icon" src="../assets/ui/google/calendar.png" width="48" height="48" alt=""><span>Calendar</span></a>
+                            <a data-app="photos" href="https://photos.google.com/"><img class="google-service-icon" src="../assets/ui/google/photos.png" width="48" height="48" alt=""><span>사진</span></a>
+                            <a data-app="translate" href="https://translate.google.com/"><img class="google-service-icon" src="../assets/ui/google/translate.png" width="48" height="48" alt=""><span>번역</span></a>
+                            <a data-app="vids" href="https://docs.google.com/videos/"><img class="google-service-icon" src="../assets/ui/google/vids.png" width="48" height="48" alt=""><span>Google Vids</span></a>
+                            <a data-app="sheets" href="https://docs.google.com/spreadsheets/"><img class="google-service-icon" src="../assets/ui/google/sheets.png" width="48" height="48" alt=""><span>Sheets</span></a>
+                            <a data-app="docs" href="https://docs.google.com/document/"><img class="google-service-icon" src="../assets/ui/google/docs.png" width="48" height="48" alt=""><span>Docs</span></a>
+                            <a data-app="slides" href="https://docs.google.com/presentation/"><img class="google-service-icon" src="../assets/ui/google/slides.png" width="48" height="48" alt=""><span>Slides</span></a>
+                            <a data-app="one" href="https://one.google.com/"><img class="google-service-icon" src="../assets/ui/google/one.png" width="48" height="48" alt=""><span>Google One</span></a>
+                            <a data-app="shopping" href="https://shopping.google.com/"><img class="google-service-icon" src="../assets/ui/google/shopping.png" width="48" height="48" alt=""><span>쇼핑</span></a>
+                            <a data-app="store" href="https://store.google.com/"><img class="google-service-icon" src="../assets/ui/google/store.png" width="48" height="48" alt=""><span>스토어</span></a>
+                            <a data-app="finance" href="https://www.google.com/finance/"><img class="google-service-icon" src="../assets/ui/google/finance.png" width="48" height="48" alt=""><span>금융</span></a>
+                            <a data-app="keep" href="https://keep.google.com/"><img class="google-service-icon" src="../assets/ui/google/keep.png" width="48" height="48" alt=""><span>Keep</span></a>
+                            <a data-app="ad-center" href="https://myadcenter.google.com/"><img class="google-service-icon" src="../assets/ui/google/ad-center.png" width="48" height="48" alt=""><span>내 광고 센터</span></a>
+                            <a data-app="classroom" href="https://classroom.google.com/"><img class="google-service-icon" src="../assets/ui/google/classroom.png" width="48" height="48" alt=""><span>Classroom</span></a>
+                            <a data-app="chat" href="https://chat.google.com/"><img class="google-service-icon" src="../assets/ui/google/chat.png" width="48" height="48" alt=""><span>Google Chat</span></a>
+                            <a data-app="earth" href="https://earth.google.com/"><img class="google-service-icon" src="../assets/ui/google/earth.png" width="48" height="48" alt=""><span>Earth</span></a>
+                        </div>
                     </div>
                 </section>
                 <div class="panel-heading"><h1 id="category-title">카테고리 목록</h1><button id="add-category" class="icon-button" type="button" aria-label="카테고리 추가"><img src="../assets/ui/add.svg" alt=""></button></div>
                 <label class="building-search">
                     <img class="building-search-icon" src="../assets/ui/search.svg" width="17" height="17" alt="">
                     <input id="building-search" type="search" placeholder="건물명을 입력하세요" aria-label="건물명 검색" aria-controls="building-results" aria-describedby="building-search-status" autocomplete="off" spellcheck="false">
+                    <button id="building-search-clear" class="building-search-clear" type="button" aria-label="검색어 지우기"><img src="../assets/ui/clear-search.svg" width="17" height="17" alt=""></button>
                 </label>
                 <p id="building-search-status" class="building-search-status" role="status" aria-live="polite" hidden></p>
                 <div id="category-list" class="category-list"></div>

@@ -142,9 +142,7 @@ export function categoryManager({
         icon.src = src;
         icon.alt = "";
         button.append(icon);
-        if (onClick) button.addEventListener("click", onClick);
-        // Without an action (the general category) the button shows but does nothing.
-        else button.disabled = true;
+        button.addEventListener("click", onClick);
         return button;
     }
     // A building's row in the panel (Figma "Main / Building List Item"): its icon and name select it, the ≡
@@ -205,6 +203,7 @@ export function categoryManager({
     }
     const search = createBookmarkSearch();
     const searchInput = $("building-search");
+    const clearButton = $("building-search-clear");
     const results = $("building-results");
     const searchStatus = $("building-search-status");
     const PAGE_SIZE = 50;
@@ -282,6 +281,11 @@ export function categoryManager({
     });
     searchInput.addEventListener("input", (event) => {
         if (!event.isComposing) queueSearch();
+    });
+    clearButton.addEventListener("click", () => {
+        searchInput.value = "";
+        flushSearch();
+        searchInput.focus();
     });
     function searchKey(event) {
         if (composing || event.isComposing || event.keyCode === 229) return;
@@ -412,14 +416,17 @@ export function categoryManager({
                         const latest = await categories.get();
                         const error = categoryError(draft, latest, category.id);
                         if (error) throw new Error(error);
-                        if (category.id === "new")
+                        if (category.id === "new") {
+                            const id = crypto.randomUUID();
                             await categories.add({
-                                id: crypto.randomUUID(),
+                                id,
                                 name: draft.trim(),
                                 color: draftColor,
                                 customColor: draftColorTouched,
                             });
-                        else await categories.edit(category.id, { name: draft.trim() });
+                            // New categories go to the top of the list, where the input row was.
+                            await categories.reorder([id, ...latest.map((item) => item.id)]);
+                        } else await categories.edit(category.id, { name: draft.trim() });
                         editing = null;
                         render(
                             groups
@@ -448,20 +455,17 @@ export function categoryManager({
                 );
                 filter.addEventListener("click", () => toggleCategory(category.id));
                 row.append(filter);
-                // The general category shows both buttons too, but they do nothing (it cannot be edited or deleted).
-                const general = isGeneralCategory(category);
-                const edit = iconButton(
-                    "../assets/ui/edit.svg",
-                    `${category.name} 수정`,
-                    general ? null : () => startEdit(category, groups),
-                );
-                const remove = iconButton(
-                    "../assets/ui/delete.svg",
-                    `${category.name} 삭제`,
-                    general ? null : () => askDelete(category, groups),
-                );
-                remove.classList.add("category-delete-button");
-                row.append(edit, remove);
+                // The general category cannot be edited or deleted, so it has no buttons.
+                if (!isGeneralCategory(category)) {
+                    const edit = iconButton("../assets/ui/edit.svg", `${category.name} 수정`, () =>
+                        startEdit(category, groups),
+                    );
+                    const remove = iconButton("../assets/ui/delete.svg", `${category.name} 삭제`, () =>
+                        askDelete(category, groups),
+                    );
+                    remove.classList.add("category-delete-button");
+                    row.append(edit, remove);
+                }
                 // The category's buildings, shown under the row while the category is selected (homepage applyFilter).
                 const items = groups.find((group) => group.category.id === category.id)?.items ?? [];
                 if (items.length) {
@@ -521,6 +525,9 @@ export function categoryManager({
         draft = "";
         draftColor = "#485b78";
         draftColorTouched = false;
+        // Search results hide the category list, so clear the search to show the new row.
+        searchInput.value = "";
+        flushSearch();
         render(lastGroups);
         $("category-list").querySelector("input")?.focus();
     });
