@@ -191,7 +191,7 @@ a:hover {
     align-items: center;
     justify-content: flex-end;
     gap: var(--space-8);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-xl);
     line-height: var(--line-height-md);
     z-index: 3;
 }
