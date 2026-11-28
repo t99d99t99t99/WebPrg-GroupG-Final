@@ -680,7 +680,7 @@ a:hover {
     display: block;
     width: 100%;
     height: var(--compact-input-height);
-    padding: 0 var(--space-3) 0 36px;
+    padding: 0 32px 0 36px;
     border: var(--border-width) solid var(--color-neutral-500);
     border-radius: var(--radius-field);
     background: var(--color-base-100);
@@ -700,6 +700,32 @@ a:hover {
 }
 .building-search input::-webkit-search-cancel-button {
     display: none;
+}
+/* Always visible while there is a query, unlike Chrome's hover-only native clear button. */
+.building-search-clear {
+    position: absolute;
+    right: var(--space-1);
+    top: 50%;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: none;
+    color: var(--color-neutral-500);
+    cursor: pointer;
+    transform: translateY(-50%);
+}
+.building-search-clear[hidden] {
+    display: none;
+}
+.building-search-clear:hover,
+.building-search-clear:focus-visible {
+    color: var(--color-base-content);
+    background: var(--color-selection-overlay);
+    outline: none;
 }
 #category-status:empty {
     display: none;

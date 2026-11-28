@@ -205,6 +205,7 @@ export function categoryManager({
     }
     const search = createBookmarkSearch();
     const searchInput = $("building-search");
+    const clearButton = $("building-search-clear");
     const results = $("building-results");
     const searchStatus = $("building-search-status");
     const PAGE_SIZE = 50;
@@ -263,6 +264,7 @@ export function categoryManager({
         cancelAnimationFrame(searchFrame);
         searchFrame = 0;
         query = searchInput.value;
+        clearButton.hidden = !query;
         onSearchChange();
         if (!query.trim()) render(lastGroups);
         renderResults();
@@ -281,7 +283,13 @@ export function categoryManager({
         queueSearch();
     });
     searchInput.addEventListener("input", (event) => {
+        clearButton.hidden = !searchInput.value;
         if (!event.isComposing) queueSearch();
+    });
+    clearButton.addEventListener("click", () => {
+        searchInput.value = "";
+        flushSearch();
+        searchInput.focus();
     });
     function searchKey(event) {
         if (composing || event.isComposing || event.keyCode === 229) return;
