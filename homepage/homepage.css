@@ -1059,6 +1059,8 @@ body.building-sorting-active * {
     flex-shrink: 0;
     width: 8px;
     height: 3px;
+    /* Presses go to the button, never to an image Chrome would start dragging. */
+    pointer-events: none;
 }
 /* Search results: the same building rows (no drag handle), each with the line of its category. */
 .building-results .building-row {

@@ -206,6 +206,11 @@ export function buildingReorder(list, { commit, move, error, finish }) {
         },
         { passive: false },
     );
+    // Chrome starts its own image drag when the press lands on an <img> (the handle's dots, the site icon),
+    // which cancels the pointer and so this drag. Rows are dragged only by the code above.
+    list.addEventListener("dragstart", (event) => {
+        if (event.target.closest?.(".building-row")) event.preventDefault();
+    });
     window.addEventListener("pointerup", (event) => {
         if (drag && event.pointerId === drag.pointer) end();
     });
