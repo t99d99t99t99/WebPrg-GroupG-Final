@@ -65,7 +65,7 @@ export async function paintBackground(layer, { land, view, width, height, fill, 
     const paintWidth = width + padding * 2,
         paintHeight = height + padding * 2;
     const bounds = cellBounds(left, top, (width + padding - x) / zoom, (height + padding - y) / zoom);
-    const tiles = fill.mode === "tile" ? planBackground(land, bounds) : [];
+    const tiles = fill.mode === "tile" ? planBackground(land, bounds, fill.tileKind) : [];
     const sources = [...new Set(tiles.map((tile) => tile.src))];
     const loaded = await Promise.all(sources.map(load));
     const photoImage = fill.mode === "photo" && fill.photoDataUrl ? await load(fill.photoDataUrl) : null;

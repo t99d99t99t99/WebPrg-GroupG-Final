@@ -6,12 +6,19 @@
 export const TILE_WIDTH = 128;
 export const TILE_HEIGHT = 64;
 
-// Land cells per building (the name picket included), so a land keeps some empty cells between buildings.
-const MARGIN = 1.3;
-// A land grows once buildings (and the picket) fill more than MAX_FILL of it, and shrinks once
-// they fill less than MIN_FILL.
-const MAX_FILL = 0.85;
-const MIN_FILL = 0.45;
+// Land cells per building (the name picket counted as one), by the "칸 여백" setting. "tight" leaves
+// only the cells a rectangle cannot avoid; the others keep empty cells between buildings.
+const SPACINGS = { tight: 1, normal: 1.5, wide: 2 };
+let margin = SPACINGS.normal;
+/** Sets the "칸 여백" every later plan uses (homepage.js sets it from the settings before planning). */
+export function setLandSpacing(name) {
+    margin = SPACINGS[name] ?? SPACINGS.normal;
+}
+// A land grows once buildings (and the picket) fill more of it than maxFill, and shrinks once they
+// fill less than minFill, so a bookmark or two more or less does not resize it. "tight" resizes on
+// every change instead, to stay full.
+const maxFill = () => Math.min(1, 1.1 / margin);
+const minFill = () => (margin === 1 ? 1 : 0.6 / margin);
 
 // 2x2 -> 2x3 -> 3x3 -> 3x4 -> 4x4 ... holding `count` cells, returned as [short, long].
 function shapeFor(count) {
@@ -26,18 +33,18 @@ function shapeFor(count) {
 
 // Land shape for `count` buildings, one picket cell and the margin.
 function targetShape(count) {
-    return shapeFor(Math.ceil((count + 1) * MARGIN));
+    return shapeFor(Math.ceil((count + 1) * margin));
 }
 
 // Grow only when the land gets crowded, and shrink only when far too many cells are empty, so adding
 // or removing a bookmark or two does not resize a land and push its neighbours around.
 function needsGrow(group) {
-    return group.count + 1 > group.area.w * group.area.h * MAX_FILL;
+    return group.count + 1 > group.area.w * group.area.h * maxFill();
 }
 function needsShrink(group) {
     const [short, long] = targetShape(group.count);
     const cells = group.area.w * group.area.h;
-    return group.count + 1 < cells * MIN_FILL && short * long < cells;
+    return group.count + 1 < cells * minFill() && short * long < cells;
 }
 
 // FNV-1a: a fixed pseudo-random number for a text, so random choices stay the same every render.
@@ -132,6 +139,37 @@ function roadComponent(groups, start) {
         }
     }
     return reached;
+}
+
+// After the "칸 여백" setting changed every land has a new size, and pulling lands in a cell or two
+// at a time stops short behind neighbours' roads, leaving empty lots in the middle of the city.
+// Lay the lands out again instead: nearest the middle first, each in the free spot next to the
+// lands already placed that is closest to half its old position, so the city stays packed and
+// connected and every land keeps roughly its old direction from the middle. Pinned lands stay.
+function repack(groups, pinned) {
+    const away = (group) => screenDistance(...centerOf(group.area), 0, 0);
+    const fixed = groups.filter((group) => pinned.has(String(group.category.id)));
+    const placed = fixed.map((group) => group.area);
+    for (const group of groups.filter((item) => !fixed.includes(item)).sort((a, b) => away(a) - away(b))) {
+        const { w, h } = group.area;
+        const [cx, cy] = centerOf(group.area);
+        const [nearX, nearY] = [cx / 2, cy / 2];
+        let best = null;
+        if (!placed.length) best = { x: Math.round(nearX - w / 2), y: Math.round(nearY - h / 2), w, h };
+        for (const t of placed) {
+            for (let y = t.y - h - 1; y <= t.y + t.h + 1; y++) {
+                for (let x = t.x - w - 1; x <= t.x + t.w + 1; x++) {
+                    const area = { x, y, w, h };
+                    if (!sharesRoad(area, t) || !isFree(area, placed)) continue;
+                    const cost = screenDistance(x + w / 2, y + h / 2, nearX, nearY);
+                    if (!best || cost < best.cost) best = { ...area, cost };
+                }
+            }
+        }
+        const area = { x: best.x, y: best.y, w, h };
+        moveTo(group, area);
+        placed.push(area);
+    }
 }
 
 // When pulling in still leaves an island (blocked by the double-road rule), move island lands one
@@ -444,8 +482,9 @@ function placeBuildings(group, spread) {
         : null;
     if (!picket) for (const cell of free) if (!picket || nearFront(cell) < nearFront(picket)) picket = cell;
     const open = free.filter((cell) => cell !== picket);
-    // New buildings prefer a free cell with no building beside it, then the checkerboard cells
-    // (the picket's colour stays for decorations), then a cell picked by the bookmark id.
+    // New buildings prefer a free cell with no building beside it, then the cell nearest the middle
+    // of the land (so a roomy land fills from its middle, not a ring along its edges), then a cell
+    // picked by the bookmark id.
     const neighbours = (cell) =>
         [
             [1, 0],
@@ -453,13 +492,14 @@ function placeBuildings(group, spread) {
             [0, 1],
             [0, -1],
         ].filter(([dx, dy]) => taken.has(`${cell.x + dx},${cell.y + dy}`)).length;
-    const offBoard = (cell) => (cell.x + cell.y + front.x + front.y + 1) % 2;
+    const middle = { x: area.x + (area.w - 1) / 2, y: area.y + (area.h - 1) / 2 };
+    const fromMiddle = (cell) => (cell.x - middle.x) ** 2 + (cell.y - middle.y) ** 2;
     for (const bookmark of waiting) {
         if (!open.length) {
             open.push(picket); // no room left: the picket gives way until the land grows
             picket = null;
         }
-        const score = (cell) => [neighbours(cell), offBoard(cell), hashText(`${bookmark.id}:${cell.x},${cell.y}`)];
+        const score = (cell) => [neighbours(cell), fromMiddle(cell), hashText(`${bookmark.id}:${cell.x},${cell.y}`)];
         let best = 0;
         for (let i = 1; i < open.length; i++) {
             const [a, b] = [score(open[i]), score(open[best])];
@@ -480,11 +520,12 @@ function placeBuildings(group, spread) {
  * so a saved plan stays as it is.
  * A building move (building-move.js) passes `compactAll` to also close gaps the move opened,
  * and `pinned` (category ids) for the lands the building left and went into, so they stay put.
+ * `refit` (after the "칸 여백" setting changed) resizes every land to the size that setting gives.
  * @param {object[]} savedCategories
  * @param {object[]} savedBookmarks
- * @param {{pinned?: Iterable<string>, compactAll?: boolean}} [options]
+ * @param {{pinned?: Iterable<string>, compactAll?: boolean, refit?: boolean}} [options]
  */
-export function planCity(savedCategories, savedBookmarks, { pinned = [], compactAll = false } = {}) {
+export function planCity(savedCategories, savedBookmarks, { pinned = [], compactAll = false, refit = false } = {}) {
     const byCategory = new Map();
     for (const bookmark of savedBookmarks) {
         const id = String(bookmark.category);
@@ -512,8 +553,10 @@ export function planCity(savedCategories, savedBookmarks, { pinned = [], compact
     // 2. Resize existing areas to fit their buildings.
     let shrank = false;
     for (const group of placed) {
-        if (needsGrow(group)) grow(group, placed);
-        else if (needsShrink(group)) {
+        const [short, long] = targetShape(group.count);
+        const size = group.area.w * group.area.h;
+        if (needsGrow(group) || (refit && size < short * long)) grow(group, placed);
+        else if (needsShrink(group) || (refit && size > short * long)) {
             shrink(group);
             shrank = true;
         }
@@ -532,7 +575,11 @@ export function planCity(savedCategories, savedBookmarks, { pinned = [], compact
 
     // Deleting a land can cut the road network, leaving the lands beyond it as an island:
     // pull everything together then too.
-    if (shrank || compactAll || !roadsConnected(placed)) compact(placed, new Set(pinnedIds));
+    if (shrank || compactAll || refit || !roadsConnected(placed)) compact(placed, new Set(pinnedIds));
+    if (refit) {
+        repack(placed, new Set(pinnedIds));
+        compact(placed, new Set(pinnedIds));
+    }
     reconnect(placed, new Set(pinnedIds));
     // A shrunk area can leave two cells to a neighbour it used to share a road with.
     fixDoubleRoads(placed, pinnedIds);

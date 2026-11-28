@@ -28,7 +28,7 @@ import { categoryManager } from "./category-manager.js";
 import { decorationsFor, yardFor } from "./decorations.js";
 import { setGoogleAccount } from "./google-account.js";
 import { createGoogleLauncher } from "./google-launcher.js";
-import { planCity, planRoads, project, TILE_HEIGHT, TILE_WIDTH } from "./layout.js";
+import { planCity, planRoads, project, setLandSpacing, TILE_HEIGHT, TILE_WIDTH } from "./layout.js";
 import { createMapCamera } from "./map-camera.js";
 import { createPicketDrag } from "./picket-drag.js";
 import { createSettingsPanel } from "./settings-panel.js";
@@ -63,6 +63,8 @@ let obstructedBuildings = new Set();
 let drawnSignature = null;
 // "지도 장식 밀도" from the saved settings, read on every render.
 let decorationDensity = DEFAULT_SETTINGS.decorationDensity;
+// "칸 여백" the last plan used; null until the first render.
+let landSpacing = null;
 let openInNewTab = DEFAULT_SETTINGS.openInNewTab;
 let emptySpaceFill = { ...DEFAULT_SETTINGS.emptySpaceFill };
 let emphasizedBuildings = new Set();
@@ -548,7 +550,7 @@ function createBuilding(bookmark, category, cell, labels, interactive = true) {
     }
     wrapper.append(link);
     if (!interactive) {
-        wrapper.classList.add("building-preview");
+        wrapper.classList.add("map-preview-building");
         link.removeAttribute("href");
         link.tabIndex = -1;
         return wrapper;
@@ -707,11 +709,11 @@ function drawBackground(layer, land = backgroundLand) {
 }
 
 // Plan positions and save what changed. The lock keeps several new tabs from planning at once.
-async function arrangeCity() {
+async function arrangeCity(refit = false) {
     return updateCity((savedCategories, savedBookmarks) => {
         const assigned = assignCategoryColors(savedCategories);
         return {
-            plan: planCity(assigned.categories, savedBookmarks),
+            plan: planCity(assigned.categories, savedBookmarks, { refit }),
             colors: assigned.changes,
         };
     });
@@ -777,9 +779,32 @@ const picketDrag = createPicketDrag({
             render();
         }
     },
-    commit: saveCategoryPicket,
+    commit: commitPicket,
     toast,
 });
+
+// Saves a dragged picket. Dropped on a building of its land, that building takes the picket's old
+// cell in the same write; cancelled if the building is no longer where the drag saw it.
+function commitPicket(categoryId, offset, swap) {
+    if (!swap) return saveCategoryPicket(categoryId, offset);
+    return moveBookmark((savedCategories, savedBookmarks) => {
+        const bookmark = savedBookmarks.find((item) => item.id === swap.bookmarkId);
+        const inPlace =
+            bookmark &&
+            String(bookmark.category) === String(categoryId) &&
+            bookmark.cell?.x === swap.from.x &&
+            bookmark.cell?.y === swap.from.y;
+        if (!inPlace) return null;
+        return {
+            categories: savedCategories.map((category) =>
+                category.id === categoryId ? { ...category, picket: { ...offset } } : category,
+            ),
+            bookmarks: savedBookmarks.map((item) =>
+                item.id === swap.bookmarkId ? { ...item, cell: { ...swap.to } } : item,
+            ),
+        };
+    });
+}
 
 let cameraBackgroundTimer;
 const camera = createMapCamera({
@@ -927,7 +952,7 @@ function drawCity(groups, preview = null) {
             map.append(building);
             const { src } = buildingTexture(bookmark.clickCount, bookmark.id, false, bookmark.buildingDesign);
             if (src.includes("/bld_house_"))
-                for (const prop of yardFor(bookmark.id, cells.get(bookmark.id)))
+                for (const prop of yardFor(bookmark.id, cells.get(bookmark.id), decorationDensity))
                     map.append(createDecoration(prop, category.id));
         }
         for (const prop of decorationsFor(group, decorationDensity)) map.append(createDecoration(prop, category.id));
@@ -979,7 +1004,13 @@ async function render() {
     }
     const version = ++renderVersion;
     try {
-        const [{ groups, total }, mapSettings] = await Promise.all([arrangeCity(), settings.get()]);
+        // "칸 여백" goes into the plan, so the settings come first. When it changed since the last
+        // render, every land is resized to it at once.
+        const mapSettings = await settings.get();
+        const refit = landSpacing !== null && landSpacing !== mapSettings.landSpacing;
+        landSpacing = mapSettings.landSpacing;
+        setLandSpacing(landSpacing);
+        const { groups, total } = await arrangeCity(refit);
         if (version !== renderVersion) return;
         decorationDensity = mapSettings.decorationDensity;
         openInNewTab = mapSettings.openInNewTab;
