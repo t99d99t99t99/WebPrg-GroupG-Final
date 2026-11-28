@@ -89,9 +89,24 @@ export function categoryManager({
     });
     const buildingSorter = buildingReorder($("category-list"), {
         commit: (ids) => bookmarks.reorder(ids),
+        // Dropped on another category's line: the building moves there (the map gives it a new cell).
+        async move(id, categoryId) {
+            const bookmark = lastGroups.flatMap((group) => group.items).find((item) => item.id === id);
+            const target = lastGroups.find((group) => group.category.id === categoryId)?.category;
+            const result = await bookmarks.edit(id, { category: categoryId });
+            if (!result) throw new Error("삭제된 북마크입니다.");
+            if (bookmark && target) toast(`‘${bookmark.name}’을(를) ‘${target.name}’(으)로 옮겼습니다.`);
+        },
         error(cause) {
             console.error(cause);
             toast(cause.message || "건물 순서를 저장하지 못했습니다.");
+        },
+        // A list update that arrived during the drag was held back (see render); show it now.
+        finish() {
+            if (deferredRender && !sorter.active) {
+                deferredRender = false;
+                render(lastGroups);
+            }
         },
     });
     // Merging deletes the dragged category, so a drop asks first like the delete button does.
@@ -145,8 +160,8 @@ export function categoryManager({
         button.addEventListener("click", onClick);
         return button;
     }
-    // A building's row in the panel (Figma "Main / Building List Item"): its icon and name select it, the ≡
-    // button (rows under a category only) reorders it. Hovering previews it on the map, clicking pins its card.
+    // A building's row in the panel (Figma "Main / Building List Item"): its icon and name select it, the drag
+    // handle (rows under a category only) reorders it. Hovering previews it on the map, clicking pins its card.
     function buildingRow(bookmark, category, sortable, match = null) {
         const row = node("div", "building-row");
         row.dataset.bookmark = bookmark.id;
@@ -193,10 +208,13 @@ export function categoryManager({
             handle.type = "button";
             handle.setAttribute("aria-label", `${bookmark.name} 순서 변경 (위·아래 방향키)`);
             handle.setAttribute("aria-keyshortcuts", "ArrowUp ArrowDown");
-            const grip = node("img", "");
-            grip.src = "../assets/ui/reorder.svg";
-            grip.alt = "";
-            handle.append(grip);
+            // Figma "Main / Drag Handle": three rows of two dots, stacked 2px apart.
+            for (let i = 0; i < 3; i++) {
+                const dots = node("img", "");
+                dots.src = "../assets/ui/drag-handle-row.svg";
+                dots.alt = "";
+                handle.append(dots);
+            }
             row.append(handle);
         }
         return row;

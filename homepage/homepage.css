@@ -975,6 +975,25 @@ body.building-sorting-active * {
     box-shadow: var(--shadow-card);
     transition: none;
 }
+/* Dragged over another category's line (Figma USER-MAIN-BUILD): the row stays put, faded, while a copy in
+   the target's color follows the pointer outside the building list, and the target line is outlined. */
+.building-row.building-moving {
+    opacity: 0.4;
+}
+.building-row.building-drag-ghost {
+    position: absolute;
+    z-index: 4;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--zone-color) 15%, var(--color-base-100));
+    box-shadow: var(--shadow-card);
+}
+.category-row.building-drag-source {
+    z-index: 1;
+}
+.category-row.building-move-target::before {
+    background-color: color-mix(in srgb, var(--zone-color) 15%, transparent);
+    box-shadow: inset 0 0 0 var(--border-width-emphasis) var(--zone-color);
+}
 .building-row-select {
     display: flex;
     align-items: center;
@@ -1019,10 +1038,13 @@ body.building-sorting-active * {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-/* ≡ button (Figma "Main / Reorder Button"): 32×32 with a 20px icon. */
+/* Drag handle (Figma "Main / Drag Handle"): 32×32, three 8×3 rows of two dots, 2px apart. */
 .building-row-handle {
-    display: grid;
-    place-items: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
     flex: 0 0 var(--icon-button-size-compact);
     width: var(--icon-button-size-compact);
     height: var(--icon-button-size-compact);
@@ -1034,10 +1056,11 @@ body.building-sorting-active * {
 }
 .building-row .building-row-handle img {
     display: block;
-    width: var(--icon-size-default);
-    height: var(--icon-size-default);
+    flex-shrink: 0;
+    width: 8px;
+    height: 3px;
 }
-/* Search results: the same building rows (no ≡), each with the line of its category. */
+/* Search results: the same building rows (no drag handle), each with the line of its category. */
 .building-results .building-row {
     width: calc(100% - 20px - var(--space-2));
     margin-left: 20px;
