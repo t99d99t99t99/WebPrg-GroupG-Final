@@ -1,5 +1,6 @@
-// Drag a category's name picket (the wooden sign) to another empty cell of the same land.
-// Dropping it outside the land, on a building's cell or back on its own cell leaves it where it was.
+// Drag a category's name picket (the wooden sign) to another cell of the same land. On a building's
+// cell the two swap places: the building moves to the cell the picket left. Dropping it outside the
+// land or back on its own cell leaves it where it was; it never moves to another land.
 // Decorations are not obstacles: they are laid out again around the picket's new cell.
 
 import { gridAt } from "./building-move.js";
@@ -14,7 +15,9 @@ const MOVE_TOLERANCE = 4; // Moving the pressed pointer farther than this picks 
  * @param {HTMLElement} options.overlay layer for the drop marker (inside #world)
  * @param {() => void} options.onStart  called when a picket is picked up
  * @param {() => void} options.onEnd    called after the drag ends
- * @param {(categoryId: string, offset: {x: number, y: number}) => Promise<boolean>} options.commit
+ * @param {(categoryId: string, offset: {x: number, y: number}, swap: {bookmarkId: string, from: {x: number, y: number}, to: {x: number, y: number}} | null) => Promise<boolean>} options.commit
+ *   saves the picket's new cell (an offset from the land's corner) and, with `swap`, moves the
+ *   building that stood there from `from` to `to` (the picket's old cell)
  * @param {(message: string) => void} options.toast
  */
 export function createPicketDrag({ world, canvas, overlay, onStart, onEnd, commit, toast }) {
@@ -67,7 +70,7 @@ export function createPicketDrag({ world, canvas, overlay, onStart, onEnd, commi
         marker.hidden = true;
         overlay.append(marker);
         document.body.classList.add("picket-dragging");
-        const buildings = new Set([...group.cells.values()].map((cell) => `${cell.x},${cell.y}`));
+        const buildings = new Map([...group.cells].map(([id, cell]) => [`${cell.x},${cell.y}`, id]));
         drag = {
             node,
             group,
@@ -83,13 +86,14 @@ export function createPicketDrag({ world, canvas, overlay, onStart, onEnd, commi
         follow(event.clientX, event.clientY);
     }
 
-    // The empty cell of the picket's own land under the grid point, or null.
+    // The cell of the picket's own land under the grid point, with the id of the building standing
+    // there (if any), or null outside the land.
     function cellAt(point) {
         const cell = { x: Math.floor(point.x), y: Math.floor(point.y) };
         const { area } = drag.group;
         const inside = cell.x >= area.x && cell.x < area.x + area.w && cell.y >= area.y && cell.y < area.y + area.h;
-        if (!inside || drag.buildings.has(`${cell.x},${cell.y}`)) return null;
-        return cell;
+        if (!inside) return null;
+        return { ...cell, bookmarkId: drag.buildings.get(`${cell.x},${cell.y}`) ?? null };
     }
 
     function place(node, left, top, zIndex) {
@@ -147,7 +151,14 @@ export function createPicketDrag({ world, canvas, overlay, onStart, onEnd, commi
         drag.marker.hidden = true;
         try {
             const offset = { x: target.x - group.area.x, y: target.y - group.area.y };
-            const saved = await commit(group.category.id, offset);
+            const swap = target.bookmarkId
+                ? {
+                      bookmarkId: target.bookmarkId,
+                      from: { x: target.x, y: target.y },
+                      to: { x: drag.home.x, y: drag.home.y },
+                  }
+                : null;
+            const saved = await commit(group.category.id, offset, swap);
             if (!saved) toast("표지판을 옮기지 못했습니다. 다시 시도해 주세요.");
         } catch (error) {
             console.error(error);

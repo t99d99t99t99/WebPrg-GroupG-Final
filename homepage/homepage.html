@@ -101,14 +101,16 @@
                         <h3 class="settings-section-title settings-section-title-first">지도 구성</h3>
                         <div class="settings-field">
                             <h4 id="settings-density-title">지도 장식 밀도</h4>
-                            <div class="settings-density">
-                                <fieldset id="settings-density" class="settings-segments" aria-labelledby="settings-density-title"><button type="button" data-density="low" aria-pressed="false">적게</button><button type="button" data-density="normal" aria-pressed="true">보통</button><button type="button" data-density="high" aria-pressed="false">많이</button></fieldset>
-                                <p id="settings-density-description" class="settings-description"></p>
-                            </div>
+                            <fieldset id="settings-density" class="settings-segments" aria-labelledby="settings-density-title"><button type="button" data-density="low" aria-pressed="false">적게</button><button type="button" data-density="normal" aria-pressed="true">보통</button><button type="button" data-density="high" aria-pressed="false">많이</button></fieldset>
+                        </div>
+                        <div class="settings-field">
+                            <h4 id="settings-spacing-title">칸 여백</h4>
+                            <fieldset id="settings-spacing" class="settings-segments" aria-labelledby="settings-spacing-title"><button type="button" data-spacing="tight" aria-pressed="false">꽉 차게</button><button type="button" data-spacing="normal" aria-pressed="true">1.5배</button><button type="button" data-spacing="wide" aria-pressed="false">2배</button></fieldset>
                         </div>
                         <div class="settings-field">
                             <h4 id="settings-fill-title">배경</h4>
                             <fieldset id="settings-fill-mode" class="settings-segments settings-fill-mode" aria-labelledby="settings-fill-title"><button type="button" data-fill="solid" aria-pressed="false">단색</button><button type="button" data-fill="gradient" aria-pressed="false">그라데이션</button><button type="button" data-fill="tile" aria-pressed="true">타일</button><button type="button" data-fill="photo" aria-pressed="false">사진</button></fieldset>
+                            <fieldset id="settings-tile-kind" class="settings-segments settings-tile-kind" aria-label="타일 종류" hidden><button type="button" data-tile="dirt" aria-pressed="true">흙</button><button type="button" data-tile="grass" aria-pressed="false">잔디</button><button type="button" data-tile="water" aria-pressed="false">물</button><button type="button" data-tile="mixed" aria-pressed="false">섞기</button></fieldset>
                             <div id="settings-solid" class="settings-solid" hidden><div id="settings-solid-preview" class="settings-fill-preview" role="img" aria-label="단색 미리보기"></div><button type="button" class="settings-color-button" data-fill-color="solidColor" aria-label="단색 배경 색상 선택" aria-haspopup="dialog" aria-expanded="false" aria-controls="settings-color-picker"><span class="settings-color-chip" aria-hidden="true"></span><span class="settings-color-hex"></span></button></div>
                             <div id="settings-gradient" class="settings-gradient" hidden>
                                 <div id="settings-gradient-preview" class="settings-fill-preview" role="img" aria-label="그라데이션 미리보기"></div>

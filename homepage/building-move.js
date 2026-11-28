@@ -21,12 +21,13 @@ export function gridAt(left, top) {
     return { x: (a + b) / 2, y: (a - b) / 2 };
 }
 
-// Saved state as the map last drew it: categories with their areas, bookmarks with their cells.
+// Saved state as the map last drew it: categories with their areas (and `picketCell`, where the
+// name picket stands), bookmarks with their cells.
 export function snapshotFromGroups(groups) {
     return {
         categories: groups
             .filter((group) => group.category.id !== "uncategorized")
-            .map((group) => ({ ...group.category, area: group.area })),
+            .map((group) => ({ ...group.category, area: group.area, picketCell: group.picket ?? null })),
         bookmarks: groups.flatMap((group) =>
             group.items.map((bookmark) => ({ ...bookmark, cell: group.cells.get(bookmark.id) })),
         ),
@@ -87,8 +88,9 @@ export function slotsOf(area) {
  * What dropping `bookmarkId` at grid point `point` means, or null when it cannot go there.
  * - Own land: an empty cell is a move, a building's cell a swap.
  * - Other land: an empty cell is taken; an occupied cell pushes its building to the nearest
- *   empty cell. When that land is full the result is `{type: "full", categoryId}`, which
- *   cannot be dropped on but lets the caller offer that land's expansion slots.
+ *   empty cell. The name picket's cell counts as taken there, so a land filled by its buildings
+ *   and its picket is full: the result is `{type: "full", categoryId}`, which cannot be dropped
+ *   on but lets the caller offer that land's expansion slots.
  * - `expandId`: the land whose slots are offered; a slot cell gives an "insert" move.
  *   Any other road cell gives null.
  */
@@ -109,11 +111,13 @@ export function resolveDrop(snapshot, bookmarkId, point, expandId = null) {
                 ? { type: "swap", bookmarkId, categoryId, cell, partner: occupant.id }
                 : { type: "place", bookmarkId, categoryId, cell };
         }
+        const free = cellsOf(land.area).filter(
+            (spot) => !taken.some((item) => same(item.cell, spot)) && !same(land.picketCell, spot),
+        );
+        if (!free.length) return { type: "full", categoryId };
         if (!occupant) return { type: "place", bookmarkId, categoryId, cell };
-        const free = cellsOf(land.area).filter((spot) => !taken.some((item) => same(item.cell, spot)));
         free.sort((a, b) => distance(a, cell) - distance(b, cell));
-        if (free[0]) return { type: "push", bookmarkId, categoryId, cell, partner: occupant.id, to: free[0] };
-        return { type: "full", categoryId };
+        return { type: "push", bookmarkId, categoryId, cell, partner: occupant.id, to: free[0] };
     }
 
     if (expandId === null) return null;

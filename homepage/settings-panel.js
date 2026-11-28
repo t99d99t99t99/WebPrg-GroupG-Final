@@ -3,12 +3,6 @@ import { createColorPicker } from "../shared/color-picker.js";
 import { prepareBackgroundImage } from "./background-image.js";
 
 const $ = (id) => document.getElementById(id);
-// Figma USER-MAIN-OPTIONS 설명 2 "지도 장식 밀도".
-const DENSITY_DESCRIPTIONS = {
-    low: "꽃·풀·돌을 드문드문 배치해 빈 공간을 넓게 남깁니다.",
-    normal: "꽃·풀·돌·우체통을 적당히 배치하고 작은 나무와 가로등, 울타리를 드문드문 놓습니다.",
-    high: "꽃·풀·돌·우체통을 놓고, 작은·큰 나무, 가로등, 울타리를 풍성하게 배치합니다.",
-};
 const TOGGLES = [
     ["settings-animation", "cityAnimation"],
     ["settings-new-tab", "openInNewTab"],
@@ -28,6 +22,12 @@ export function createSettingsPanel({
     const confirmation = $("settings-reset-confirm");
     const help = $("settings-animation-help");
     const fillButtons = [...$("settings-fill-mode").querySelectorAll("button")];
+    const tileButtons = [...$("settings-tile-kind").querySelectorAll("button")];
+    // Segmented settings that save one value: [fieldset id, button data key, settings field].
+    const choices = [
+        ["settings-density", "density", "decorationDensity"],
+        ["settings-spacing", "spacing", "landSpacing"],
+    ];
     let initial;
     let draft;
     let opening = false;
@@ -103,6 +103,9 @@ export function createSettingsPanel({
         $("settings-solid").hidden = shown !== "solid";
         $("settings-gradient").hidden = shown !== "gradient";
         $("settings-fill-photo").hidden = shown !== "photo";
+        $("settings-tile-kind").hidden = shown !== "tile";
+        for (const button of tileButtons)
+            button.setAttribute("aria-pressed", String(button.dataset.tile === fill.tileKind));
         for (const button of panel.querySelectorAll("[data-fill-color]")) {
             const color = fill[button.dataset.fillColor];
             button.querySelector(".settings-color-chip").style.backgroundColor = color;
@@ -118,9 +121,9 @@ export function createSettingsPanel({
         else $("settings-photo-image").removeAttribute("src");
     }
     function render() {
-        for (const button of $("settings-density").querySelectorAll("button"))
-            button.setAttribute("aria-pressed", String(button.dataset.density === draft.decorationDensity));
-        $("settings-density-description").textContent = DENSITY_DESCRIPTIONS[draft.decorationDensity];
+        for (const [id, key, field] of choices)
+            for (const button of $(id).querySelectorAll("button"))
+                button.setAttribute("aria-pressed", String(button.dataset[key] === draft[field]));
         for (const [id, field] of TOGGLES) {
             const button = $(id);
             button.setAttribute("aria-checked", String(draft[field]));
@@ -224,11 +227,18 @@ export function createSettingsPanel({
         event.preventDefault();
         return finish();
     });
-    for (const button of $("settings-density").querySelectorAll("button"))
+    for (const [id, key, field] of choices)
+        for (const button of $(id).querySelectorAll("button"))
+            button.addEventListener("click", () => {
+                draft[field] = button.dataset[key];
+                render();
+                return applyDraft(field);
+            });
+    for (const button of tileButtons)
         button.addEventListener("click", () => {
-            draft.decorationDensity = button.dataset.density;
-            render();
-            return applyDraft("decorationDensity");
+            draft.emptySpaceFill.tileKind = button.dataset.tile;
+            renderFill();
+            return applyDraft("emptySpaceFill");
         });
     for (const [id, field] of TOGGLES)
         $(id).addEventListener("click", () => {

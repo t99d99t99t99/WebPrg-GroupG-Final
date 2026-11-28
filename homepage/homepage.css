@@ -1889,8 +1889,9 @@ body.picket-dragging .zone svg {
     transform: scale(var(--hover-grow));
     transform-origin: bottom center;
 }
-/* Buildings of the drag preview map: pictures only. */
-.building.building-preview {
+/* Buildings of the drag preview map: pictures only. Not "building-preview": the design picker
+   (shared/building-picker.css) uses that name for its own boxes. */
+.building.map-preview-building {
     pointer-events: none;
 }
 /* Expansion slots of a full land: where the building can go to grow that land. */

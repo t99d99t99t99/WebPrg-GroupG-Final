@@ -3,6 +3,10 @@ import { storage, withWriteLock } from "./storage.js";
 // Map look settings shown in the settings panel. One object under one key; fields the panel adds
 // later go next to these. Missing or unknown values fall back to the defaults below.
 export const DECORATION_DENSITIES = ["low", "normal", "high"];
+// "칸 여백": how many land cells each building gets (layout.js `SPACINGS`).
+export const LAND_SPACINGS = ["tight", "normal", "wide"];
+// Ground kinds under "타일" (homepage/background.js).
+export const TILE_KINDS = ["dirt", "grass", "water", "mixed"];
 export const DEFAULT_EMPTY_SPACE_FILL = Object.freeze({
     mode: "tile",
     colorMode: "solid",
@@ -11,6 +15,7 @@ export const DEFAULT_EMPTY_SPACE_FILL = Object.freeze({
     gradientEnd: "#b7d6f2",
     angle: 90,
     photoDataUrl: "",
+    tileKind: "dirt",
 });
 // Every app the Google Service launcher can show, in the order "추가 앱" lists them. The launcher
 // shows nine of them; the first nine are the default.
@@ -46,6 +51,7 @@ export const GOOGLE_LAUNCHER_APPS = Object.freeze([
 export const GOOGLE_LAUNCHER_SIZE = 9;
 export const DEFAULT_SETTINGS = Object.freeze({
     decorationDensity: "normal",
+    landSpacing: "normal",
     cityAnimation: true,
     openInNewTab: true,
     autoSyncBookmarks: false,
@@ -61,6 +67,7 @@ const fillValidators = {
     gradientStart: hexColor,
     gradientEnd: hexColor,
     angle: (value) => Number.isInteger(value) && value >= 0 && value <= 360,
+    tileKind: (value) => TILE_KINDS.includes(value),
     photoDataUrl: (value) =>
         typeof value === "string" &&
         (value === "" || /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(value)),
@@ -73,6 +80,7 @@ const validators = {
         new Set(value).size === GOOGLE_LAUNCHER_SIZE &&
         value.every((id) => GOOGLE_LAUNCHER_APPS.includes(id)),
     decorationDensity: (value) => DECORATION_DENSITIES.includes(value),
+    landSpacing: (value) => LAND_SPACINGS.includes(value),
     cityAnimation: (value) => typeof value === "boolean",
     openInNewTab: (value) => typeof value === "boolean",
     autoSyncBookmarks: (value) => typeof value === "boolean",
@@ -84,11 +92,20 @@ const validators = {
         Object.keys(fillValidators).every((field) => fillValidators[field](value[field])),
 };
 
+// A fill saved before `tileKind` existed reads as the default dirt tiles.
+function withFillDefaults(value) {
+    return value && typeof value === "object" && !Array.isArray(value) && !("tileKind" in value)
+        ? { ...value, tileKind: DEFAULT_EMPTY_SPACE_FILL.tileKind }
+        : value;
+}
+
 function withDefaults(saved) {
     const settings = { ...DEFAULT_SETTINGS, emptySpaceFill: { ...DEFAULT_EMPTY_SPACE_FILL } };
     if (saved && typeof saved === "object") {
+        const fields = { ...saved, emptySpaceFill: withFillDefaults(saved.emptySpaceFill) };
         for (const [field, valid] of Object.entries(validators))
-            if (valid(saved[field])) settings[field] = field === "emptySpaceFill" ? { ...saved[field] } : saved[field];
+            if (valid(fields[field]))
+                settings[field] = field === "emptySpaceFill" ? { ...fields[field] } : fields[field];
     }
     return settings;
 }

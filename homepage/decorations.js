@@ -1,5 +1,6 @@
-// Trees, flowers, weeds, rocks and street furniture on the empty cells of each land, and front
-// yards (a fence and a mailbox) for houses (pure functions).
+// Flowers, weeds, rocks, trees and street furniture on the empty cells of each land, and front
+// yards (a fence and a mailbox) for houses (pure functions). The "지도 장식 밀도" setting picks
+// how much of each (DENSITIES).
 // Choices are hashed from the category and the cell's place inside its land, so they stay
 // put across renders and move along when the whole land moves. The picket cell stays empty.
 // Props are drawn at their original size: scaling pixel art makes its pixels look uneven.
@@ -7,16 +8,9 @@
 import { hashText } from "./layout.js";
 
 const PROPS = "../assets/Isometric City/Props";
-// All five trees; the smaller two are listed twice so the big ones stay occasional.
-const TREES = [
-    "tree_common_medium",
-    "tree_common_medium",
-    "tree_pine_small",
-    "tree_pine_small",
-    "tree_common_large",
-    "tree_pine_medium",
-    "tree_pine_tall",
-];
+// Only the smaller trees: the large ones looked like buildings in the beta test.
+const SMALL_TREES = ["tree_pine_small", "tree_common_medium"];
+const BIG_TREES = ["tree_pine_medium"];
 const FURNITURE = ["lightpole_a", "lightpole_b", "trashcan_blue_a", "trashcan_green_b", "dropbox_a", "dropbox_b"];
 const FLOWERS = ["flowers_pink", "flowers_red", "flowers_yellow"];
 const PLANTS = [
@@ -30,17 +24,28 @@ const PLANTS = [
     "rocks_gray_a",
     "rocks_gray_b",
 ];
-const TREE_SHARE = 0.25; // cells with a tree and a plant or two in front of it
-const FURNITURE_SHARE = 0.15; // cells with one piece of street furniture and a plant or two
-const YARD_SHARE = 0.7; // houses with a front fence and a mailbox
-// Share of a land's empty cells that get decorations, by the "지도 장식 밀도" setting. "high" decorates
-// every cell. Each cell has its own fixed roll, so a higher density keeps the decorations of a lower one
-// and only adds more.
-const DENSITY_SHARE = { low: 0.35, normal: 0.65, high: 1 };
-// Fence sprites run along the x axis ("\" on screen); mirrored they run along the y axis. Their base line sits
-// lower in the image than a standing prop's feet.
-const FENCES = ["fence_wood_a", "fence_wood_b"];
-const FENCE_ANCHOR = 0.7;
+// What each "지도 장식 밀도" shows:
+// - low: a few flowers, weeds and rocks, leaving most of the land empty.
+// - normal: more of them, a small tree or a piece of street furniture (street light, trash can,
+//   postbox) here and there, and a fence by some houses.
+// - high: every empty cell, with small and big trees, street furniture, and a fence by most houses.
+// `share` is the share of empty cells that get anything; `tree` and `furniture` are the shares of
+// those cells that get a tree or a piece of street furniture (with a plant or two in front); `yard` is the share of
+// houses with a front fence and a mailbox. Each cell keeps its own fixed rolls, so a higher density
+// decorates every cell a lower one does and adds more.
+const DENSITIES = {
+    low: { share: 0.35, trees: [], tree: 0, furniture: 0, yard: 0 },
+    normal: { share: 0.65, trees: SMALL_TREES, tree: 0.15, furniture: 0.1, yard: 0.4 },
+    high: { share: 1, trees: [...SMALL_TREES, ...SMALL_TREES, ...BIG_TREES], tree: 0.25, furniture: 0.15, yard: 0.8 },
+};
+// A fence stands on the house's front edge (lower left on screen), parallel to the door side.
+// fence_wood_a is drawn in that direction and fence_wood_b in the other, so b is mirrored.
+// `anchor` is where the bottom of the posts meets the ground under the middle of the image, and
+// `shift` (cells along the edge) centres the drawn part, as each image has empty columns on one side.
+const FENCES = [
+    { name: "fence_wood_a", flip: false, anchor: 0.82, shift: 0.07 },
+    { name: "fence_wood_b", flip: true, anchor: 0.71, shift: -0.055 },
+];
 
 // Several pseudo-random numbers in [0, 1) from one key.
 function roller(key) {
@@ -56,7 +61,7 @@ const prop = (name, x, y, extra = {}) => ({ x, y, src: `${PROPS}/prop_${name}.pn
  * @returns {{x: number, y: number, src: string, flip?: boolean, anchor?: number}[]} grid points where each prop stands
  */
 export function decorationsFor({ category, area, cells, picket }, density = "high") {
-    const share = DENSITY_SHARE[density] ?? 1;
+    const { share, trees, tree, furniture } = DENSITIES[density] ?? DENSITIES.high;
     const taken = new Set([...cells.values()].map((cell) => `${cell.x},${cell.y}`));
     if (picket) taken.add(`${picket.x},${picket.y}`);
     const props = [];
@@ -69,8 +74,8 @@ export function decorationsFor({ category, area, cells, picket }, density = "hig
             const at = (from, to) => from + roll() * (to - from);
             const cell = [];
             const kind = roll();
-            if (kind < TREE_SHARE + FURNITURE_SHARE) {
-                cell.push(prop(pick(kind < TREE_SHARE ? TREES : FURNITURE, roll), x + at(0.4, 0.6), y + at(0.4, 0.6)));
+            if (kind < tree + furniture) {
+                cell.push(prop(pick(kind < tree ? trees : FURNITURE, roll), x + at(0.4, 0.6), y + at(0.4, 0.6)));
                 const extra = 1 + Math.floor(roll() * 2);
                 for (let i = 0; i < extra; i++)
                     cell.push(prop(pick(PLANTS, roll), x + at(0.65, 0.9), y + at(0.65, 0.9)));
@@ -93,20 +98,21 @@ export function decorationsFor({ category, area, cells, picket }, density = "hig
 }
 
 /**
- * Front yard of a house standing on `cell`: a fence along one front edge and a mailbox on the
- * other, or nothing for some houses.
+ * Front yard of a house standing on `cell`: a fence on its front edge and a mailbox on its side
+ * edge, or nothing for some houses (none at all on the low density).
+ * @param {"low"|"normal"|"high"} [density]
  * @returns {{x: number, y: number, src: string, flip?: boolean, anchor?: number}[]}
  */
-export function yardFor(bookmarkId, cell) {
+export function yardFor(bookmarkId, cell, density = "high") {
     const roll = roller(`yard:${bookmarkId}`);
-    if (roll() >= YARD_SHARE) return [];
+    if (roll() >= (DENSITIES[density] ?? DENSITIES.high).yard) return [];
     const fence = pick(FENCES, roll);
     const mailbox = pick(["dropbox_a", "dropbox_b"], roll);
     const { x, y } = cell;
-    // Front edges: y = y+1 (lower left) and x = x+1 (lower right). The fence stands toward the
-    // outer corner and the mailbox toward the back of the other edge, clear of the name label
-    // under the front corner.
-    return roll() < 0.5
-        ? [prop(fence, x + 0.3, y + 0.97, { anchor: FENCE_ANCHOR }), prop(mailbox, x + 0.95, y + 0.3)]
-        : [prop(fence, x + 0.97, y + 0.3, { anchor: FENCE_ANCHOR, flip: true }), prop(mailbox, x + 0.3, y + 0.95)];
+    // Front edge y = y+1 (lower left), toward its outer end so the name label under the front
+    // corner stays clear; the mailbox stands toward the back of the side edge x = x+1.
+    return [
+        prop(fence.name, x + 0.4 + fence.shift, y + 0.98, { anchor: fence.anchor, flip: fence.flip }),
+        prop(mailbox, x + 0.95, y + 0.3),
+    ];
 }
