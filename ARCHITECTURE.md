@@ -48,7 +48,7 @@
 | `shared/emoji-picker.js`, `shared/emoji-picker.css` | 저장 팝업·홈페이지 북마크 수정 창의 대표 아이콘 선택창. 한국어·영어 검색, 최근 사용(선택기 인스턴스 동안 유지)과 사람·자연·음식·활동·여행·사물·기호·깃발 분류, 키보드 이동, 사이트 아이콘 복귀. 저장은 호출 화면에서 처리하며 `position` 콜백으로 배율이 적용된 대화상자 안의 위치를 계산할 수 있음 |
 | `shared/emoji-data.js`, `shared/emoji-LICENSE.txt` | Unicode Emoji 17.0의 기본 피부색 이모지와 CLDR 48 한국어 이름·영어 검색어, 허용 이모지 검증 및 데이터 라이선스 |
 | `homepage/google-account.js` | 계정 표시 전용 어댑터. 전달받은 이름·HTTPS 사진 URL을 표시하고 사진 부재·실패 시 기본 아바타로 복귀. 인증·권한·저장소 접근 없음 |
-| `homepage/google-launcher.js` | Google Service 런처 편집(USER-MAIN-CATEGORY-008). `homepage.html`에 있는 앱 링크 27개를 런처 9칸과 **추가 앱** 목록 사이에서 옮김. 추가 앱을 런처 칸에 끌어다 놓으면 그 자리에 넣고 마지막 앱을 뺌. 불러오기·저장은 콜백(`settings`의 `googleLauncher`)으로 받고 저장소에 직접 접근하지 않음 |
+| `homepage/google-launcher.js` | Google Service 런처 편집(USER-MAIN-CATEGORY-008). `homepage.html`에 있는 앱 링크 27개를 런처 9칸과 **추가 앱** 목록 사이에서 옮김. 추가 앱을 런처 칸에 끌어다 놓으면 그 칸에 있던 앱과 서로 바꿈(나머지 앱은 제자리). 불러오기·저장은 콜백(`settings`의 `googleLauncher`)으로 받고 저장소에 직접 접근하지 않음 |
 | `homepage/category-manager.js` | 카테고리 목록 패널. 건물명·도메인 검색(다중 단어·초성·공백/문자 정규화, 일치 강조, 50개씩 추가 표시, 키보드 조작), 선택한 카테고리 아래 건물 목록(호버·클릭은 `homepage.js`의 `hoverBuilding`·`selectBuilding`으로 지도 강조·상세 카드 고정), 생성·이름 수정·드래그 순서 이동·삭제 확인, 색상 칩이나 연필로 이름 수정 칸과 컬러피커를 함께 열기(카테고리 일반의 색상 칩은 컬러피커만), 수정 중 확인·취소, 휴지통 버튼으로 삭제 창 열기, 카테고리 강조 선택 |
 | `homepage/bookmark-search.js` | 홈페이지 검색 전용 순수 모듈. 제목·도메인 색인, NFKC·대소문자·공백 정규화, 한글 초성, 모든 단어 일치 및 제목 우선 순위, 원문 강조 범위, 최근 12개 검색 결과 캐시. 저장소를 수정하지 않음 |
 | `homepage/category-reorder.js` | 행의 포인터 드래그·자동 스크롤·정착 애니메이션·취소와 저장 콜백 처리. 다른 행의 카테고리 줄 가운데에 놓으면 병합 콜백 |
