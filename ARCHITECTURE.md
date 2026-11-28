@@ -37,8 +37,8 @@
 | `homepage/building-appearance.js` | 그림자를 제외한 호버 윤곽, 건물별 사전 제작 벽면 마스크 연결 |
 | `homepage/category-colors.js` | 카테고리 기본 색 배정, 벽면 명도와 잔디 채도·명도 보정 |
 | `db/storage.js` | Chrome 저장소 및 웹 미리보기 어댑터, 저장 변경 알림, 공통 쓰기 잠금 |
-| `db/settings.js` | 지도 설정 저장소(`SettingsDB`). 지도 장식 밀도·도시 애니메이션·새 탭 열기·빈 공간 채우기 값을 검증·저장하며, 없거나 잘못된 값은 기본값으로 읽음 |
-| `homepage/settings-panel.js`, `homepage/settings.css` | 우측 상단 내비게이션의 설정 버튼과 좌측 상단 설정 창. 설정 즉시 반영·취소 시 복원, 장식 밀도, 동작 스위치, 빈 공간 채우기 편집·사진 업로드, 동기화 및 초기화 재확인. 빈 공간 채우기 설정을 지도 배경 렌더러에 전달 |
+| `db/settings.js` | 지도 설정 저장소(`SettingsDB`). 지도 장식 밀도·도시 애니메이션·새 탭 열기·크롬 북마크 자동 동기화·배경(빈 공간 채우기) 값을 검증·저장하며, 없거나 잘못된 값은 기본값으로 읽음 |
+| `homepage/settings-panel.js`, `homepage/settings.css` | 우측 상단 내비게이션의 설정 버튼과, 카테고리 목록 자리에 목록 대신 열리는 설정 창(USER-MAIN-OPTIONS). 설정 즉시 반영·취소(설정 취소·X·설정 버튼 다시 누르기) 시 복원, 장식 밀도와 단계별 설명, 동작 스위치와 설명 말풍선, 배경 네 칸 선택·색상·사진 업로드, 자동 동기화 스위치·지금 동기화 및 초기화 재확인. 열림·닫힘은 `onOpen`·`onClose` 콜백으로 알려 `homepage.js`가 카테고리 목록을 숨기고 되돌림. 빈 공간 채우기 설정을 지도 배경 렌더러에 전달 |
 | `homepage/background-image.js` | 업로드 사진 검증 및 자동 압축. 긴 변 2560px·인코딩 결과 1MiB 이내를 목표로 WebP 화질과 해상도를 조절하고, 이미 목표 이내인 사진은 원본을 유지 |
 | `shared/` | 홈페이지 이름·URL 검증, 사이트 아이콘 URL 생성, 키보드로 조작할 수 있는 카테고리 선택 목록 |
 | `shared/building-designs.js` | 건물 5개 계열의 성장 에셋과 좌우 방향별 기본 디자인 10종. 팝업 선택·DB 검증·지도 렌더링이 공유 |
@@ -129,7 +129,7 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 `mask-editor.js`는 선택한 정적 PNG를 읽어 픽셀과 불투명도를 편집하고 변경된 마스크를 카드에 미리 보여 줍니다. 원본 보기와 선택 픽셀의 불투명도 복사, 확대·축소를 버튼과 단축키로 제공합니다. 변경된 PNG는 디버그 페이지의 `sessionStorage`에 임시 보관해 같은 탭의 새로고침 후에도 복원하며, 탭 세션이 끝나면 사라집니다. 개별 PNG나 변경된 마스크·전체 마스크 ZIP을 다운로드하고 파일을 직접 교체해야 실제 에셋에 반영됩니다. 앱 데이터 저장 키와 Chrome 저장소는 사용하지 않습니다.
 
 - `db/db.js`가 저장 키와 `bookmarks`, `categories`, `settings` 싱글턴, 초기화 Promise인 `ready`, 변경 알림 `subscribe`(북마크·카테고리·지도 설정 키가 바뀔 때)를 제공합니다.
-- 홈페이지 설정 창 안의 "크롬 북마크 동기화" 버튼은 클릭할 때 `chrome.bookmarks.getTree`로 읽은 트리를 `importChromeBookmarks`에 전달합니다. 북마크바·기타·모바일 등 Chrome 기본 컨테이너 안의 사용자 폴더를 카테고리로 만들고(폴더 이름은 앞 10자까지만 써서 앱의 카테고리 이름 규칙에 맞춥니다), 하위 폴더의 북마크는 해당 상위 카테고리로 합칩니다. 폴더 밖의 북마크는 "카테고리 일반"으로 가져옵니다. 같은 이름의 카테고리는 재사용하고(앞 10자가 같은 폴더는 한 카테고리로 합쳐집니다), 정규화한 URL이 이미 있으면 건너뜁니다. HTTP/HTTPS 주소만 가져오며 이름은 Chrome 원본을 보존합니다. 공통 쓰기 잠금 안에서 최신 데이터와 합쳐 두 배열을 함께 저장합니다. Chrome 원본을 수정하지 않으며, 기존 항목의 변경·삭제를 추적하는 실시간 동기화는 하지 않습니다.
+- 홈페이지 설정 창 안의 "지금 동기화" 버튼은 클릭할 때, "크롬 북마크 자동 동기화"(`settings`의 `autoSyncBookmarks`)가 켜져 있으면 새 탭을 열 때마다 `homepage.js`가 `chrome.bookmarks.getTree`로 읽은 트리를 `importChromeBookmarks`에 전달합니다. 북마크바·기타·모바일 등 Chrome 기본 컨테이너 안의 사용자 폴더를 카테고리로 만들고(폴더 이름은 앞 10자까지만 써서 앱의 카테고리 이름 규칙에 맞춥니다), 하위 폴더의 북마크는 해당 상위 카테고리로 합칩니다. 폴더 밖의 북마크는 "카테고리 일반"으로 가져옵니다. 같은 이름의 카테고리는 재사용하고(앞 10자가 같은 폴더는 한 카테고리로 합쳐집니다), 정규화한 URL이 이미 있으면 건너뜁니다. HTTP/HTTPS 주소만 가져오며 이름은 Chrome 원본을 보존합니다. 공통 쓰기 잠금 안에서 최신 데이터와 합쳐 두 배열을 함께 저장합니다. Chrome 원본을 수정하지 않으며, 기존 항목의 변경·삭제를 추적하는 실시간 동기화는 하지 않습니다.
 - 팝업은 `Bookmark`, `Category` 클래스와 `add` API로 현재 페이지를 저장합니다. 팝업은 374×600 크기의 각진 컨테이너이며 입력 영역만 세로 스크롤하고 하단 74px 영역의 작업 버튼은 고정합니다. 현재 탭 제목을 초기 페이지 이름으로 표시하며, 이름은 빈 값만 거부하고 이름·메모 모두 언어·기호·글자 수 제한 없이 저장합니다. 홈페이지 이름 수정과 메모도 같은 제한을 적용합니다. 긴 이름은 입력란·지도 라벨에서 말줄임하고 상세 카드에서 줄바꿈합니다.
 - 새 카테고리 입력은 “일반”으로 시작하며 모든 언어·특수기호·이모지를 허용합니다. 10자 이내, 빈 값·이름 중복 금지 규칙을 UI와 DB에서 검사합니다. 기존 카테고리 목록은 `shared/category-select.js`로 색상 칩과 이름을 함께 표시하고 4개 항목 높이에서 스크롤합니다. 새 카테고리는 임의의 팔레트 색상으로 시작하며 색상 선택기·HEX 입력으로 바꿉니다. 불투명도는 100%로 표시합니다. 선택한 색상은 기존 `color` 필드에 저장합니다.
 - 건물 선택은 5개 계열의 좌우 방향별 기본 디자인 10종이며 기본값은 도심 주택 왼쪽입니다. 선택 상태는 회색 반투명 배경으로 강조하며 양 끝의 진행 불가 화살표는 숨깁니다. 미리보기는 홈페이지와 같은 벽면 마스크, 색상 블렌딩 및 `wallColorAdjustments`를 사용하고 카테고리 선택·색상·HEX 변경 즉시 갱신합니다. 선택값은 북마크의 `buildingDesign` 필드에 저장하며, 지도는 선택한 계열·방향과 카테고리 색상을 적용합니다. 선택값이 없으면 ID 기반으로 결정합니다.
@@ -197,14 +197,15 @@ debug/building-color-test/building-color-test.js ──> debug/building-color-te
 - `customColor`: 이전 화면의 사용자 색상 지정 여부. 저장 값은 보존하지만 홈페이지 건물 색상에는 사용하지 않습니다.
 - `buildingFamily`: 이전 버전이 저장한 선택적 계열 ID. 현재 화면의 계열 선택에는 사용하지 않으며, 기존 필드는 데이터 호환을 위해 보존합니다.
 
-**지도 설정:** `{ decorationDensity?, cityAnimation?, openInNewTab?, emptySpaceFill?, googleLauncher? }`
+**지도 설정:** `{ decorationDensity?, cityAnimation?, openInNewTab?, autoSyncBookmarks?, emptySpaceFill?, googleLauncher? }`
 
-- `decorationDensity`: 지도 장식 밀도. `"low"`(적게)·`"normal"`(보통)·`"high"`(많이) 중 하나이고 기본값은 `"normal"`입니다. `settings.get()`은 기본값을 채운 전체 설정을 돌려주고, `settings.edit({ decorationDensity })`는 값을 검사한 뒤 저장합니다(다른 저장 필드는 보존). 설정 창은 열 때 읽은 값을 보관하고 변경한 항목을 즉시 저장·반영합니다. 연속 입력은 쓰기 순서를 보장하면서 대기 중인 이전 입력을 최신 값으로 합칩니다. **설정 취소**만 이번에 바꾼 항목을 창을 열기 전 값으로 복원하며, **설정 저장**·Esc·바깥 클릭은 변경을 유지합니다. 취소와 전체 초기화는 진행 중인 설정 쓰기 뒤에 처리해 뒤늦은 쓰기가 복원·초기화 값을 덮지 않도록 합니다. 설정창 항목이 늘면 `db/settings.js`의 기본값과 검사 목록에 필드를 추가합니다.
+- `decorationDensity`: 지도 장식 밀도. `"low"`(적게)·`"normal"`(보통)·`"high"`(많이) 중 하나이고 기본값은 `"normal"`입니다. `settings.get()`은 기본값을 채운 전체 설정을 돌려주고, `settings.edit({ decorationDensity })`는 값을 검사한 뒤 저장합니다(다른 저장 필드는 보존). 설정 창은 열 때 읽은 값을 보관하고 변경한 항목을 즉시 저장·반영합니다. 연속 입력은 쓰기 순서를 보장하면서 대기 중인 이전 입력을 최신 값으로 합칩니다. **설정 취소**·X 버튼·설정 버튼 다시 누르기는 이번에 바꾼 항목을 창을 열기 전 값으로 복원하며, **설정 저장**·Esc·바깥 클릭은 변경을 유지합니다. 취소와 전체 초기화는 진행 중인 설정 쓰기 뒤에 처리해 뒤늦은 쓰기가 복원·초기화 값을 덮지 않도록 합니다. 설정창 항목이 늘면 `db/settings.js`의 기본값과 검사 목록에 필드를 추가합니다.
 
 - `cityAnimation`: boolean, 기본값 true. `homepage.js`가 설정을 읽어 `traffic.setEnabled`에 전달합니다. false이면 교통 요소만 정지하며 호버·대화상자 페이드는 유지합니다. OS 움직임 줄이기는 이 설정보다 우선합니다.
 - `openInNewTab`: boolean, 기본값 true. 일반 건물 클릭을 새 탭으로 열고 false이면 현재 탭으로 엽니다. Ctrl/⌘·Shift·가운데 클릭 등 브라우저 기본 동작과 방문 횟수 기록은 유지합니다.
+- `autoSyncBookmarks`: boolean, 기본값 false. true이면 `homepage.js`가 새 탭을 열 때마다 크롬 북마크를 가져옵니다(지금 동기화와 같은 가져오기).
 - `googleLauncher`: Google Service 런처에 표시할 앱 ID 9개의 배열(순서대로, 중복 없음). ID 목록은 `db/settings.js`의 `GOOGLE_LAUNCHER_APPS`(27개)이고 기본값은 그 앞 9개(계정·검색·지도·Play·뉴스·Gmail·드라이브·Meet·주소록)입니다. 값이 없거나 올바르지 않으면 기본값을 씁니다.
-- `emptySpaceFill`: `{ mode, colorMode, solidColor, gradientStart, gradientEnd, angle, photoDataUrl }`. `mode`는 `none`·`color`·`photo`·`tile`이고 기본값은 `tile`, `colorMode`는 `solid`·`gradient`이고 기본값은 `solid`입니다. 색상은 6자리 HEX(기본 단색·시작색 `#d7e9c8`, 끝색 `#b7d6f2`), 방향은 0~360 정수(기본 90), 사진은 JPG/PNG/WEBP의 base64 data URL(기본 빈 문자열)입니다. 업로드 원본의 용량 제한 없이 긴 변 2560px·인코딩 결과 1MiB 이내로 자동 최적화한 뒤 저장합니다(base64 변환 시 약 4/3배). 기존 저장 사진에는 새 용량 제한을 적용하지 않습니다. **선택 UI·설정 저장만 구현했으며 `background.js`·배경 렌더러는 이 설정을 사용하지 않습니다.**
+- `emptySpaceFill`: `{ mode, colorMode, solidColor, gradientStart, gradientEnd, angle, photoDataUrl }`. `mode`는 `none`·`color`·`photo`·`tile`이고 기본값은 `tile`, `colorMode`는 `solid`·`gradient`이고 기본값은 `solid`입니다. 설정 창의 네 칸은 단색(`color`+`solid`)·그라데이션(`color`+`gradient`)·타일(`tile`)·사진(`photo`)이며, `none`은 설정 창에서 더 고를 수 없고 이미 저장된 값은 그대로 읽습니다. 색상은 6자리 HEX(기본 단색·시작색 `#d7e9c8`, 끝색 `#b7d6f2`), 방향은 0~360 정수(기본 90), 사진은 JPG/PNG/WEBP의 base64 data URL(기본 빈 문자열)입니다. 업로드 원본의 용량 제한 없이 긴 변 2560px·인코딩 결과 1MiB 이내로 자동 최적화한 뒤 저장합니다(base64 변환 시 약 4/3배). 기존 저장 사진에는 새 용량 제한을 적용하지 않습니다. **선택 UI·설정 저장만 구현했으며 `background.js`·배경 렌더러는 이 설정을 사용하지 않습니다.**
 
 `db/db.js`의 `resetAllData`는 공통 쓰기 잠금 안에서 북마크를 빈 배열, 카테고리를 새 기본 카테고리 하나, 설정을 기본값, 아이콘 보정 표시를 false로 한 번에 저장합니다. 저장 키는 남겨 다음 실행에서 시연 데이터가 다시 생성되지 않게 합니다. 크롬 원본 북마크나 다른 서비스의 저장소는 삭제하지 않습니다. 설정 창의 초기화 확인 버튼을 눌렀을 때만 호출하며 설정 취소로 되돌릴 수 없는 별도 즉시 실행 동작입니다. 크롬 북마크 동기화도 설정 저장과 별도로 즉시 실행합니다.
 

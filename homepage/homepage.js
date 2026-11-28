@@ -337,7 +337,9 @@ function showTooltip(bookmark, category, link) {
     const right = visible.right + gap;
     const y = Math.max(12, Math.min(visible.top, innerHeight - box.height - 12));
     // The category panel sits at the top right; keep the card clear of it where they share rows.
-    const panel = document.querySelector(".category-panel").getBoundingClientRect();
+    const panel = (
+        document.querySelector(".category-panel:not([hidden])") ?? $("settings-panel")
+    ).getBoundingClientRect();
     const besidePanel = panel.width && y < panel.bottom && y + box.height > panel.top;
     const rightEdge = besidePanel ? panel.left : innerWidth;
     const leftFits = left >= 12;
@@ -1490,11 +1492,24 @@ $("bookmark-editor").addEventListener("cancel", async (event) => {
     }
 });
 
+// Imports Chrome's bookmarks ("지금 동기화" and "크롬 북마크 자동 동기화") and redraws the map.
+async function syncChromeBookmarks() {
+    const result = await importChromeBookmarks(await chrome.bookmarks.getTree());
+    await backfillMissingBookmarkIcons();
+    await render();
+    return result;
+}
+
 createSettingsPanel({
+    // The settings panel takes the category panel's place while it is open (Figma USER-MAIN-OPTIONS).
     onOpen() {
         hideTooltip();
         showGoogleServices(false);
         colorPicker.close();
+        document.querySelector(".category-panel").hidden = true;
+    },
+    onClose() {
+        document.querySelector(".category-panel").hidden = false;
     },
     onSaved: render,
     onError: toast,
@@ -1514,9 +1529,7 @@ createSettingsPanel({
         if (!globalThis.chrome?.bookmarks?.getTree)
             throw new Error("확장 프로그램을 새로고침한 뒤 크롬 새 탭에서 동기화해 주세요.");
         try {
-            const result = await importChromeBookmarks(await chrome.bookmarks.getTree());
-            await backfillMissingBookmarkIcons();
-            await render();
+            const result = await syncChromeBookmarks();
             return `북마크 ${result.bookmarks}개, 카테고리 ${result.categories}개를 가져왔습니다. 중복 ${result.duplicates}개, 지원하지 않는 주소 ${result.skipped}개는 건너뛰었습니다.`;
         } catch (error) {
             throw new Error("크롬 북마크를 가져오지 못했습니다. 확장 프로그램 권한을 확인한 뒤 다시 시도해 주세요.", {
@@ -1525,5 +1538,13 @@ createSettingsPanel({
         }
     },
 });
+
+// "크롬 북마크 자동 동기화": bring in newly added Chrome bookmarks each time a new tab opens.
+settings
+    .get()
+    .then((saved) => {
+        if (saved.autoSyncBookmarks && globalThis.chrome?.bookmarks?.getTree) return syncChromeBookmarks();
+    })
+    .catch(console.error);
 
 setGoogleAccount();
