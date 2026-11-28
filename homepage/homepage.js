@@ -1541,7 +1541,7 @@ createSettingsPanel({
             throw new Error("확장 프로그램을 새로고침한 뒤 크롬 새 탭에서 동기화해 주세요.");
         try {
             const result = await syncChromeBookmarks();
-            return `북마크 ${result.bookmarks}개, 카테고리 ${result.categories}개를 가져왔습니다. 중복 ${result.duplicates}개, 지원하지 않는 주소 ${result.skipped}개는 건너뛰었습니다.`;
+            return `북마크 ${result.bookmarks}개, 카테고리 ${result.categories}개를 가져왔습니다. 중복 ${result.duplicates}개, 지원하지 않는 주소 ${result.skipped}개는 건너뛰었습니다.${result.removed ? ` 크롬에서 지운 북마크 ${result.removed}개는 삭제했습니다.` : ""}`;
         } catch (error) {
             throw new Error("크롬 북마크를 가져오지 못했습니다. 확장 프로그램 권한을 확인한 뒤 다시 시도해 주세요.", {
                 cause: error,
@@ -1550,7 +1550,8 @@ createSettingsPanel({
     },
 });
 
-// "크롬 북마크 자동 동기화": bring in newly added Chrome bookmarks each time a new tab opens.
+// "크롬 북마크 자동 동기화": bring in newly added Chrome bookmarks, and drop the ones deleted in
+// Chrome, each time a new tab opens.
 settings
     .get()
     .then((saved) => {
