@@ -49,6 +49,9 @@ function paintFill(context, fill, width, height, photoImage) {
     context.fillRect(0, 0, width, height);
 }
 
+// Canvas pixels painted beyond each screen edge, so camera moves stay covered until the next repaint.
+export const BACKGROUND_OVERSCAN = 256;
+
 // Rasterise only at screen/design resolution, even when the world is zoomed far out.
 export async function paintBackground(layer, { land, view, width, height, fill, pixelRatio = 1 }) {
     const version = (versions.get(layer) ?? 0) + 1;
@@ -56,7 +59,7 @@ export async function paintBackground(layer, { land, view, width, height, fill, 
     const { x, y, zoom } = view;
     // Overscan keeps short camera gestures covered while the cached canvas follows the world.
     // A whole number of device pixels keeps the canvas edge, and so every tile, on the pixel grid.
-    const padding = Math.round(256 * pixelRatio) / pixelRatio;
+    const padding = Math.round(BACKGROUND_OVERSCAN * pixelRatio) / pixelRatio;
     const left = (-x - padding) / zoom,
         top = (-y - padding) / zoom;
     const paintWidth = width + padding * 2,

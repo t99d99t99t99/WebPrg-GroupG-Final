@@ -3,10 +3,21 @@ import { createColorPicker } from "../shared/color-picker.js";
 import { prepareBackgroundImage } from "./background-image.js";
 
 const $ = (id) => document.getElementById(id);
-const FILL_LABELS = { none: "사용 안 함", color: "단색·그라데이션", photo: "사진 업로드", tile: "타일 패턴" };
+// Figma USER-MAIN-OPTIONS 설명 2 "지도 장식 밀도".
+const DENSITY_DESCRIPTIONS = {
+    low: "꽃·풀·돌을 드문드문 배치해 빈 공간을 넓게 남깁니다.",
+    normal: "꽃·풀·돌·우체통을 적당히 배치하고 작은 나무와 가로등, 울타리를 드문드문 놓습니다.",
+    high: "꽃·풀·돌·우체통을 놓고, 작은·큰 나무, 가로등, 울타리를 풍성하게 배치합니다.",
+};
+const TOGGLES = [
+    ["settings-animation", "cityAnimation"],
+    ["settings-new-tab", "openInNewTab"],
+    ["settings-auto-sync", "autoSyncBookmarks"],
+];
 
 export function createSettingsPanel({
     onOpen = () => {},
+    onClose = () => {},
     onSaved = () => {},
     onReset = () => {},
     onSync,
@@ -15,9 +26,8 @@ export function createSettingsPanel({
     const panel = $("settings-panel");
     const trigger = $("settings-button");
     const confirmation = $("settings-reset-confirm");
-    const fillTrigger = $("settings-fill-trigger");
-    const options = $("settings-fill-options");
-    const optionButtons = [...options.querySelectorAll("button")];
+    const help = $("settings-animation-help");
+    const fillButtons = [...$("settings-fill-mode").querySelectorAll("button")];
     let initial;
     let draft;
     let opening = false;
@@ -55,11 +65,6 @@ export function createSettingsPanel({
         $("sync-bookmarks").setAttribute("aria-busy", String(syncing));
         $("settings-reset-submit").setAttribute("aria-busy", String(resetting));
     }
-    function closeOptions(restoreFocus = false) {
-        options.hidden = true;
-        fillTrigger.setAttribute("aria-expanded", "false");
-        if (restoreFocus) fillTrigger.focus();
-    }
     function positionPopup(picker, anchor, gap = 0) {
         const bounds = panel.getBoundingClientRect();
         const rect = anchor.getBoundingClientRect();
@@ -92,15 +97,12 @@ export function createSettingsPanel({
 
     function renderFill() {
         const fill = draft.emptySpaceFill;
-        $("settings-fill-label").textContent = FILL_LABELS[fill.mode];
-        for (const button of optionButtons)
-            button.setAttribute("aria-selected", String(button.dataset.fill === fill.mode));
-        $("settings-fill-color").hidden = fill.mode !== "color";
-        $("settings-fill-photo").hidden = fill.mode !== "photo";
-        $("settings-solid").hidden = fill.colorMode !== "solid";
-        $("settings-gradient").hidden = fill.colorMode !== "gradient";
-        for (const button of $("settings-color-mode").querySelectorAll("button"))
-            button.setAttribute("aria-pressed", String(button.dataset.colorMode === fill.colorMode));
+        // The four segments cover the saved `mode` + `colorMode`; a saved "none" matches no segment.
+        const shown = fill.mode === "color" ? fill.colorMode : fill.mode;
+        for (const button of fillButtons) button.setAttribute("aria-pressed", String(button.dataset.fill === shown));
+        $("settings-solid").hidden = shown !== "solid";
+        $("settings-gradient").hidden = shown !== "gradient";
+        $("settings-fill-photo").hidden = shown !== "photo";
         for (const button of panel.querySelectorAll("[data-fill-color]")) {
             const color = fill[button.dataset.fillColor];
             button.querySelector(".settings-color-chip").style.backgroundColor = color;
@@ -118,10 +120,8 @@ export function createSettingsPanel({
     function render() {
         for (const button of $("settings-density").querySelectorAll("button"))
             button.setAttribute("aria-pressed", String(button.dataset.density === draft.decorationDensity));
-        for (const [id, field] of [
-            ["settings-animation", "cityAnimation"],
-            ["settings-new-tab", "openInNewTab"],
-        ]) {
+        $("settings-density-description").textContent = DENSITY_DESCRIPTIONS[draft.decorationDensity];
+        for (const [id, field] of TOGGLES) {
             const button = $(id);
             button.setAttribute("aria-checked", String(draft[field]));
             button.querySelector("img").src = `../assets/ui/settings-switch-${draft[field] ? "on" : "off"}.svg`;
@@ -162,7 +162,6 @@ export function createSettingsPanel({
         saving = true;
         if (cancel) uploadController?.abort();
         picker.close();
-        closeOptions();
         busy();
         status("");
         try {
@@ -181,12 +180,12 @@ export function createSettingsPanel({
         if (saving || resetting) return;
         uploadController?.abort();
         picker.close();
-        closeOptions();
         panel.hidden = true;
-        trigger.hidden = false;
+        help.setAttribute("aria-expanded", "false");
         trigger.setAttribute("aria-expanded", "false");
         generation++;
         draft = null;
+        onClose();
         if (restoreFocus) trigger.focus();
     }
     async function open() {
@@ -204,7 +203,6 @@ export function createSettingsPanel({
             render();
             onOpen();
             panel.hidden = false;
-            trigger.hidden = true;
             trigger.setAttribute("aria-expanded", "true");
             busy();
             $("settings-density").querySelector('[aria-pressed="true"]').focus();
@@ -215,8 +213,13 @@ export function createSettingsPanel({
             opening = false;
         }
     }
-    trigger.addEventListener("click", open);
+    // The X button and a second click on the settings button cancel, like "설정 취소".
+    trigger.addEventListener("click", () => (panel.hidden ? open() : finish(true)));
+    $("settings-close").addEventListener("click", () => finish(true));
     $("settings-cancel").addEventListener("click", () => finish(true));
+    help.addEventListener("click", () =>
+        help.setAttribute("aria-expanded", String(help.getAttribute("aria-expanded") !== "true")),
+    );
     $("settings-form").addEventListener("submit", (event) => {
         event.preventDefault();
         return finish();
@@ -227,59 +230,20 @@ export function createSettingsPanel({
             render();
             return applyDraft("decorationDensity");
         });
-    for (const [id, field] of [
-        ["settings-animation", "cityAnimation"],
-        ["settings-new-tab", "openInNewTab"],
-    ])
+    for (const [id, field] of TOGGLES)
         $(id).addEventListener("click", () => {
             draft[field] = !draft[field];
             render();
             return applyDraft(field);
         });
 
-    function openOptions() {
-        picker.close();
-        options.hidden = false;
-        fillTrigger.setAttribute("aria-expanded", "true");
-        optionButtons.find((button) => button.dataset.fill === draft.emptySpaceFill.mode)?.focus();
-    }
-    fillTrigger.addEventListener("click", () => (options.hidden ? openOptions() : closeOptions()));
-    fillTrigger.addEventListener("keydown", (event) => {
-        if (["ArrowDown", "ArrowUp"].includes(event.key)) {
-            event.preventDefault();
-            openOptions();
-        }
-    });
-    for (const button of optionButtons)
+    for (const button of fillButtons)
         button.addEventListener("click", () => {
-            draft.emptySpaceFill.mode = button.dataset.fill;
-            picker.close();
-            renderFill();
-            closeOptions(true);
-            return applyDraft("emptySpaceFill");
-        });
-    options.addEventListener("keydown", (event) => {
-        const index = optionButtons.indexOf(document.activeElement);
-        let next;
-        if (event.key === "ArrowDown") next = (index + 1) % optionButtons.length;
-        else if (event.key === "ArrowUp") next = (index + optionButtons.length - 1) % optionButtons.length;
-        else if (event.key === "Home") next = 0;
-        else if (event.key === "End") next = optionButtons.length - 1;
-        else if (event.key === "Escape") {
-            event.preventDefault();
-            event.stopPropagation();
-            closeOptions(true);
-            return;
-        } else if (event.key === "Tab") {
-            closeOptions(true);
-            return;
-        } else return;
-        event.preventDefault();
-        optionButtons[next].focus();
-    });
-    for (const button of $("settings-color-mode").querySelectorAll("button"))
-        button.addEventListener("click", () => {
-            draft.emptySpaceFill.colorMode = button.dataset.colorMode;
+            const fill = draft.emptySpaceFill;
+            if (["solid", "gradient"].includes(button.dataset.fill)) {
+                fill.mode = "color";
+                fill.colorMode = button.dataset.fill;
+            } else fill.mode = button.dataset.fill;
             picker.close();
             renderFill();
             return applyDraft("emptySpaceFill");
@@ -365,7 +329,6 @@ export function createSettingsPanel({
     $("settings-reset").addEventListener("click", () => {
         if (saving || syncing || uploading) return;
         picker.close();
-        closeOptions();
         const bounds = panel.getBoundingClientRect();
         confirmation.style.left = `${bounds.left}px`;
         confirmation.style.top = `${bounds.top}px`;
@@ -376,6 +339,9 @@ export function createSettingsPanel({
         $("settings-reset-cancel").focus();
     });
     $("settings-reset-cancel").addEventListener("click", () => confirmation.close());
+    $("settings-reset-close").addEventListener("click", () => {
+        if (!resetting) confirmation.close();
+    });
     confirmation.addEventListener("cancel", (event) => {
         if (resetting) event.preventDefault();
     });
@@ -416,13 +382,10 @@ export function createSettingsPanel({
             close(true);
         }
     });
-    panel.querySelector(".settings-body").addEventListener("scroll", () => {
-        picker.close();
-        closeOptions();
-    });
+    panel.querySelector(".settings-body").addEventListener("scroll", () => picker.close());
     document.addEventListener("pointerdown", (event) => {
         if (confirmation.open || panel.hidden) return;
-        if (!options.hidden && !event.target.closest(".settings-fill-select")) closeOptions();
+        if (!help.contains(event.target)) help.setAttribute("aria-expanded", "false");
         if (!panel.contains(event.target) && !trigger.contains(event.target)) close();
     });
     return { open, close };
