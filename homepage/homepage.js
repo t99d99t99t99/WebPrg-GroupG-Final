@@ -17,7 +17,7 @@ import { isBookmarkEmoji } from "../shared/emoji-data.js";
 import { createEmojiPicker } from "../shared/emoji-picker.js";
 import { bookmarkEmoji, bookmarkIconUrl } from "../shared/site-icons.js";
 import { bookmarkNameError, categoryError, webUrl } from "../shared/validation.js";
-import { paintBackground } from "./background-renderer.js";
+import { BACKGROUND_OVERSCAN, paintBackground } from "./background-renderer.js";
 import { applyPreparedWallMask, buildingVisualBounds, prepareBuildingAppearance } from "./building-appearance.js";
 import { createBuildingDrag } from "./building-drag.js";
 import { layoutFingerprint, planMove, snapshotFromGroups } from "./building-move.js";
@@ -673,7 +673,7 @@ function fitCity(tiles) {
     const y = MAP_AREA.top + (MAP_AREA.height - height * zoom) / 2 - minTop * zoom;
     const world = $("world");
     const first = !world.style.transform;
-    const view = camera.fit({ x, y, zoom });
+    const view = camera.fit({ x, y, zoom }, { left: minLeft, top: minTop, right: maxRight, bottom: maxBottom });
     if (first) {
         // Animate later zoom changes only, not the first placement on page load.
         void world.offsetWidth;
@@ -686,8 +686,10 @@ function fitCity(tiles) {
 // fitCity so the background never changes the zoom. Redrawn when the canvas resizes.
 let backgroundLand = null;
 let backgroundView = null;
+let paintedView = null; // the view the background canvas was last painted for
 function drawBackground(layer, land = backgroundLand) {
     if (!land || !backgroundView) return;
+    paintedView = backgroundView;
     const canvas = $("canvas");
     paintBackground(layer, {
         land,
@@ -770,12 +772,21 @@ const camera = createMapCamera({
     onChange(view) {
         backgroundView = view;
         if (activeLink || !tooltip.hidden) hideTooltip();
-        // Keep the cached background during a gesture; rasterise once the camera settles.
-        clearTimeout(cameraBackgroundTimer);
-        cameraBackgroundTimer = setTimeout(() => {
+        // Keep the cached background during a gesture and rasterise once the camera settles. Repaint
+        // right away when the zoom changes (a zoom-out shows more than the canvas covers) or half of the
+        // overscan is used up, so the unpainted area never comes into view.
+        const repaint = () => {
             const background = document.querySelector("#ground > .background-tiles");
             if (background) drawBackground(background);
-        }, 120);
+        };
+        clearTimeout(cameraBackgroundTimer);
+        if (
+            paintedView &&
+            (view.zoom !== paintedView.zoom ||
+                Math.max(Math.abs(view.x - paintedView.x), Math.abs(view.y - paintedView.y)) > BACKGROUND_OVERSCAN / 2)
+        )
+            repaint();
+        else cameraBackgroundTimer = setTimeout(repaint, 120);
     },
 });
 

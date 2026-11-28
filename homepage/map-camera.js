@@ -37,7 +37,9 @@ export function zoomAt(view, point, factor, min, max) {
 // Camera state is intentionally local to this tab; it never changes saved building positions.
 export function createMapCamera({ surface, canvas, world, canStart, onChange }) {
     let view = null;
-    let minimum = 0.1;
+    // The zoom that fits the whole city and the city's bounds in world coordinates (see fit()).
+    let fitZoom = 1;
+    let city = null;
     let manual = false;
     let drag = null;
     let frame = 0;
@@ -57,6 +59,21 @@ export function createMapCamera({ surface, canvas, world, canStart, onChange }) 
         const zoom = levelZoom(levelIndex(next.zoom, r), r);
         return { x: Math.round(next.x * r) / r, y: Math.round(next.y * r) / r, zoom };
     }
+    // The lowest zoom level: one below the level that fits the whole city.
+    const minimumLevel = () => levelIndex(fitZoom, ratio()) - 1;
+    // Keep part of the city on screen (a quarter of the canvas, or all of a smaller city), so the camera
+    // cannot wander off into empty background.
+    function contain(next) {
+        if (!city) return next;
+        const { zoom } = next;
+        const keepX = Math.min((city.right - city.left) * zoom, canvas.offsetWidth / 4);
+        const keepY = Math.min((city.bottom - city.top) * zoom, canvas.offsetHeight / 4);
+        return {
+            x: clamp(next.x, keepX - city.right * zoom, canvas.offsetWidth - keepX - city.left * zoom),
+            y: clamp(next.y, keepY - city.bottom * zoom, canvas.offsetHeight - keepY - city.top * zoom),
+            zoom,
+        };
+    }
     function apply() {
         world.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`;
     }
@@ -68,7 +85,7 @@ export function createMapCamera({ surface, canvas, world, canStart, onChange }) 
     // Zoom steps glide between levels (CSS .camera-zooming); panning follows the pointer directly.
     function change(next, zooming = false) {
         world.classList.toggle("camera-zooming", zooming);
-        view = snap(next);
+        view = snap(contain(next));
         manual = true;
         interacting = true;
         world.classList.add("camera-controlled");
@@ -104,9 +121,10 @@ export function createMapCamera({ surface, canvas, world, canStart, onChange }) 
                 pendingZoom += -clamp(delta, -240, 240) * (event.ctrlKey ? 0.01 : 0.002);
                 if (Math.abs(pendingZoom) < LEVEL_STEP) return;
                 const r = ratio();
-                const zoom = levelZoom(levelIndex(view.zoom, r) + Math.sign(pendingZoom), r);
+                const level = levelIndex(view.zoom, r) + Math.sign(pendingZoom);
+                const zoom = levelZoom(level, r);
                 pendingZoom = 0;
-                if (zoom < minimum || zoom > 4) return;
+                if (level < minimumLevel() || zoom > 4) return;
                 const point = { x: (event.clientX - rect.left) / scale, y: (event.clientY - rect.top) / scale };
                 change(zoomAt(view, point, zoom / view.zoom, 0, Infinity), true);
             }
@@ -163,10 +181,14 @@ export function createMapCamera({ surface, canvas, world, canStart, onChange }) 
         true,
     );
     return {
-        fit(next) {
-            minimum = Math.min(0.1, next.zoom * 0.4);
-            // A manual view is kept, but re-snapped because a resize can change the pixel ratio.
-            view = snap(manual ? view : next);
+        // `next` shows the whole city; `bounds` is the city's box in world coordinates.
+        fit(next, bounds) {
+            fitZoom = next.zoom;
+            city = bounds;
+            // A manual view is kept, but brought back inside the limits (the city may have changed) and
+            // re-snapped because a resize can change the pixel ratio.
+            const lowest = levelZoom(minimumLevel(), ratio());
+            view = snap(manual ? contain({ ...view, zoom: Math.max(view.zoom, lowest) }) : next);
             apply();
             return { ...view };
         },
