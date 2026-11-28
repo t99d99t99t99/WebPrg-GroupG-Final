@@ -521,6 +521,9 @@ export function categoryManager({
         draft = "";
         draftColor = "#485b78";
         draftColorTouched = false;
+        // Search results hide the category list, so clear the search to show the new row.
+        searchInput.value = "";
+        flushSearch();
         render(lastGroups);
         $("category-list").querySelector("input")?.focus();
     });
